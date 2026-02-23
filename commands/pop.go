@@ -7,7 +7,7 @@ import (
 )
 
 func HandlePop(args []string) error {
-	messages, err := logic.LoadContext()
+	transactions, err := logic.LoadContext()
 	if err != nil {
 		return err
 	}
@@ -21,13 +21,13 @@ func HandlePop(args []string) error {
 		numToPop = num
 	}
 
-	if numToPop > len(messages) {
-		numToPop = len(messages)
+	if numToPop > len(transactions) {
+		numToPop = len(transactions)
 	}
 
-	messages = messages[:len(messages)-numToPop]
+	transactions = transactions[:len(transactions)-numToPop]
 
-	if err := logic.SaveContext(messages); err != nil {
+	if err := logic.SaveContext(transactions); err != nil {
 		return err
 	}
 

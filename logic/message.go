@@ -1,39 +1,46 @@
 package logic
 
-func LoadContextForMessageType(messageType MessageType) ([]Message, error) {
-	messages, err := LoadContext()
+func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, error) {
+	transactions, err := LoadContext()
 	if err != nil {
 		return nil, err
 	}
 
-	var allowedTypes []MessageType
+	newTransactions := make([]Transaction, 0)
+	newTransaction := Transaction{Type: transactionType}
 
-	switch messageType {
-	case MessageTypeCommand:
-		allowedTypes = []MessageType{MessageTypeFile, MessageTypeCommand, MessageTypeAction, MessageTypePlan}
-	case MessageTypeObjective:
-		allowedTypes = []MessageType{MessageTypeFile, MessageTypeQuestion, MessageTypeAnswer, MessageTypeObjective, MessageTypePlan, MessageTypeRevision}
-	case MessageTypeQuestion:
-		allowedTypes = []MessageType{MessageTypeFile, MessageTypeQuestion, MessageTypeAnswer, MessageTypeObjective, MessageTypePlan}
-	default:
-		return make([]Message, 0), nil
+	allowedTypes := make(map[TransactionType]bool)
+
+	switch transactionType {
+	case TransactionTypeQuestion:
+		allowedTypes[TransactionTypeQuestion] = true
+		allowedTypes[TransactionTypePlan] = true
+	case TransactionTypePlan:
+		allowedTypes[TransactionTypeQuestion] = true
+		allowedTypes[TransactionTypePlan] = true
+	case TransactionTypeAct:
+		allowedTypes[TransactionTypeAct] = true
 	}
 
-	var filtered []Message
-	for _, msg := range messages {
-		for _, allowed := range allowedTypes {
-			if msg.Type == allowed {
-				if messageType == MessageTypeObjective && msg.Type == MessageTypePlan {
-					filtered = append(filtered, Message{Type: MessageTypeRevision, Content: msg.Content})
-				} else {
-					filtered = append(filtered, msg)
-				}
-				break
+	lastPlan := ""
+	for _, tx := range transactions {
+		if allowedTypes[tx.Type] {
+			newTransactions = append(newTransactions, tx)
+		} else {
+			for _, file := range tx.Context {
+				newTransaction.Context = append(newTransaction.Context, file)
 			}
+		}
+		if tx.Type == TransactionTypePlan {
+			lastPlan = tx.Response
 		}
 	}
 
-	return filtered, nil
+	if transactionType == TransactionTypeAct {
+		newTransaction.Request = []string{lastPlan}
+	}
+
+	return append(newTransactions, newTransaction), nil
 }
 
 type MessageType string
@@ -50,7 +57,6 @@ const (
 )
 
 func ResponseType(messageType MessageType) MessageType {
-
 	switch messageType {
 	case MessageTypeCommand:
 		return MessageTypeAction
@@ -67,4 +73,25 @@ type Message struct {
 	Type    MessageType
 	Path    string
 	Content string
+}
+
+type TransactionType string
+
+const (
+	TransactionTypeNone     TransactionType = "None"
+	TransactionTypeQuestion TransactionType = "Question"
+	TransactionTypeAct      TransactionType = "Act"
+	TransactionTypePlan     TransactionType = "Plan"
+)
+
+type File struct {
+	Path    string
+	Content string
+}
+
+type Transaction struct {
+	Type     TransactionType
+	Request  []string
+	Response string
+	Context  []File
 }

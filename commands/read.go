@@ -35,7 +35,7 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Skipping directory: %s\n", filePath)
 				continue
 			}
-			messages, err := logic.LoadContext()
+			transactions, err := logic.LoadContext()
 			if err != nil {
 				return err
 			}
@@ -44,15 +44,20 @@ func HandleReadCommand(args []string) error {
 				return err
 			}
 
-			if hasMessageWithPath(messages, filePath) {
+			if hasMessageWithPath(transactions, filePath) {
 				fmt.Printf("Skipping: %s\n", filePath)
 				continue
 			} else {
 				fmt.Printf("Reading: %s\n", filePath)
 			}
 
-			messages = append(messages, logic.Message{Type: logic.MessageTypeFile, Path: filePath, Content: content})
-			err2 := logic.SaveContext(messages)
+			file := logic.File{Path: filePath, Content: content}
+			if !AppendFileToLastTransaction(transactions, file) {
+				transaction := logic.Transaction{Type: logic.TransactionTypeNone, Context: []logic.File{file}}
+				transactions = append(transactions, transaction)
+			}
+
+			err2 := logic.SaveContext(transactions)
 			if err2 != nil {
 				return err2
 			}
@@ -62,11 +67,25 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func hasMessageWithPath(messages []logic.Message, path string) bool {
-
-	for _, message := range messages {
-		if message.Path == path {
+func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.File) bool {
+	count := len(transactions)
+	if count > 0 {
+		transaction := transactions[count-1]
+		if transaction.Type == logic.TransactionTypeNone {
+			transaction.Context = append(transaction.Context, file)
+			transactions[count-1] = transaction
 			return true
+		}
+	}
+	return false
+}
+
+func hasMessageWithPath(transactions []logic.Transaction, path string) bool {
+	for _, transaction := range transactions {
+		for _, file := range transaction.Context {
+			if file.Path == path {
+				return true
+			}
 		}
 	}
 	return false

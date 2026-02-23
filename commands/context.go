@@ -8,31 +8,40 @@ import (
 )
 
 func HandleContextCommand() error {
-	messages, err := logic.LoadContext()
+	transactions, err := logic.LoadContext()
 	if err != nil {
 		return err
 	}
 
-	if len(messages) == 0 {
+	if len(transactions) == 0 {
 		fmt.Println("Context is empty")
 		return nil
 	}
 
-	for i, message := range messages {
-		fmt.Printf("[%d] %s", i, message.Type)
-		if message.Path != "" {
-			fmt.Printf(" - %s", message.Path)
-		} else {
-			truncatedContent := message.Content
-			if len(truncatedContent) > 200 {
-				truncatedContent = truncatedContent[:200] + "..."
-			}
+	for i, transaction := range transactions {
 
-			truncatedContent = strings.ReplaceAll(truncatedContent, "\n", " ")
-			fmt.Printf(" - %s", truncatedContent)
+		count, _ := fmt.Printf("[%d] %s", i, transaction.Type)
+		for _, req := range transaction.Request {
+			fmt.Print(" - User: ")
+			printTruncated(req)
 		}
-		fmt.Println()
+		fmt.Print(strings.Repeat(" ", count))
+		fmt.Print(" - Assistant: ")
+		printTruncated(transaction.Response)
+
+		for j, file := range transaction.Context {
+			fmt.Printf(" - [%d] %s", j, file.Path)
+		}
 	}
 
 	return nil
+}
+
+func printTruncated(truncatedContent string) {
+	if len(truncatedContent) > 200 {
+		truncatedContent = truncatedContent[:200] + "..."
+	}
+	truncatedContent = strings.ReplaceAll(truncatedContent, "\n", " ")
+	fmt.Printf(" - %s", truncatedContent)
+	fmt.Println()
 }

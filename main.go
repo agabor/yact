@@ -85,10 +85,6 @@ func main() {
 		commandErr = commands.HandleContextCommand()
 	case "pop":
 		commandErr = commands.HandlePop(commandArgs)
-	case "del":
-		commandErr = commands.HandleDelete(commandArgs)
-	case "reload":
-		_, commandErr = commands.HandleReload()
 	case "reset":
 		if len(commandArgs) != 0 {
 			fmt.Fprintf(os.Stderr, "Error: the reset command takes no arguments\n")
@@ -100,21 +96,11 @@ func main() {
 	case "bash":
 		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, cfg, systemprompt.Bash)
 	case "ask":
-		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Ask, logic.MessageTypeQuestion)
+		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Ask, logic.TransactionTypeQuestion)
 	case "plan":
-		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Plan, logic.MessageTypeObjective)
+		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Plan, logic.TransactionTypePlan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
-	case "last":
-		if len(commandArgs) > 1 {
-			fmt.Fprintf(os.Stderr, "Error: last command takes at most one argument\n")
-			os.Exit(1)
-		}
-		lastFilePath := ""
-		if len(commandArgs) == 1 {
-			lastFilePath = commandArgs[0]
-		}
-		commandErr = commands.HandleLastCommand(lastFilePath)
 	case "step":
 		if len(commandArgs) != 1 {
 			fmt.Fprintf(os.Stderr, "Error: step index required\n")

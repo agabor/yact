@@ -13,7 +13,7 @@ func getContextFilePath() (string, error) {
 	}
 	return filepath.Join(homeDir, ".yact", "context.json"), nil
 }
-func LoadContext() ([]Message, error) {
+func LoadContext() ([]Transaction, error) {
 	contextPath, err := getContextFilePath()
 	if err != nil {
 		return nil, err
@@ -22,20 +22,20 @@ func LoadContext() ([]Message, error) {
 	data, err := os.ReadFile(contextPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []Message{}, nil
+			return []Transaction{}, nil
 		}
 		return nil, err
 	}
 
-	var messages []Message
-	if err := json.Unmarshal(data, &messages); err != nil {
+	var transactions []Transaction
+	if err := json.Unmarshal(data, &transactions); err != nil {
 		return nil, err
 	}
 
-	return messages, nil
+	return transactions, nil
 }
 
-func SaveContext(messages []Message) error {
+func SaveContext(transactions []Transaction) error {
 	contextPath, err := getContextFilePath()
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func SaveContext(messages []Message) error {
 		return err
 	}
 
-	data, err := json.MarshalIndent(messages, "", "  ")
+	data, err := json.MarshalIndent(transactions, "", "  ")
 	if err != nil {
 		return err
 	}

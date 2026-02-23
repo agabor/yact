@@ -18,7 +18,6 @@ func ShowHelp() {
 	fmt.Println("  y read <file>           # Add file reference to prompt")
 	fmt.Println("  y context               # List all messages in context")
 	fmt.Println("  y pop [num]             # Remove last num messages (default: 1)")
-	fmt.Println("  y del <idx>             # Remove message at index")
 	fmt.Println("  y reload                # Reload file contents from disk")
 	fmt.Println("  y reset                 # Reload file contents from disk, then remove other messages")
 	fmt.Println("  y new                   # Create a new context")
