@@ -1,5 +1,7 @@
 package logic
 
+import "strings"
+
 func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
@@ -9,70 +11,58 @@ func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, 
 	newTransactions := make([]Transaction, 0)
 	newTransaction := Transaction{Type: transactionType}
 
-	allowedTypes := make(map[TransactionType]bool)
-
-	switch transactionType {
-	case TransactionTypeQuestion:
-		allowedTypes[TransactionTypeQuestion] = true
-		allowedTypes[TransactionTypePlan] = true
-	case TransactionTypePlan:
-		allowedTypes[TransactionTypeQuestion] = true
-		allowedTypes[TransactionTypePlan] = true
-	case TransactionTypeAct:
-		allowedTypes[TransactionTypeAct] = true
-	}
-
-	lastPlan := ""
 	for _, tx := range transactions {
-		if allowedTypes[tx.Type] {
+		if tx.Type == transactionType {
 			newTransactions = append(newTransactions, tx)
 		} else {
 			for _, file := range tx.Context {
 				newTransaction.Context = append(newTransaction.Context, file)
 			}
 		}
-		if tx.Type == TransactionTypePlan {
-			lastPlan = tx.Response
-		}
 	}
 
 	if transactionType == TransactionTypeAct {
-		newTransaction.Request = []string{lastPlan}
+		lastPlan := strings.TrimSpace(getLastPlan(transactions))
+		if lastPlan != "" {
+			newTransaction.Request = []string{lastPlan}
+		}
+	}
+
+	if transactionType == TransactionTypePlan {
+		questions := getQuestions(transactions)
+		if len(questions) > 0 {
+			qaPrompt := "Questions and Answers\n" +
+				"====================="
+			for _, tx := range questions {
+				qaPrompt = qaPrompt +
+					"\nQuestion\n--------\n" + tx.Request[0] +
+					"\nAnswer\n------\n" + tx.Response
+			}
+			newTransaction.Request = []string{qaPrompt}
+		}
 	}
 
 	return append(newTransactions, newTransaction), nil
 }
 
-type MessageType string
-
-const (
-	MessageTypeFile      MessageType = "File"
-	MessageTypeQuestion  MessageType = "Question"
-	MessageTypeAnswer    MessageType = "Answer"
-	MessageTypeCommand   MessageType = "Command"
-	MessageTypeAction    MessageType = "Action"
-	MessageTypeObjective MessageType = "Objective"
-	MessageTypePlan      MessageType = "Plan"
-	MessageTypeRevision  MessageType = "Revision"
-)
-
-func ResponseType(messageType MessageType) MessageType {
-	switch messageType {
-	case MessageTypeCommand:
-		return MessageTypeAction
-	case MessageTypeQuestion:
-		return MessageTypeAnswer
-	case MessageTypeObjective:
-		return MessageTypePlan
-	default:
-		return messageType
+func getLastPlan(transactions []Transaction) string {
+	lastPlan := ""
+	for _, tx := range transactions {
+		if tx.Type == TransactionTypePlan {
+			lastPlan = tx.Response
+		}
 	}
+	return lastPlan
 }
 
-type Message struct {
-	Type    MessageType
-	Path    string
-	Content string
+func getQuestions(transactions []Transaction) []Transaction {
+	var result []Transaction
+	for _, tx := range transactions {
+		if tx.Type == TransactionTypeQuestion {
+			result = append(result, tx)
+		}
+	}
+	return result
 }
 
 type TransactionType string
