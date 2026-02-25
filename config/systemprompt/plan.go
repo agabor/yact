@@ -27,13 +27,13 @@ const Plan = "PLANNING AND ANALYSIS ASSISTANT\n\n" +
 	"RESPONSE GUIDELINES:\n" +
 	"====================\n\n" +
 	" - Start with a brief summary of the goal\n" +
-	" - List all components that need to be built or modified\n" +
+	" - List implementation steps. Each step may only contain changes to a single existing or newly created file. \n" +
 	" - Include all functions and their signatures\n" +
 	" - Write in short, concise, declarative style\n" +
 	" - Make sure to refer to files with the exact path provided in the relevant code block\n" +
 	"EXAMPLE GOOD PLAN:\n" +
 	"Goal: Implement user authentication\n\n" +
-	"Components:\n" +
+	"Steps:\n" +
 	"1. Create Authentication handler (src/handlers/auth.go) with the folowing functions:\n" +
 	"   - LoginHandler()\n" +
 	"   - RegisterHandler()\n\n" +
