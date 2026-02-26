@@ -1,6 +1,49 @@
 # YACT - Yet Another Coding Tool
 
-A command-line AI assistant powered by Claude that helps you generate code, bash scripts, and answer questions about your codebase.
+Minimal, fast, transactional LLM coding assistant
+
+## RAG vs Prompt Stuffing
+
+## Conversational vs Transactional
+
+Most mainstream coding assistants, like Cline, Cursor and Copilot, are conversational. They maintain a messaging history,
+on a chat interface. They are proactive, capable of reading files by themselves, making modifications, and testing those
+modifications.
+
+YACT, on the other hand, is transactional. A YACT transaction is a request response pair. The request comes from the user,
+and contains a list of file contents, with a textual prompt. The response comes from the LLM, and either contains a list
+of file contents or some textual description.
+
+## Tool Usage vs Code Blocks
+
+Most coding agents use a set of pre-defined tools to work with your code base. LLMs use XML formated messages, to signal
+tool usage intent. The agent parses the response, and executes the specified tools.
+For example, Cline's tools are the following:
+https://docs.cline.bot/tools-reference/all-cline-tools
+
+| Tool	                        | Description                     |
+|------------------------------|---------------------------------|
+| `write_to_file`              | 	Create or overwrite files      |
+| `read_file`                  | 	Read file contents             |
+| `replace_in_file`	           | Make targeted edits to files    |
+| `search_files`	              | Search files using regex        |
+| `list_files`	                | List directory contents         |
+| `list_code_definition_names` | 	List code definitions in files |
+
+YACT, on the other hand, does not have any tools, but uses markdown formated code blocks.
+
+## Comparison
+|                          | Conversational                                                                                 | Transactional                                                                                                                                                              |
+|--------------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Keeps messaging history  | Yes                                                                                            | No, most previous messages are pruned.                                                                                                                                     |
+| Generation method        | Retrieval Augumented Generation (RAG)                                                          | Prompt Stuffing                                                                                                                                                            |
+| LLM interface complexity | Complex                                                                                        | Simple                                                                                                                                                                     |
+| Model Selection          | [Larger Models](https://docs.cline.bot/running-models-locally/overview#why-not-smaller-models) | Works with larger a selection of models, down to 7b parameters.                                                                                                            |
+| MCP usage                | Yes                                                                                            | No                                                                                                                                                                         |
+| API Cost                 | Up to $50 per day                                                                              | Up to $2 per day                                                                                                                                                           |
+| Vibe Coding Capable      | Yes                                                                                            | No                                                                                                                                                                         |
+| File size limitations    | No limitation, however, they tend to be less effective on large source files.                  | Editable file sizes are limited by the LLMs output token limit. This typically means a maximum of 400 LOC per file, however keeping file sizes under 200 LOC is recomended |
+| Coding standards         | No official recomendations.                                                                    | Strict clean coding principles are recomended.                                                                                                                             |
 
 ## Installation
 
