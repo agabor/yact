@@ -12,8 +12,10 @@ const (
 )
 
 type Message struct {
-	Role    Role
-	Content string
+	Role              Role
+	Content           string
+	Thinking          string
+	ThinkingSignature string
 }
 
 type Client interface {

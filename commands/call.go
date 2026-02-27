@@ -100,7 +100,7 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 			messages = append(messages, api.Message{Role: api.RoleTypeUser, Content: prompt})
 		}
 		if strings.TrimSpace(tx.Response) != "" {
-			messages = append(messages, api.Message{Role: api.RoleTypeAssistant, Content: tx.Response})
+			messages = append(messages, api.Message{Role: api.RoleTypeAssistant, Content: tx.Response, Thinking: tx.ResponseThinking})
 		}
 	}
 
@@ -121,6 +121,7 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 	}
 
 	transactions[len(transactions)-1].Response = response.Content
+	transactions[len(transactions)-1].ResponseThinking = response.Thinking
 
 	if err := logic.SaveContext(transactions); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)

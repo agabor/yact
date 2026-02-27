@@ -84,7 +84,7 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 	messageParams := make([]anthropic.MessageParam, len(messages))
 	for i, msg := range messages {
 		if msg.Role == RoleTypeAssistant {
-			messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content))
+			messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewThinkingBlock(msg.ThinkingSignature, msg.Thinking), anthropic.NewTextBlock(msg.Content))
 		} else {
 			messageParams[i] = anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content))
 		}
@@ -122,10 +122,12 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 
 	var responseText string
 	var thinkingText string
+	var thinkingSignature string
 
 	for _, block := range message.Content {
 		if block.Type == "thinking" {
 			thinkingText = block.Thinking
+			thinkingSignature = block.Signature
 		} else {
 			responseText += block.Text
 		}
@@ -145,7 +147,9 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 	}
 
 	return Message{
-		Role:    RoleTypeAssistant,
-		Content: responseText,
+		Role:              RoleTypeAssistant,
+		Content:           responseText,
+		Thinking:          thinkingText,
+		ThinkingSignature: thinkingSignature,
 	}, nil
 }

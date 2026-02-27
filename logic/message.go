@@ -80,8 +80,10 @@ type File struct {
 }
 
 type Transaction struct {
-	Type     TransactionType
-	Request  []string
-	Response string
-	Context  []File
+	Type                      TransactionType
+	Request                   []string
+	Response                  string
+	ResponseThinking          string
+	ResponseThinkingSignature string
+	Context                   []File
 }
