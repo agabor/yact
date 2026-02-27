@@ -13,8 +13,9 @@ import (
 
 type ClaudeClient struct {
 	apiKey          string
-	model           string
+	model           anthropic.Model
 	maxOutputTokens int
+	thinkBudget     int
 	inputPrice      int
 	outputPrice     int
 }
@@ -22,65 +23,47 @@ type ClaudeClient struct {
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
 	c.model = c.selectModel(cfg)
-	c.maxOutputTokens = c.selectMaxTokens(cfg)
+	c.maxOutputTokens = cfg.MaxTokens
+	c.thinkBudget = cfg.ThinkBudget
 	c.inputPrice = c.selectInputPrice(cfg)
 	c.outputPrice = c.selectOutputPrice(cfg)
 }
 
-func (c *ClaudeClient) selectModel(cfg *config.Config) string {
+func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
 	switch strings.ToLower(cfg.ClaudeModel) {
 	case "opus":
-		return cfg.OpusModel
+		return anthropic.ModelClaudeOpus4_6
 	case "sonnet":
-		return cfg.SonnetModel
-	case "haiku":
-		return cfg.HaikuModel
+		return anthropic.ModelClaudeSonnet4_6
 	default:
-		return cfg.HaikuModel
-	}
-}
-
-func (c *ClaudeClient) selectMaxTokens(cfg *config.Config) int {
-	switch strings.ToLower(cfg.ClaudeModel) {
-	case "opus":
-		return cfg.OpusMaxTokens
-	case "sonnet":
-		return cfg.SonnetMaxTokens
-	case "haiku":
-		return cfg.HaikuMaxTokens
-	default:
-		return cfg.HaikuMaxTokens
+		return anthropic.ModelClaudeHaiku4_5
 	}
 }
 
 func (c *ClaudeClient) selectInputPrice(cfg *config.Config) int {
 	switch strings.ToLower(cfg.ClaudeModel) {
 	case "opus":
-		return cfg.OpusInputPrice
+		return 5
 	case "sonnet":
-		return cfg.SonnetInputPrice
-	case "haiku":
-		return cfg.HaikuInputPrice
+		return 3
 	default:
-		return cfg.HaikuInputPrice
+		return 1
 	}
 }
 
 func (c *ClaudeClient) selectOutputPrice(cfg *config.Config) int {
 	switch strings.ToLower(cfg.ClaudeModel) {
 	case "opus":
-		return cfg.OpusOutputPrice
+		return 25
 	case "sonnet":
-		return cfg.SonnetOutputPrice
-	case "haiku":
-		return cfg.HaikuOutputPrice
+		return 15
 	default:
-		return cfg.HaikuOutputPrice
+		return 5
 	}
 }
 
 func (c *ClaudeClient) GetModelName() string {
-	return c.model
+	return string(c.model)
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
@@ -108,13 +91,13 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 	}
 
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.Model(c.model),
+		Model:     c.model,
 		MaxTokens: int64(c.maxOutputTokens),
 		Messages:  messageParams,
 	}
 
 	if think {
-		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(10000)
+		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(c.thinkBudget))
 	}
 
 	if systemPrompt != "" {
@@ -137,13 +120,6 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 		message.Usage.InputTokens,
 		message.Usage.OutputTokens)
 
-	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
-	fmt.Printf("Cost: $%.6f\n", cost)
-
-	if message.Usage.OutputTokens >= int64(c.maxOutputTokens) {
-		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
-	}
-
 	var responseText string
 	var thinkingText string
 
@@ -159,6 +135,13 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 		fmt.Println("\n=== Claude's Thinking ===")
 		fmt.Println(thinkingText)
 		fmt.Println("===\n")
+	}
+
+	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
+	fmt.Printf("Cost: $%.6f\n", cost)
+
+	if message.Usage.OutputTokens >= int64(c.maxOutputTokens) {
+		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
 	}
 
 	return Message{

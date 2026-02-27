@@ -12,18 +12,8 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		fmt.Println("Current configuration:")
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
-		printConfigValue("opus_model", cfg.OpusModel, false)
-		printConfigValue("opus_input_price", fmt.Sprintf("%d", cfg.OpusInputPrice), false)
-		printConfigValue("opus_output_price", fmt.Sprintf("%d", cfg.OpusOutputPrice), false)
-		printConfigValue("opus_max_tokens", fmt.Sprintf("%d", cfg.OpusMaxTokens), false)
-		printConfigValue("sonnet_model", cfg.SonnetModel, false)
-		printConfigValue("sonnet_input_price", fmt.Sprintf("%d", cfg.SonnetInputPrice), false)
-		printConfigValue("sonnet_output_price", fmt.Sprintf("%d", cfg.SonnetOutputPrice), false)
-		printConfigValue("sonnet_max_tokens", fmt.Sprintf("%d", cfg.SonnetMaxTokens), false)
-		printConfigValue("haiku_model", cfg.HaikuModel, false)
-		printConfigValue("haiku_input_price", fmt.Sprintf("%d", cfg.HaikuInputPrice), false)
-		printConfigValue("haiku_output_price", fmt.Sprintf("%d", cfg.HaikuOutputPrice), false)
-		printConfigValue("haiku_max_tokens", fmt.Sprintf("%d", cfg.HaikuMaxTokens), false)
+		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
+		printConfigValue("think_budget", fmt.Sprintf("%d", cfg.ThinkBudget), false)
 		return nil
 	}
 
@@ -36,46 +26,12 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.AnthropicAPIKey = value
 		case "claude_model":
 			cfg.ClaudeModel = value
-		case "opus_model":
-			cfg.OpusModel = value
-		case "opus_input_price":
-			if err := setIntValue(&cfg.OpusInputPrice, value); err != nil {
+		case "max_tokens":
+			if err := setIntValue(&cfg.MaxTokens, value); err != nil {
 				return err
 			}
-		case "opus_output_price":
-			if err := setIntValue(&cfg.OpusOutputPrice, value); err != nil {
-				return err
-			}
-		case "opus_max_tokens":
-			if err := setIntValue(&cfg.OpusMaxTokens, value); err != nil {
-				return err
-			}
-		case "sonnet_model":
-			cfg.SonnetModel = value
-		case "sonnet_input_price":
-			if err := setIntValue(&cfg.SonnetInputPrice, value); err != nil {
-				return err
-			}
-		case "sonnet_output_price":
-			if err := setIntValue(&cfg.SonnetOutputPrice, value); err != nil {
-				return err
-			}
-		case "sonnet_max_tokens":
-			if err := setIntValue(&cfg.SonnetMaxTokens, value); err != nil {
-				return err
-			}
-		case "haiku_model":
-			cfg.HaikuModel = value
-		case "haiku_input_price":
-			if err := setIntValue(&cfg.HaikuInputPrice, value); err != nil {
-				return err
-			}
-		case "haiku_output_price":
-			if err := setIntValue(&cfg.HaikuOutputPrice, value); err != nil {
-				return err
-			}
-		case "haiku_max_tokens":
-			if err := setIntValue(&cfg.HaikuMaxTokens, value); err != nil {
+		case "think_budget":
+			if err := setIntValue(&cfg.ThinkBudget, value); err != nil {
 				return err
 			}
 		default:

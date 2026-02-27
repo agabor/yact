@@ -7,36 +7,16 @@ import (
 )
 
 const (
-	ClaudeModel       = "haiku"
-	OpusModel         = "claude-opus-4-6"
-	OpusInputPrice    = 5
-	OpusOutputPrice   = 25
-	OpusMaxTokens     = 128000
-	SonnetModel       = "claude-sonnet-4-6"
-	SonnetInputPrice  = 3
-	SonnetOutputPrice = 15
-	SonnetMaxTokens   = 64000
-	HaikuModel        = "claude-haiku-4-5"
-	HaikuInputPrice   = 1
-	HaikuOutputPrice  = 5
-	HaikuMaxTokens    = 64000
+	ClaudeModel = "haiku"
+	MaxTokens   = 16000
+	ThinkBudget = 8000
 )
 
 type Config struct {
-	AnthropicAPIKey   string `json:"anthropic_api_key"`
-	ClaudeModel       string `json:"claude_model"`
-	OpusModel         string `json:"opus_model"`
-	OpusInputPrice    int    `json:"opus_input_price"`
-	OpusOutputPrice   int    `json:"opus_output_price"`
-	OpusMaxTokens     int    `json:"opus_max_tokens"`
-	SonnetModel       string `json:"sonnet_model"`
-	SonnetInputPrice  int    `json:"sonnet_input_price"`
-	SonnetOutputPrice int    `json:"sonnet_output_price"`
-	SonnetMaxTokens   int    `json:"sonnet_max_tokens"`
-	HaikuModel        string `json:"haiku_model"`
-	HaikuInputPrice   int    `json:"haiku_input_price"`
-	HaikuOutputPrice  int    `json:"haiku_output_price"`
-	HaikuMaxTokens    int    `json:"haiku_max_tokens"`
+	AnthropicAPIKey string `json:"anthropic_api_key"`
+	ClaudeModel     string `json:"claude_model"`
+	MaxTokens       int    `json:"max_tokens"`
+	ThinkBudget     int    `json:"think_budget"`
 }
 
 func getConfigDir() (string, error) {
@@ -56,20 +36,10 @@ func getConfigFile() (string, error) {
 }
 func DefaultConfig() *Config {
 	return &Config{
-		AnthropicAPIKey:   "",
-		ClaudeModel:       ClaudeModel,
-		OpusModel:         OpusModel,
-		OpusInputPrice:    OpusInputPrice,
-		OpusOutputPrice:   OpusOutputPrice,
-		OpusMaxTokens:     OpusMaxTokens,
-		SonnetModel:       SonnetModel,
-		SonnetInputPrice:  SonnetInputPrice,
-		SonnetOutputPrice: SonnetOutputPrice,
-		SonnetMaxTokens:   SonnetMaxTokens,
-		HaikuModel:        HaikuModel,
-		HaikuInputPrice:   HaikuInputPrice,
-		HaikuOutputPrice:  HaikuOutputPrice,
-		HaikuMaxTokens:    HaikuMaxTokens,
+		AnthropicAPIKey: "",
+		ClaudeModel:     ClaudeModel,
+		MaxTokens:       MaxTokens,
+		ThinkBudget:     ThinkBudget,
 	}
 }
 
