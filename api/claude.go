@@ -19,8 +19,8 @@ type ClaudeClient struct {
 
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
-	c.model = cfg.ClaudeModel
-	c.maxOutputTokens = cfg.MaxOutputTokens
+	c.model = cfg.HaikuModel
+	c.maxOutputTokens = cfg.HaikuMaxTokens
 }
 
 func (c *ClaudeClient) GetModelName() string {

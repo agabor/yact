@@ -7,14 +7,36 @@ import (
 )
 
 const (
-	ClaudeModel      = "claude-haiku-4-5-20251001"
-	DefaultMaxTokens = 8192
+	ClaudeModel       = "haiku"
+	OpusModel         = "claude-opus-4-6"
+	OpusInputPrice    = 5
+	OpusOutputPrice   = 25
+	OpusMaxTokens     = 128000
+	SonnetModel       = "claude-sonnet-4-6"
+	SonnetInputPrice  = 3
+	SonnetOutputPrice = 15
+	SonnetMaxTokens   = 64000
+	HaikuModel        = "claude-haiku-4-5"
+	HaikuInputPrice   = 1
+	HaikuOutputPrice  = 5
+	HaikuMaxTokens    = 64000
 )
 
 type Config struct {
-	AnthropicAPIKey string `json:"anthropic_api_key"`
-	ClaudeModel     string `json:"claude_model"`
-	MaxOutputTokens int    `json:"max_output_tokens"`
+	AnthropicAPIKey   string `json:"anthropic_api_key"`
+	ClaudeModel       string `json:"claude_model"`
+	OpusModel         string `json:"opus_model"`
+	OpusInputPrice    int    `json:"opus_input_price"`
+	OpusOutputPrice   int    `json:"opus_output_price"`
+	OpusMaxTokens     int    `json:"opus_max_tokens"`
+	SonnetModel       string `json:"sonnet_model"`
+	SonnetInputPrice  int    `json:"sonnet_input_price"`
+	SonnetOutputPrice int    `json:"sonnet_output_price"`
+	SonnetMaxTokens   int    `json:"sonnet_max_tokens"`
+	HaikuModel        string `json:"haiku_model"`
+	HaikuInputPrice   int    `json:"haiku_input_price"`
+	HaikuOutputPrice  int    `json:"haiku_output_price"`
+	HaikuMaxTokens    int    `json:"haiku_max_tokens"`
 }
 
 func getConfigDir() (string, error) {
@@ -32,12 +54,22 @@ func getConfigFile() (string, error) {
 	}
 	return filepath.Join(dir, "config"), nil
 }
-
 func DefaultConfig() *Config {
 	return &Config{
-		AnthropicAPIKey: "",
-		ClaudeModel:     ClaudeModel,
-		MaxOutputTokens: DefaultMaxTokens,
+		AnthropicAPIKey:   "",
+		ClaudeModel:       ClaudeModel,
+		OpusModel:         OpusModel,
+		OpusInputPrice:    OpusInputPrice,
+		OpusOutputPrice:   OpusOutputPrice,
+		OpusMaxTokens:     OpusMaxTokens,
+		SonnetModel:       SonnetModel,
+		SonnetInputPrice:  SonnetInputPrice,
+		SonnetOutputPrice: SonnetOutputPrice,
+		SonnetMaxTokens:   SonnetMaxTokens,
+		HaikuModel:        HaikuModel,
+		HaikuInputPrice:   HaikuInputPrice,
+		HaikuOutputPrice:  HaikuOutputPrice,
+		HaikuMaxTokens:    HaikuMaxTokens,
 	}
 }
 
@@ -59,10 +91,6 @@ func Load() (*Config, error) {
 
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return cfg, err
-	}
-
-	if cfg.MaxOutputTokens <= 0 {
-		cfg.MaxOutputTokens = DefaultMaxTokens
 	}
 
 	return cfg, nil
