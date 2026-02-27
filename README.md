@@ -30,7 +30,7 @@ https://docs.cline.bot/tools-reference/all-cline-tools
 | `list_files`	                | List directory contents         |
 | `list_code_definition_names` | 	List code definitions in files |
 
-YACT, on the other hand, does not have any tools, but uses markdown formated code blocks.
+YACT, on the other hand, does not have any tools, but uses Markdown formated code blocks.
 
 ## Comparison
 |                          | Conversational                                                                                 | Transactional                                                                                                                                                              |
