@@ -19,8 +19,34 @@ type ClaudeClient struct {
 
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
-	c.model = cfg.HaikuModel
-	c.maxOutputTokens = cfg.HaikuMaxTokens
+	c.model = c.selectModel(cfg)
+	c.maxOutputTokens = c.selectMaxTokens(cfg)
+}
+
+func (c *ClaudeClient) selectModel(cfg *config.Config) string {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "opus":
+		return cfg.OpusModel
+	case "sonnet":
+		return cfg.SonnetModel
+	case "haiku":
+		return cfg.HaikuModel
+	default:
+		return cfg.HaikuModel
+	}
+}
+
+func (c *ClaudeClient) selectMaxTokens(cfg *config.Config) int {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "opus":
+		return cfg.OpusMaxTokens
+	case "sonnet":
+		return cfg.SonnetMaxTokens
+	case "haiku":
+		return cfg.HaikuMaxTokens
+	default:
+		return cfg.HaikuMaxTokens
+	}
 }
 
 func (c *ClaudeClient) GetModelName() string {
