@@ -20,17 +20,19 @@ func HandleContextCommand() error {
 
 	for i, transaction := range transactions {
 
-		count, _ := fmt.Printf("[%d] %s", i, transaction.Type)
+		fmt.Printf("[%d] %s:", i, transaction.Type)
+		fmt.Println()
+		fmt.Print(" - User: ")
+		fmt.Println()
 		for _, req := range transaction.Request {
-			fmt.Print(" - User: ")
 			printTruncated(req)
 		}
-		fmt.Print(strings.Repeat(" ", count))
 		fmt.Print(" - Assistant: ")
 		printTruncated(transaction.Response)
 
 		for j, file := range transaction.Context {
 			fmt.Printf(" - [%d] %s", j, file.Path)
+			fmt.Println()
 		}
 	}
 
@@ -42,6 +44,5 @@ func printTruncated(truncatedContent string) {
 		truncatedContent = truncatedContent[:200] + "..."
 	}
 	truncatedContent = strings.ReplaceAll(truncatedContent, "\n", " ")
-	fmt.Printf(" - %s", truncatedContent)
-	fmt.Println()
+	fmt.Println(truncatedContent)
 }
