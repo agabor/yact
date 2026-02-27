@@ -26,8 +26,8 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(args []string, safe bool, cfg *config.Config, systemPrompt string) error {
-	responseContent, err := HandleCall(args, cfg, systemPrompt, logic.TransactionTypeAct)
+func HandleActCommand(args []string, safe bool, think bool, cfg *config.Config, systemPrompt string) error {
+	responseContent, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeAct)
 	if err != nil {
 		return err
 	}
@@ -35,8 +35,8 @@ func HandleActCommand(args []string, safe bool, cfg *config.Config, systemPrompt
 	return processCodeBlocks(responseContent, safe)
 }
 
-func HandleVerbalCommand(args []string, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) error {
-	responseContent, err := HandleCall(args, cfg, systemPrompt, transactionType)
+func HandleVerbalCommand(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) error {
+	responseContent, err := HandleCall(args, think, cfg, systemPrompt, transactionType)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func HandleVerbalCommand(args []string, cfg *config.Config, systemPrompt string,
 	return nil
 }
 
-func HandleGoCommand(cfg *config.Config, systemPrompt string) error {
+func HandleGoCommand(think bool, cfg *config.Config, systemPrompt string) error {
 
 	transactions, err := logic.LoadContextForMessageType(logic.TransactionTypeAct)
 	if err != nil {
@@ -53,7 +53,7 @@ func HandleGoCommand(cfg *config.Config, systemPrompt string) error {
 		transactions = []logic.Transaction{}
 	}
 
-	responseContent, err := callClaudeAPI(transactions, cfg, systemPrompt)
+	responseContent, err := callClaudeAPI(transactions, think, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func HandleGoCommand(cfg *config.Config, systemPrompt string) error {
 	return processCodeBlocks(responseContent, false)
 }
 
-func HandleCall(args []string, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) (string, error) {
+func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) (string, error) {
 	prompt := strings.Join(args, " ")
 
 	transactions, err := logic.LoadContextForMessageType(transactionType)
@@ -73,7 +73,7 @@ func HandleCall(args []string, cfg *config.Config, systemPrompt string, transact
 	tx.Request = append(tx.Request, prompt)
 	transactions[len(transactions)-1] = tx
 
-	responseContent, err := callClaudeAPI(transactions, cfg, systemPrompt)
+	responseContent, err := callClaudeAPI(transactions, think, cfg, systemPrompt)
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +81,7 @@ func HandleCall(args []string, cfg *config.Config, systemPrompt string, transact
 	return responseContent, nil
 }
 
-func callClaudeAPI(transactions []logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
+func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) (string, error) {
 	fmt.Printf("Sending request to Claude...\n")
 
 	var client api.Client
@@ -107,7 +107,7 @@ func callClaudeAPI(transactions []logic.Transaction, cfg *config.Config, systemP
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(messages, systemPrompt)
+	response, err := client.Call(messages, think, systemPrompt)
 
 	done <- true
 	close(done)

@@ -89,7 +89,7 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return inputCost + outputCost
 }
 
-func (c *ClaudeClient) Call(messages []Message, systemPrompt string) (Message, error) {
+func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string) (Message, error) {
 	if c.apiKey == "" {
 		return Message{}, fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
 	}
@@ -108,15 +108,19 @@ func (c *ClaudeClient) Call(messages []Message, systemPrompt string) (Message, e
 	}
 
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.F(c.model),
-		MaxTokens: anthropic.F(int64(c.maxOutputTokens)),
-		Messages:  anthropic.F(messageParams),
+		Model:     anthropic.Model(c.model),
+		MaxTokens: int64(c.maxOutputTokens),
+		Messages:  messageParams,
+	}
+
+	if think {
+		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(10000)
 	}
 
 	if systemPrompt != "" {
-		params.System = anthropic.F([]anthropic.TextBlockParam{
-			anthropic.NewTextBlock(systemPrompt),
-		})
+		params.System = []anthropic.TextBlockParam{
+			{Text: systemPrompt},
+		}
 	}
 
 	fmt.Printf("Calling Claude with %d messages\n", len(messages))
@@ -141,8 +145,20 @@ func (c *ClaudeClient) Call(messages []Message, systemPrompt string) (Message, e
 	}
 
 	var responseText string
+	var thinkingText string
+
 	for _, block := range message.Content {
-		responseText += block.Text
+		if block.Type == "thinking" {
+			thinkingText = block.Thinking
+		} else {
+			responseText += block.Text
+		}
+	}
+
+	if thinkingText != "" {
+		fmt.Println("\n=== Claude's Thinking ===")
+		fmt.Println(thinkingText)
+		fmt.Println("===\n")
 	}
 
 	return Message{

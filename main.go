@@ -29,6 +29,7 @@ func getPromptFromStdin() (string, error) {
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	safeFlag := flag.BoolP("safe", "s", false, "Add .new suffix to generated files")
+	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
 
 	flag.Parse()
 
@@ -92,13 +93,13 @@ func main() {
 		}
 		commandErr = commands.HandleResetCommand()
 	case "act":
-		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Act)
 	case "bash":
-		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, cfg, systemprompt.Bash)
+		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Bash)
 	case "ask":
-		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Ask, logic.TransactionTypeQuestion)
+		commandErr = commands.HandleVerbalCommand(commandArgs, *thinkFlag, cfg, systemprompt.Ask, logic.TransactionTypeQuestion)
 	case "plan":
-		commandErr = commands.HandleVerbalCommand(commandArgs, cfg, systemprompt.Plan, logic.TransactionTypePlan)
+		commandErr = commands.HandleVerbalCommand(commandArgs, *thinkFlag, cfg, systemprompt.Plan, logic.TransactionTypePlan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "step":
@@ -108,13 +109,13 @@ func main() {
 		}
 		stepArgs := append([]string{"implement", "step"}, commandArgs...)
 		stepArgs = append(stepArgs, ". Make no other changes.")
-		commandErr = commands.HandleActCommand(stepArgs, *safeFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand(stepArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Act)
 	case "go":
 		if len(commandArgs) != 0 {
 			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")
 			os.Exit(1)
 		}
-		commandErr = commands.HandleGoCommand(cfg, systemprompt.Act)
+		commandErr = commands.HandleGoCommand(*thinkFlag, cfg, systemprompt.Act)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")

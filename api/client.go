@@ -19,5 +19,5 @@ type Message struct {
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(messages []Message, systemPrompt string) (Message, error)
+	Call(messages []Message, think bool, systemPrompt string) (Message, error)
 }
