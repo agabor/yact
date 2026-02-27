@@ -100,7 +100,7 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 			messages = append(messages, api.Message{Role: api.RoleTypeUser, Content: prompt})
 		}
 		if strings.TrimSpace(tx.Response) != "" {
-			messages = append(messages, api.Message{Role: api.RoleTypeAssistant, Content: tx.Response, Thinking: tx.ResponseThinking})
+			messages = append(messages, api.Message{Role: api.RoleTypeAssistant, Content: tx.Response, Thinking: tx.ResponseThinking, ThinkingSignature: tx.ResponseThinkingSignature})
 		}
 	}
 

@@ -19,22 +19,27 @@ func HandleResetCommand() error {
 
 	for _, transaction := range transactions {
 		for _, file := range transaction.Context {
-			content, err := logic.ReadAsCodeBlock(file.Path)
-			if err != nil {
-				reloadErrors = append(reloadErrors, fmt.Sprintf("could not reload %s: %v", file.Path, err))
+			path := strings.TrimPrefix(strings.TrimSpace(file.Path), "./")
+			if seenPaths[path] {
 				continue
 			}
-			seenPaths[file.Path] = true
-			newTransaction.Context = append(newTransaction.Context, logic.File{Path: file.Path, Content: content})
+			content, err := logic.ReadAsCodeBlock(path)
+			if err != nil {
+				reloadErrors = append(reloadErrors, fmt.Sprintf("could not reload %s: %v", path, err))
+				continue
+			}
+			seenPaths[path] = true
+			newTransaction.Context = append(newTransaction.Context, logic.File{Path: path, Content: content})
 		}
 		if transaction.Type == logic.TransactionTypeAct {
 			for _, block := range logic.ParseCodeBlocks(transaction.Response) {
-				if seenPaths[block.Path] {
+				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
+				if seenPaths[path] {
 					continue
 				}
 
-				seenPaths[block.Path] = true
-				newTransaction.Context = append(newTransaction.Context, logic.File{Path: block.Path, Content: block.Content})
+				seenPaths[path] = true
+				newTransaction.Context = append(newTransaction.Context, logic.File{Path: path, Content: block.Content})
 			}
 		}
 	}
