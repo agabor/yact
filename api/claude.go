@@ -15,12 +15,16 @@ type ClaudeClient struct {
 	apiKey          string
 	model           string
 	maxOutputTokens int
+	inputPrice      int
+	outputPrice     int
 }
 
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
 	c.model = c.selectModel(cfg)
 	c.maxOutputTokens = c.selectMaxTokens(cfg)
+	c.inputPrice = c.selectInputPrice(cfg)
+	c.outputPrice = c.selectOutputPrice(cfg)
 }
 
 func (c *ClaudeClient) selectModel(cfg *config.Config) string {
@@ -49,29 +53,39 @@ func (c *ClaudeClient) selectMaxTokens(cfg *config.Config) int {
 	}
 }
 
+func (c *ClaudeClient) selectInputPrice(cfg *config.Config) int {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "opus":
+		return cfg.OpusInputPrice
+	case "sonnet":
+		return cfg.SonnetInputPrice
+	case "haiku":
+		return cfg.HaikuInputPrice
+	default:
+		return cfg.HaikuInputPrice
+	}
+}
+
+func (c *ClaudeClient) selectOutputPrice(cfg *config.Config) int {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "opus":
+		return cfg.OpusOutputPrice
+	case "sonnet":
+		return cfg.SonnetOutputPrice
+	case "haiku":
+		return cfg.HaikuOutputPrice
+	default:
+		return cfg.HaikuOutputPrice
+	}
+}
+
 func (c *ClaudeClient) GetModelName() string {
 	return c.model
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
-	var inputCostPer1M, outputCostPer1M float64
-
-	switch {
-	case strings.Contains(c.model, "haiku"):
-		inputCostPer1M = 0.80
-		outputCostPer1M = 4.0
-	case strings.Contains(c.model, "sonnet"):
-		inputCostPer1M = 3.0
-		outputCostPer1M = 15.0
-	case strings.Contains(c.model, "opus"):
-		inputCostPer1M = 15.0
-		outputCostPer1M = 75.0
-	default:
-		return 0.0
-	}
-
-	inputCost := (float64(inputTokens) / 1_000_000) * inputCostPer1M
-	outputCost := (float64(outputTokens) / 1_000_000) * outputCostPer1M
+	inputCost := (float64(inputTokens) / 1_000_000) * float64(c.inputPrice)
+	outputCost := (float64(outputTokens) / 1_000_000) * float64(c.outputPrice)
 	return inputCost + outputCost
 }
 
