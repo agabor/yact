@@ -84,7 +84,11 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 	messageParams := make([]anthropic.MessageParam, len(messages))
 	for i, msg := range messages {
 		if msg.Role == RoleTypeAssistant {
-			messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewThinkingBlock(msg.ThinkingSignature, msg.Thinking), anthropic.NewTextBlock(msg.Content))
+			if strings.TrimSpace(msg.Thinking) != "" {
+				messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewThinkingBlock(msg.ThinkingSignature, msg.Thinking), anthropic.NewTextBlock(msg.Content))
+			} else {
+				messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content))
+			}
 		} else {
 			messageParams[i] = anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content))
 		}
