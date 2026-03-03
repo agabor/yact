@@ -15,8 +15,9 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeBlock struct {
-	Path    string
-	Content string
+	Path     string
+	Content  string
+	Complete bool
 }
 
 func extractFilenameFromComment(line string) string {
@@ -82,7 +83,7 @@ func linesToCodeBlock(lines []string) CodeBlock {
 		}
 	}
 
-	return CodeBlock{Path: filePath, Content: joinLines(lines)}
+	return CodeBlock{Path: filePath, Content: joinLines(lines), Complete: true}
 }
 
 func joinLines(lines []string) string {
@@ -144,7 +145,9 @@ func ParseCodeBlocks(response string) ([]CodeBlock, []string) {
 	}
 
 	if inBlock && len(lineBuffer) > 0 {
-		codeBlocks = append(codeBlocks, linesToCodeBlock(lineBuffer))
+		codeBlock := linesToCodeBlock(lineBuffer)
+		codeBlock.Complete = false
+		codeBlocks = append(codeBlocks, codeBlock)
 	}
 
 	return codeBlocks, text

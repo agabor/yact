@@ -139,6 +139,9 @@ func processCodeBlocks(content string, safe bool) error {
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 		}
+		if !codeBlock.Complete {
+			fmt.Println("Warning: Incomplete code block.")
+		}
 	}
 
 	if len(text) > 0 {
