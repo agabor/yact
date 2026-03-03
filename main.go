@@ -92,6 +92,12 @@ func main() {
 			os.Exit(1)
 		}
 		commandErr = commands.HandleResetCommand()
+	case "restore":
+		if len(commandArgs) != 0 {
+			fmt.Fprintf(os.Stderr, "Error: the restore command takes no arguments\n")
+			os.Exit(1)
+		}
+		commandErr = commands.HandleRestoreCommand()
 	case "act":
 		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Act)
 	case "bash":
