@@ -133,11 +133,20 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 func processCodeBlocks(content string, safe bool) error {
 	fmt.Println("Processing response...")
 	var parseErrors []string
-	for _, codeBlock := range logic.ParseCodeBlocks(content) {
+	codeblocks, text := logic.ParseCodeBlocks(content)
+	for _, codeBlock := range codeblocks {
 		err := codeBlock.Write(safe)
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 		}
+	}
+
+	if len(text) > 0 {
+		fmt.Println("Text outside of code blocks:")
+		for _, text := range text {
+			fmt.Println(text)
+		}
+		fmt.Println("")
 	}
 
 	if len(parseErrors) > 0 {

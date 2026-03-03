@@ -32,7 +32,8 @@ func HandleResetCommand() error {
 			newTransaction.Context = append(newTransaction.Context, logic.File{Path: path, Content: content})
 		}
 		if transaction.Type == logic.TransactionTypeAct {
-			for _, block := range logic.ParseCodeBlocks(transaction.Response) {
+			blocks, _ := logic.ParseCodeBlocks(transaction.Response)
+			for _, block := range blocks {
 				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
 				if seenPaths[path] {
 					continue

@@ -119,10 +119,11 @@ func (cb *CodeBlock) Write(safe bool) error {
 	fmt.Printf("Written: %s\n", filePath)
 	return nil
 }
-func ParseCodeBlocks(response string) []CodeBlock {
+func ParseCodeBlocks(response string) ([]CodeBlock, []string) {
 	lines := strings.Split(response, "\n")
 	var codeBlocks = make([]CodeBlock, 0)
 	var lineBuffer = make([]string, 0)
+	var text = make([]string, 0)
 	inBlock := false
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
@@ -137,6 +138,8 @@ func ParseCodeBlocks(response string) []CodeBlock {
 			}
 		} else if inBlock {
 			lineBuffer = append(lineBuffer, line)
+		} else {
+			text = append(text, line)
 		}
 	}
 
@@ -144,5 +147,5 @@ func ParseCodeBlocks(response string) []CodeBlock {
 		codeBlocks = append(codeBlocks, linesToCodeBlock(lineBuffer))
 	}
 
-	return codeBlocks
+	return codeBlocks, text
 }
