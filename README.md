@@ -1,38 +1,51 @@
 # YACT - Yet Another Coding Tool
 
-Minimal, fast, transactional LLM coding assistant
+Minimal, responsive, transparent LLM coding assistant
 
-## RAG vs Prompt Stuffing
+## Design principles
 
-## Conversational vs Transactional
+ * YACT supports AI assisted software development. (Not AI driven software development.)
+ * YACT is optimized for responsiveness. You get results in seconds, not minutes.
+ * YACT is reactive, not proactive. It does what it is explicitly asked to do, and nothing more.
+ * YACT works transparently. You can read all messages sent to, and received from the LLM.
 
-Most mainstream coding assistants, like Cline, Cursor and Copilot, are conversational. They maintain a messaging history,
-on a chat interface. They are proactive, capable of reading files by themselves, making modifications, and testing those
-modifications.
+## Comparison to Mainstream Coding Agents
 
-YACT, on the other hand, is transactional. A YACT transaction is a request response pair. The request comes from the user,
-and contains a list of file contents, with a textual prompt. The response comes from the LLM, and either contains a list
-of file contents or some textual description.
+YACT differs from mainstream coding assistants, like Cline, Cursor and Copilot, in the sense that it not aims to be a
+complete, automated coding suite, rather be a Swiss army knife for LLM assisted coding. This is why it is called a
+"Coding Tool" rather than a "Coding Agent".
 
-## Tool Usage vs Code Blocks
+### RAG vs Prompt Stuffing
 
-Most coding agents use a set of pre-defined tools to work with your code base. LLMs use XML formated messages, to signal
-tool usage intent. The agent parses the response, and executes the specified tools.
-For example, Cline's tools are the following:
-https://docs.cline.bot/tools-reference/all-cline-tools
+Mainstream coding agents typically use the Retrieval Augmented Generation (RAG) approach. This means, that the LLM
+decides what files it needs to read to complete the given task, and uses the agent's file reading tool to retrieve
+to necessary file contents.
 
-| Tool	                        | Description                     |
-|------------------------------|---------------------------------|
-| `write_to_file`              | 	Create or overwrite files      |
-| `read_file`                  | 	Read file contents             |
-| `replace_in_file`	           | Make targeted edits to files    |
-| `search_files`	              | Search files using regex        |
-| `list_files`	                | List directory contents         |
-| `list_code_definition_names` | 	List code definitions in files |
+YACT uses the prompt stuffing approach. The developer uses YACT's explicit read command, to append the content of a
+file to the prompt. The LLM can not initiate file reading.
 
-YACT, on the other hand, does not have any tools, but uses Markdown formated code blocks.
+### Proactive vs Reactive
 
-## Comparison
+Mainstream coding agents typically utilize a chat interface. Once the developer sends an initial prompt, they are free to
+proactively explore the codebase, run commands, edit files (with permission), while sending multiple API calls to the LLM.
+
+YACT, on the other hand, is reactive. The developer needs to select the files needed for the task, and explicitly append
+them to the prompt with the read command. Once the prompt is ready, a single API call will be made to the LLM. Depending
+on the task,the LLM will respond in human language, or with generated code, that will be inserted into the code base by
+YACT.
+
+### Tool Usage vs Code Blocks
+
+The earliest LLMs that were available through API had a really strict output token limit, as low as 4000 tokens, which
+meant, that only 100 to 200 lines of codes could be generated in a single API call. To overcome this restriction agent
+developers introduced file editing tool, to enable their agents to incrementally edit code files.
+
+Today, typical output token limits are around 64K to 128K, which, with adequate clean coding practices, is plenty 
+to generate multiple complete source files. Exploiting this "late comer's advantage", YACT always generates
+complete source files, making its LLM interface far simpler than most agents. This approach also enables YACT to
+aggressively compact its context, keeping API calls responsive, and cheap.
+
+### Comparison
 |                          | Conversational                                                                                 | Transactional                                                                                                                                                              |
 |--------------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Keeps messaging history  | Yes                                                                                            | No, most previous messages are pruned.                                                                                                                                     |
@@ -44,6 +57,10 @@ YACT, on the other hand, does not have any tools, but uses Markdown formated cod
 | Vibe Coding Capable      | Yes                                                                                            | No                                                                                                                                                                         |
 | File size limitations    | No limitation, however, they tend to be less effective on large source files.                  | Editable file sizes are limited by the LLMs output token limit. This typically means a maximum of 400 LOC per file, however keeping file sizes under 200 LOC is recomended |
 | Coding standards         | No official recomendations.                                                                    | Strict clean coding principles are recomended.                                                                                                                             |
+
+## Modes
+
+
 
 ## Installation
 
