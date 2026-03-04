@@ -2,24 +2,11 @@ package api
 
 import (
 	"yact/config"
+	"yact/logic"
 )
-
-type Role string
-
-const (
-	RoleTypeAssistant Role = "Assistant"
-	RoleTypeUser      Role = "User"
-)
-
-type Message struct {
-	Role              Role
-	Content           string
-	Thinking          string
-	ThinkingSignature string
-}
 
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(messages []Message, think bool, systemPrompt string) (Message, error)
+	Call(transactions []logic.Transaction, think bool, systemPrompt string) ([]logic.Transaction, error)
 }

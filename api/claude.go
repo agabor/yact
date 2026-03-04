@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	"yact/config"
+	"yact/logic"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -72,28 +73,41 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return inputCost + outputCost
 }
 
-func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string) (Message, error) {
+func (c *ClaudeClient) Call(transactions []logic.Transaction, think bool, systemPrompt string) ([]logic.Transaction, error) {
 	if c.apiKey == "" {
-		return Message{}, fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
+		return transactions, fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
 	}
 
 	startTime := time.Now()
 
 	client := anthropic.NewClient(option.WithAPIKey(c.apiKey))
 
-	messageParams := make([]anthropic.MessageParam, len(messages))
-	for i, msg := range messages {
-		if msg.Role == RoleTypeAssistant {
-			if strings.TrimSpace(msg.ThinkingSignature) != "" && strings.TrimSpace(msg.Thinking) != "" {
-				messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewThinkingBlock(msg.ThinkingSignature, msg.Thinking), anthropic.NewTextBlock(msg.Content))
-			} else {
-				messageParams[i] = anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content))
+	messageParams := make([]anthropic.MessageParam, 0)
+
+	for _, tx := range transactions {
+		blocks := make([]anthropic.ContentBlockParamUnion, 0)
+		for _, file := range tx.Context {
+			blocks = append(blocks, anthropic.NewTextBlock(file.Content))
+		}
+		for _, prompt := range tx.Request {
+			blocks = append(blocks, anthropic.NewTextBlock(prompt))
+		}
+		messageParams = append(messageParams, anthropic.MessageParam{
+			Role:    anthropic.MessageParamRoleUser,
+			Content: blocks,
+		})
+		blocks = make([]anthropic.ContentBlockParamUnion, 0)
+		if strings.TrimSpace(tx.Response) != "" {
+			if strings.TrimSpace(tx.ResponseThinkingSignature) != "" && strings.TrimSpace(tx.ResponseThinking) != "" {
+				blocks = append(blocks, anthropic.NewThinkingBlock(tx.ResponseThinkingSignature, tx.ResponseThinking))
 			}
-		} else {
-			messageParams[i] = anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content))
+			blocks = append(blocks, anthropic.NewTextBlock(tx.Response))
+			messageParams = append(messageParams, anthropic.MessageParam{
+				Role:    anthropic.MessageParamRoleAssistant,
+				Content: blocks,
+			})
 		}
 	}
-
 	params := anthropic.MessageNewParams{
 		Model:     c.model,
 		MaxTokens: int64(c.maxOutputTokens),
@@ -110,12 +124,12 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 		}
 	}
 
-	fmt.Printf("Calling Claude with %d messages\n", len(messages))
+	fmt.Printf("Calling Claude with %d messages\n", len(messageParams))
 
 	message, err := client.Messages.New(context.Background(), params)
 
 	if err != nil {
-		return Message{}, fmt.Errorf("error calling Claude API: %w", err)
+		return transactions, fmt.Errorf("error calling Claude API: %w", err)
 	}
 
 	duration := time.Since(startTime)
@@ -150,10 +164,15 @@ func (c *ClaudeClient) Call(messages []Message, think bool, systemPrompt string)
 		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
 	}
 
-	return Message{
-		Role:              RoleTypeAssistant,
-		Content:           responseText,
-		Thinking:          thinkingText,
-		ThinkingSignature: thinkingSignature,
-	}, nil
+	tx := transactions[len(transactions)-1]
+	tx.Response = responseText
+	tx.ResponseThinking = thinkingText
+	tx.ResponseThinkingSignature = thinkingSignature
+	transactions[len(transactions)-1] = tx
+
+	if strings.TrimSpace(responseText) == "" {
+		return transactions, fmt.Errorf("error: empty response from Claude API")
+	}
+
+	return transactions, nil
 }

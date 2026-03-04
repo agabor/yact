@@ -90,24 +90,10 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 
 	fmt.Printf("Model: %s\n", client.GetModelName())
 
-	var messages []api.Message
-
-	for _, tx := range transactions {
-		for _, file := range tx.Context {
-			messages = append(messages, api.Message{Role: api.RoleTypeUser, Content: file.Content})
-		}
-		for _, prompt := range tx.Request {
-			messages = append(messages, api.Message{Role: api.RoleTypeUser, Content: prompt})
-		}
-		if strings.TrimSpace(tx.Response) != "" {
-			messages = append(messages, api.Message{Role: api.RoleTypeAssistant, Content: tx.Response, Thinking: tx.ResponseThinking, ThinkingSignature: tx.ResponseThinkingSignature})
-		}
-	}
-
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(messages, think, systemPrompt)
+	transactions, err := client.Call(transactions, think, systemPrompt)
 
 	done <- true
 	close(done)
@@ -116,19 +102,11 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 		return "", err
 	}
 
-	if strings.TrimSpace(response.Content) == "" {
-		return "", fmt.Errorf("error: empty response from Claude API")
-	}
-
-	transactions[len(transactions)-1].Response = response.Content
-	transactions[len(transactions)-1].ResponseThinking = response.Thinking
-	transactions[len(transactions)-1].ResponseThinkingSignature = response.ThinkingSignature
-
 	if err := logic.SaveContext(transactions); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
-	return response.Content, nil
+	return transactions[len(transactions)-1].Response, nil
 }
 
 func processCodeBlocks(content string, safe bool) error {
