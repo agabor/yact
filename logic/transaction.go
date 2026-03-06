@@ -1,6 +1,10 @@
 package logic
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
 
 func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, error) {
 	transactions, err := LoadContext()
@@ -28,20 +32,6 @@ func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, 
 		}
 	}
 
-	if transactionType == TransactionTypePlan {
-		questions := getQuestions(transactions)
-		if len(questions) > 0 {
-			qaPrompt := "Questions and Answers\n" +
-				"====================="
-			for _, tx := range questions {
-				qaPrompt = qaPrompt +
-					"\nQuestion\n--------\n" + tx.Request[0] +
-					"\nAnswer\n------\n" + tx.Response
-			}
-			newTransaction.Request = []string{qaPrompt}
-		}
-	}
-
 	return append(newTransactions, newTransaction), nil
 }
 
@@ -55,15 +45,46 @@ func getLastPlan(transactions []Transaction) string {
 	return lastPlan
 }
 
-func getQuestions(transactions []Transaction) []Transaction {
-	var result []Transaction
-	for _, tx := range transactions {
-		if tx.Type == TransactionTypeQuestion {
-			result = append(result, tx)
+func CompactTransactions(transactions []Transaction) (Transaction, error) {
+	seenPaths := make(map[string]bool)
+	var reloadErrors []string
+
+	newTransaction := Transaction{Type: TransactionTypeNone}
+
+	for _, transaction := range transactions {
+		for _, file := range transaction.Context {
+			path := strings.TrimPrefix(strings.TrimSpace(file.Path), "./")
+			if seenPaths[path] {
+				continue
+			}
+			content, err := ReadAsCodeBlock(path)
+			if err != nil {
+				reloadErrors = append(reloadErrors, fmt.Sprintf("could not reload %s: %v", path, err))
+				continue
+			}
+			seenPaths[path] = true
+			newTransaction.Context = append(newTransaction.Context, File{Path: path, Content: content})
+		}
+		if transaction.Type == TransactionTypeAct {
+			blocks, _ := ParseCodeBlocks(transaction.Response)
+			for _, block := range blocks {
+				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
+				if seenPaths[path] {
+					continue
+				}
+
+				seenPaths[path] = true
+				newTransaction.Context = append(newTransaction.Context, File{Path: path, Content: block.Content})
+			}
 		}
 	}
-	return result
+
+	if len(reloadErrors) > 0 {
+		return newTransaction, fmt.Errorf("reloaded context with errors: %s", strings.Join(reloadErrors, "; "))
+	}
+	return newTransaction, nil
 }
+
 
 type TransactionType string
 
