@@ -59,7 +59,7 @@ aggressively compact its context, keeping API calls responsive, and cheap.
 | Coding standards         | No official recomendations.                                                                    | Strict clean coding principles are recomended.                                                                                    |
 
 ## Modes
-
+YACT uses Question / Plan / Act modes. Then plan and act mode can be familiar for users of competing tools. The plan mode creates a step-by-step implementation plan for a given task, which can be implemented using act mode. In the question mode you can ask questions about you code base without interfering with coding tasks. 
 
 
 ## Installation
@@ -216,23 +216,6 @@ echo "fix the database connection" | y bash
 - **Context**: Build up context by reading relevant files before asking complex questions
 - **Conversation flow**: Use multi-step conversations - ask for a plan first, then generate code
 - **Cost tracking**: The tool displays token usage and estimated costs for each API call
-
-## Workflow
-
-The following diagram illustrates YACT message types as nodes YACT commands as edges:
-
-```mermaid
-graph TD
-    File -->|ask| Question
-    File -->|act| Command
-    File -->|plan| Objective
-    Question -->|assistant| Answer
-    Answer -->|ask| Question
-    Command -->|assistant| Action
-    Action -->|act| Command
-    Objective -->|assistant| Plan
-    Plan -->|act| Command
-```
 
 ## Help
 
