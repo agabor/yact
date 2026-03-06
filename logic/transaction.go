@@ -15,14 +15,13 @@ func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, 
 	newTransactions := make([]Transaction, 0)
 	newTransaction := Transaction{Type: transactionType}
 
-	for _, tx := range transactions {
-		if tx.Type == transactionType {
-			newTransactions = append(newTransactions, tx)
-		} else {
-			for _, file := range tx.Context {
-				newTransaction.Context = append(newTransaction.Context, file)
-			}
+	if transactionType != getType(transactions) {
+		newTransaction, err = CompactTransactions(transactions)
+		if err != nil {
+			return nil, err
 		}
+	} else
+		newTransaction = transactions
 	}
 
 	if transactionType == TransactionTypeAct {
@@ -43,6 +42,13 @@ func getLastPlan(transactions []Transaction) string {
 		}
 	}
 	return lastPlan
+}
+
+func getType(transactions []Transaction) TransactionType {
+	for _, tx := range transactions {
+		return tx.TransactionType
+	}
+	return TransactionTypeNone
 }
 
 func CompactTransactions(transactions []Transaction) (Transaction, error) {
