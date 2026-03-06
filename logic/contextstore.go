@@ -6,15 +6,32 @@ import (
 	"path/filepath"
 )
 
-func getContextFilePath() (string, error) {
+func LoadContext() ([]Transaction, error) {
+	return loadContextFromJson("context.json")
+}
+
+func SaveContext(transactions []Transaction) error {
+	return saveContextToJson("context.json", transactions)
+}
+
+func LoadQuestionsContext() ([]Transaction, error) {
+	return loadContextFromJson("questions.json")
+}
+
+func SaveQuestionsContext(transactions []Transaction) error {
+	return saveContextToJson("questions.json", transactions)
+}
+
+func getContextFilePath(jsonFileName string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(homeDir, ".yact", "context.json"), nil
+	return filepath.Join(homeDir, ".yact", jsonFileName), nil
 }
-func LoadContext() ([]Transaction, error) {
-	contextPath, err := getContextFilePath()
+
+func loadContextFromJson(jsonFileName string) ([]Transaction, error) {
+	contextPath, err := getContextFilePath(jsonFileName)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +52,8 @@ func LoadContext() ([]Transaction, error) {
 	return transactions, nil
 }
 
-func SaveContext(transactions []Transaction) error {
-	contextPath, err := getContextFilePath()
+func saveContextToJson(jsonFileName string, transactions []Transaction) error {
+	contextPath, err := getContextFilePath(jsonFileName)
 	if err != nil {
 		return err
 	}
