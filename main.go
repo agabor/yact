@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"yact/config/systemprompt"
-	"yact/logic"
 
 	"yact/commands"
 	"yact/config"
@@ -103,9 +102,9 @@ func main() {
 	case "bash":
 		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Bash)
 	case "ask":
-		commandErr = commands.HandleVerbalCommand(commandArgs, *thinkFlag, cfg, systemprompt.Ask, logic.TransactionTypeQuestion)
+		commandErr = commands.HandleAskCommand(commandArgs, *thinkFlag, cfg, systemprompt.Ask)
 	case "plan":
-		commandErr = commands.HandleVerbalCommand(commandArgs, *thinkFlag, cfg, systemprompt.Plan, logic.TransactionTypePlan)
+		commandErr = commands.HandlePlanCommand(commandArgs, *thinkFlag, cfg, systemprompt.Plan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "step":

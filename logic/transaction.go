@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-
 func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
@@ -20,8 +19,8 @@ func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, 
 		if err != nil {
 			return nil, err
 		}
-	} else
-		newTransaction = transactions
+	} else {
+		newTransactions = transactions
 	}
 
 	if transactionType == TransactionTypeAct {
@@ -46,7 +45,7 @@ func getLastPlan(transactions []Transaction) string {
 
 func getType(transactions []Transaction) TransactionType {
 	for _, tx := range transactions {
-		return tx.TransactionType
+		return tx.Type
 	}
 	return TransactionTypeNone
 }
@@ -90,7 +89,6 @@ func CompactTransactions(transactions []Transaction) (Transaction, error) {
 	}
 	return newTransaction, nil
 }
-
 
 type TransactionType string
 

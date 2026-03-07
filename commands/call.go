@@ -27,21 +27,43 @@ func showProgress(done chan bool) {
 }
 
 func HandleActCommand(args []string, safe bool, think bool, cfg *config.Config, systemPrompt string) error {
-	responseContent, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeAct)
+	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeAct)
 	if err != nil {
 		return err
 	}
 
-	return processCodeBlocks(responseContent, safe)
+	if err = logic.SaveContext(transactions); err != nil {
+		fmt.Printf("Warning: could not save context: %v\n", err)
+	}
+
+	return processCodeBlocks(transactions[len(transactions)-1].Response, safe)
 }
 
-func HandleVerbalCommand(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) error {
-	responseContent, err := HandleCall(args, think, cfg, systemPrompt, transactionType)
+func HandlePlanCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
+	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypePlan)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("\n" + responseContent)
+	if err := logic.SaveContext(transactions); err != nil {
+		fmt.Printf("Warning: could not save context: %v\n", err)
+	}
+
+	fmt.Println("\n" + transactions[len(transactions)-1].Response)
+	return nil
+}
+
+func HandleAskCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
+	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeQuestion)
+	if err != nil {
+		return err
+	}
+
+	if err := logic.SaveQuestionsContext(transactions); err != nil {
+		fmt.Printf("Warning: could not save context: %v\n", err)
+	}
+
+	fmt.Println("\n" + transactions[len(transactions)-1].Response)
 	return nil
 }
 
@@ -53,15 +75,19 @@ func HandleGoCommand(think bool, cfg *config.Config, systemPrompt string) error 
 		transactions = []logic.Transaction{}
 	}
 
-	responseContent, err := callClaudeAPI(transactions, think, cfg, systemPrompt)
+	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
 
-	return processCodeBlocks(responseContent, false)
+	if err = logic.SaveContext(transactions); err != nil {
+		fmt.Printf("Warning: could not save context: %v\n", err)
+	}
+
+	return processCodeBlocks(transactions[len(transactions)-1].Response, false)
 }
 
-func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) (string, error) {
+func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) ([]logic.Transaction, error) {
 	prompt := strings.Join(args, " ")
 
 	transactions, err := logic.LoadContextForMessageType(transactionType)
@@ -73,15 +99,10 @@ func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt stri
 	tx.Request = append(tx.Request, prompt)
 	transactions[len(transactions)-1] = tx
 
-	responseContent, err := callClaudeAPI(transactions, think, cfg, systemPrompt)
-	if err != nil {
-		return "", err
-	}
-
-	return responseContent, nil
+	return callClaudeAPI(transactions, think, cfg, systemPrompt)
 }
 
-func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) (string, error) {
+func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) ([]logic.Transaction, error) {
 	fmt.Printf("Sending request to Claude...\n")
 
 	var client api.Client
@@ -98,15 +119,7 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 	done <- true
 	close(done)
 
-	if err != nil {
-		return "", err
-	}
-
-	if err := logic.SaveContext(transactions); err != nil {
-		fmt.Printf("Warning: could not save context: %v\n", err)
-	}
-
-	return transactions[len(transactions)-1].Response, nil
+	return transactions, err
 }
 
 func processCodeBlocks(content string, safe bool) error {

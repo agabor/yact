@@ -11,6 +11,14 @@ func LoadContext() ([]Transaction, error) {
 }
 
 func SaveContext(transactions []Transaction) error {
+	compact, err := CompactTransactions(transactions)
+	if err != nil {
+		return err
+	}
+	err = saveContextToJson("questions.json", []Transaction{compact})
+	if err != nil {
+		return err
+	}
 	return saveContextToJson("context.json", transactions)
 }
 
