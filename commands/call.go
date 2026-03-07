@@ -26,7 +26,7 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(args []string, safe bool, think bool, cfg *config.Config, systemPrompt string) error {
+func HandleActCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
 	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeAct)
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func HandleActCommand(args []string, safe bool, think bool, cfg *config.Config, 
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
-	return processCodeBlocks(transactions[len(transactions)-1].Response, safe)
+	return processCodeBlocks(transactions[len(transactions)-1].Response)
 }
 
 func HandlePlanCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
@@ -84,7 +84,7 @@ func HandleGoCommand(think bool, cfg *config.Config, systemPrompt string) error 
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
-	return processCodeBlocks(transactions[len(transactions)-1].Response, false)
+	return processCodeBlocks(transactions[len(transactions)-1].Response)
 }
 
 func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) ([]logic.Transaction, error) {
@@ -122,12 +122,12 @@ func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Con
 	return transactions, err
 }
 
-func processCodeBlocks(content string, safe bool) error {
+func processCodeBlocks(content string) error {
 	fmt.Println("Processing response...")
 	var parseErrors []string
 	codeblocks, text := logic.ParseCodeBlocks(content)
 	for _, codeBlock := range codeblocks {
-		err := codeBlock.Write(safe)
+		err := codeBlock.Write()
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 		}

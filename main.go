@@ -27,7 +27,6 @@ func getPromptFromStdin() (string, error) {
 
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
-	safeFlag := flag.BoolP("safe", "s", false, "Add .new suffix to generated files")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
 
 	flag.Parse()
@@ -98,9 +97,9 @@ func main() {
 		}
 		commandErr = commands.HandleRestoreCommand()
 	case "act":
-		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand(commandArgs, *thinkFlag, cfg, systemprompt.Act)
 	case "bash":
-		commandErr = commands.HandleActCommand(commandArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Bash)
+		commandErr = commands.HandleActCommand(commandArgs, *thinkFlag, cfg, systemprompt.Bash)
 	case "ask":
 		commandErr = commands.HandleAskCommand(commandArgs, *thinkFlag, cfg, systemprompt.Ask)
 	case "plan":
@@ -114,7 +113,7 @@ func main() {
 		}
 		stepArgs := append([]string{"implement", "step"}, commandArgs...)
 		stepArgs = append(stepArgs, ". Make no other changes.")
-		commandErr = commands.HandleActCommand(stepArgs, *safeFlag, *thinkFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand(stepArgs, *thinkFlag, cfg, systemprompt.Act)
 	case "go":
 		if len(commandArgs) != 0 {
 			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")

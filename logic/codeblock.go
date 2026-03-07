@@ -103,11 +103,8 @@ func ReadAsCodeBlock(filePath string) (string, error) {
 	return AsCodeBlock(filePath, string(content)), nil
 }
 
-func (cb *CodeBlock) Write(safe bool) error {
+func (cb *CodeBlock) Write() error {
 	filePath := cb.Path
-	if safe {
-		filePath += ".new"
-	}
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)
@@ -120,6 +117,7 @@ func (cb *CodeBlock) Write(safe bool) error {
 	fmt.Printf("Written: %s\n", filePath)
 	return nil
 }
+
 func ParseCodeBlocks(response string) ([]CodeBlock, []string) {
 	lines := strings.Split(response, "\n")
 	var codeBlocks = make([]CodeBlock, 0)

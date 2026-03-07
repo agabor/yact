@@ -19,6 +19,7 @@ func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, 
 		if err != nil {
 			return nil, err
 		}
+		newTransaction.Type = transactionType
 	} else {
 		newTransactions = transactions
 	}
