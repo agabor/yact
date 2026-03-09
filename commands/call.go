@@ -134,7 +134,7 @@ func processCodeBlocks(content string) error {
 		}
 	}
 
-	if len(text) > 0 {
+	if len(text) > 0 && strings.TrimSpace(strings.Join(text, "")) != "" {
 		fmt.Println("Text outside of code blocks:")
 		for _, text := range text {
 			fmt.Println(text)
