@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"strings"
 
 	"yact/logic"
 )
@@ -24,25 +23,31 @@ func HandleContextCommand() error {
 		fmt.Println()
 		fmt.Print(" - User: ")
 		fmt.Println()
-		for _, req := range transaction.Request {
-			printTruncated(req)
-		}
-		fmt.Print(" - Assistant: ")
-		printTruncated(transaction.Response)
-
 		for j, file := range transaction.Context {
 			fmt.Printf(" - [%d] %s", j, file.Path)
 			fmt.Println()
 		}
+		for _, req := range transaction.Request {
+			printTruncated(req)
+		}
+		printLine()
+		fmt.Print(" - Assistant: ")
+		fmt.Println()
+		printTruncated(transaction.Response)
+		printLine()
 	}
 
 	return nil
 }
 
+func printLine() {
+	fmt.Println("--------------------------------------")
+}
+
 func printTruncated(truncatedContent string) {
-	if len(truncatedContent) > 200 {
-		truncatedContent = truncatedContent[:200] + "..."
+	printLine()
+	if len(truncatedContent) > 100 {
+		truncatedContent = truncatedContent[:100] + "..."
 	}
-	truncatedContent = strings.ReplaceAll(truncatedContent, "\n", " ")
 	fmt.Println(truncatedContent)
 }
