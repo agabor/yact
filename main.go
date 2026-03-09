@@ -73,13 +73,29 @@ func main() {
 		}
 		commandErr = commands.HandleRestoreCommand()
 	case "act":
-		commandErr = commands.HandleActCommand(commandArgs, *thinkFlag, cfg, systemprompt.Act)
+		if len(commandArgs) != 1 {
+			fmt.Fprintf(os.Stderr, "Error: act command requires a prompt\n")
+			os.Exit(1)
+		}
+		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Act)
 	case "bash":
-		commandErr = commands.HandleActCommand(commandArgs, *thinkFlag, cfg, systemprompt.Bash)
+		if len(commandArgs) != 1 {
+			fmt.Fprintf(os.Stderr, "Error: bash command requires a prompt\n")
+			os.Exit(1)
+		}
+		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Bash)
 	case "ask":
-		commandErr = commands.HandleAskCommand(commandArgs, *thinkFlag, cfg, systemprompt.Ask)
+		if len(commandArgs) != 1 {
+			fmt.Fprintf(os.Stderr, "Error: ask command requires a prompt\n")
+			os.Exit(1)
+		}
+		commandErr = commands.HandleAskCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Ask)
 	case "plan":
-		commandErr = commands.HandlePlanCommand(commandArgs, *thinkFlag, cfg, systemprompt.Plan)
+		if len(commandArgs) != 1 {
+			fmt.Fprintf(os.Stderr, "Error: plan command requires a prompt\n")
+			os.Exit(1)
+		}
+		commandErr = commands.HandlePlanCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Plan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "step":
@@ -87,9 +103,8 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: step index required\n")
 			os.Exit(1)
 		}
-		stepArgs := append([]string{"implement", "step"}, commandArgs...)
-		stepArgs = append(stepArgs, ". Make no other changes.")
-		commandErr = commands.HandleActCommand(stepArgs, *thinkFlag, cfg, systemprompt.Act)
+		prompt := "implement step " + commandArgs[0] + ". Make no other changes."
+		commandErr = commands.HandleActCommand(prompt, *thinkFlag, cfg, systemprompt.Act)
 	case "go":
 		if len(commandArgs) != 0 {
 			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")

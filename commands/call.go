@@ -26,8 +26,8 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeAct)
+func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+	transactions, err := HandleCall(prompt, think, cfg, systemPrompt, logic.TransactionTypeAct)
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func HandleActCommand(args []string, think bool, cfg *config.Config, systemPromp
 	return processCodeBlocks(transactions[len(transactions)-1].Response)
 }
 
-func HandlePlanCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypePlan)
+func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+	transactions, err := HandleCall(prompt, think, cfg, systemPrompt, logic.TransactionTypePlan)
 	if err != nil {
 		return err
 	}
@@ -53,8 +53,8 @@ func HandlePlanCommand(args []string, think bool, cfg *config.Config, systemProm
 	return nil
 }
 
-func HandleAskCommand(args []string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := HandleCall(args, think, cfg, systemPrompt, logic.TransactionTypeQuestion)
+func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+	transactions, err := HandleCall(prompt, think, cfg, systemPrompt, logic.TransactionTypeQuestion)
 	if err != nil {
 		return err
 	}
@@ -87,9 +87,7 @@ func HandleGoCommand(think bool, cfg *config.Config, systemPrompt string) error 
 	return processCodeBlocks(transactions[len(transactions)-1].Response)
 }
 
-func HandleCall(args []string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) ([]logic.Transaction, error) {
-	prompt := strings.Join(args, " ")
-
+func HandleCall(prompt string, think bool, cfg *config.Config, systemPrompt string, transactionType logic.TransactionType) ([]logic.Transaction, error) {
 	transactions, err := logic.LoadContextForMessageType(transactionType)
 	if err != nil {
 		fmt.Printf("Warning: could not load context: %v\n", err)
