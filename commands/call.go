@@ -65,10 +65,6 @@ func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPromp
 
 	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
 
-	if err := logic.SaveQuestionsContext(transactions); err != nil {
-		fmt.Printf("Warning: could not save context: %v\n", err)
-	}
-
 	fmt.Println("\n" + transactions[len(transactions)-1].Response)
 	return nil
 }

@@ -6,30 +6,6 @@ import (
 	"path/filepath"
 )
 
-func LoadContext() ([]Transaction, error) {
-	return loadContextFromJson("context.json")
-}
-
-func SaveContext(transactions []Transaction) error {
-	compact, err := CompactTransactions(transactions)
-	if err != nil {
-		return err
-	}
-	err = SaveQuestionsContext([]Transaction{compact})
-	if err != nil {
-		return err
-	}
-	return saveContextToJson("context.json", transactions)
-}
-
-func LoadQuestionsContext() ([]Transaction, error) {
-	return loadContextFromJson("questions.json")
-}
-
-func SaveQuestionsContext(transactions []Transaction) error {
-	return saveContextToJson("questions.json", transactions)
-}
-
 func getContextFilePath(jsonFileName string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -38,8 +14,8 @@ func getContextFilePath(jsonFileName string) (string, error) {
 	return filepath.Join(homeDir, ".yact", jsonFileName), nil
 }
 
-func loadContextFromJson(jsonFileName string) ([]Transaction, error) {
-	contextPath, err := getContextFilePath(jsonFileName)
+func LoadContext() ([]Transaction, error) {
+	contextPath, err := getContextFilePath("context.json")
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +36,8 @@ func loadContextFromJson(jsonFileName string) ([]Transaction, error) {
 	return transactions, nil
 }
 
-func saveContextToJson(jsonFileName string, transactions []Transaction) error {
-	contextPath, err := getContextFilePath(jsonFileName)
+func SaveContext(transactions []Transaction) error {
+	contextPath, err := getContextFilePath("context.json")
 	if err != nil {
 		return err
 	}

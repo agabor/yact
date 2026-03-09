@@ -20,12 +20,7 @@ func LoadContextForPlan() ([]Transaction, error) {
 		return []Transaction{tx}, nil
 	}
 
-	if transactions[len(transactions)-1].Type == TransactionTypeNone {
-		transactions[len(transactions)-1].Type = TransactionTypePlan
-		return transactions, nil
-	}
-
-	return append(transactions, Transaction{Type: TransactionTypePlan}), nil
+	return prepareNewTransaction(TransactionTypePlan, transactions)
 }
 
 func LoadContextForAct() ([]Transaction, error) {
@@ -47,25 +42,29 @@ func LoadContextForAct() ([]Transaction, error) {
 		return []Transaction{tx}, nil
 	}
 
+	return prepareNewTransaction(TransactionTypeAct, transactions)
+}
+
+func prepareNewTransaction(t TransactionType, transactions []Transaction) ([]Transaction, error) {
 	if transactions[len(transactions)-1].Type == TransactionTypeNone {
-		transactions[len(transactions)-1].Type = TransactionTypeAct
+		transactions[len(transactions)-1].Type = t
 		return transactions, nil
 	}
 
-	return append(transactions, Transaction{Type: TransactionTypeAct}), nil
+	return append(transactions, Transaction{Type: TransactionTypePlan}), nil
 }
+
 func LoadContextForQuestion() ([]Transaction, error) {
-	transactions, err := LoadQuestionsContext()
+	transactions, err := LoadContext()
 	if err != nil {
 		return nil, err
 	}
-
-	if transactions[len(transactions)-1].Type == TransactionTypeNone {
-		transactions[len(transactions)-1].Type = TransactionTypeQuestion
-		return transactions, nil
+	tx, err := CompactTransactions(transactions)
+	if err != nil {
+		return nil, err
 	}
-
-	return append(transactions, Transaction{Type: TransactionTypeQuestion}), nil
+	tx.Type = TransactionTypeQuestion
+	return []Transaction{tx}, nil
 }
 
 func getLastPlan(transactions []Transaction) string {
