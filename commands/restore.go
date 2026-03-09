@@ -31,8 +31,8 @@ func HandleRestoreCommand() error {
 	}
 
 	for path, content := range fileVersions {
-		codeBlock := logic.CodeBlock{Path: path, Content: content}
-		err := codeBlock.Write()
+		codeFile := logic.CodeFile{Path: path, Content: content}
+		err := codeFile.Write()
 		if err != nil {
 			restoreErrors = append(restoreErrors, fmt.Sprintf("%v", err))
 		}

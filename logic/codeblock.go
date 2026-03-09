@@ -14,7 +14,7 @@ var unknownFileCounter = 0
 const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
-type CodeBlock struct {
+type CodeFile struct {
 	Path    string
 	Content string
 }
@@ -44,7 +44,7 @@ func extractFilenameFromComment(line string) string {
 	return ""
 }
 
-func linesToCodeBlock(lines []string) CodeBlock {
+func linesToCodeFile(lines []string) CodeFile {
 	filePath := ""
 	lineIndex := 0
 
@@ -82,34 +82,34 @@ func linesToCodeBlock(lines []string) CodeBlock {
 		}
 	}
 
-	return CodeBlock{Path: filePath, Content: joinLines(lines)}
+	return CodeFile{Path: filePath, Content: joinLines(lines)}
 }
 
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (cb *CodeBlock) Serialize() string {
-	return joinLines([]string{BlockDelimiter, "//" + cb.Path, cb.Content, BlockDelimiter})
+func (cf *CodeFile) Serialize() string {
+	return joinLines([]string{BlockDelimiter, "//" + cf.Path, cf.Content, BlockDelimiter})
 }
 
-func ReadAsFile(filePath string) (CodeBlock, error) {
+func ReadAsFile(filePath string) (CodeFile, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return CodeBlock{}, err
+		return CodeFile{}, err
 	}
 
-	return CodeBlock{Path: filePath, Content: string(content)}, nil
+	return CodeFile{Path: filePath, Content: string(content)}, nil
 }
 
-func (cb *CodeBlock) Write() error {
-	filePath := cb.Path
+func (cf *CodeFile) Write() error {
+	filePath := cf.Path
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(filePath, []byte(cb.Content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(cf.Content), 0644); err != nil {
 		return fmt.Errorf("error writing file %s: %w", filePath, err)
 	}
 
@@ -117,9 +117,9 @@ func (cb *CodeBlock) Write() error {
 	return nil
 }
 
-func ParseCodeBlocks(response string) ([]CodeBlock, []string, bool) {
+func ParseCodeBlocks(response string) ([]CodeFile, []string, bool) {
 	lines := strings.Split(response, "\n")
-	var codeBlocks = make([]CodeBlock, 0)
+	var codeFiles = make([]CodeFile, 0)
 	var lineBuffer = make([]string, 0)
 	var text = make([]string, 0)
 	inBlock := false
@@ -127,7 +127,7 @@ func ParseCodeBlocks(response string) ([]CodeBlock, []string, bool) {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
 			if inBlock {
 				if len(lineBuffer) > 0 {
-					codeBlocks = append(codeBlocks, linesToCodeBlock(lineBuffer))
+					codeFiles = append(codeFiles, linesToCodeFile(lineBuffer))
 				}
 				inBlock = false
 				lineBuffer = make([]string, 0)
@@ -142,10 +142,10 @@ func ParseCodeBlocks(response string) ([]CodeBlock, []string, bool) {
 	}
 
 	if inBlock && len(lineBuffer) > 0 {
-		codeBlock := linesToCodeBlock(lineBuffer)
-		codeBlocks = append(codeBlocks, codeBlock)
-		return codeBlocks, text, false
+		codeFile := linesToCodeFile(lineBuffer)
+		codeFiles = append(codeFiles, codeFile)
+		return codeFiles, text, false
 	}
 
-	return codeBlocks, text, true
+	return codeFiles, text, true
 }

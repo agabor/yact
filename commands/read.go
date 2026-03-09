@@ -52,7 +52,7 @@ func HandleReadCommand(args []string) error {
 				return err
 			}
 			if !AppendFileToLastTransaction(transactions, file) {
-				transaction := logic.Transaction{Type: logic.TransactionTypeNone, Context: []logic.CodeBlock{file}}
+				transaction := logic.Transaction{Type: logic.TransactionTypeNone, Context: []logic.CodeFile{file}}
 				transactions = append(transactions, transaction)
 			}
 
@@ -66,7 +66,7 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.CodeBlock) bool {
+func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.CodeFile) bool {
 	count := len(transactions)
 	if count > 0 {
 		transaction := transactions[count-1]

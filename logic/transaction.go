@@ -139,5 +139,5 @@ type Transaction struct {
 	Response                  string
 	ResponseThinking          string
 	ResponseThinkingSignature string
-	Context                   []CodeBlock
+	Context                   []CodeFile
 }
