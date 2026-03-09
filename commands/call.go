@@ -32,11 +32,7 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 		return err
 	}
 
-	if strings.TrimSpace(prompt) != "" {
-		transactions = appendPromptToTransactions(prompt, transactions)
-	}
-
-	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
+	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
 
 	if err = logic.SaveContext(transactions); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
@@ -50,9 +46,8 @@ func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemProm
 	if err != nil {
 		return err
 	}
-	transactions = appendPromptToTransactions(prompt, transactions)
 
-	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
+	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
 
 	if err := logic.SaveContext(transactions); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
@@ -67,9 +62,8 @@ func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPromp
 	if err != nil {
 		return err
 	}
-	transactions = appendPromptToTransactions(prompt, transactions)
 
-	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
+	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
 
 	if err := logic.SaveQuestionsContext(transactions); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
@@ -86,7 +80,12 @@ func appendPromptToTransactions(prompt string, transactions []logic.Transaction)
 	return transactions
 }
 
-func callClaudeAPI(transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) ([]logic.Transaction, error) {
+func callClaudeAPI(prompt string, transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) ([]logic.Transaction, error) {
+
+	if strings.TrimSpace(prompt) != "" {
+		transactions = appendPromptToTransactions(prompt, transactions)
+	}
+
 	fmt.Printf("Sending request to Claude...\n")
 
 	var client api.Client
