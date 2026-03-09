@@ -15,9 +15,8 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeBlock struct {
-	Path     string
-	Content  string
-	Complete bool
+	Path    string
+	Content string
 }
 
 func extractFilenameFromComment(line string) string {
@@ -83,24 +82,24 @@ func linesToCodeBlock(lines []string) CodeBlock {
 		}
 	}
 
-	return CodeBlock{Path: filePath, Content: joinLines(lines), Complete: true}
+	return CodeBlock{Path: filePath, Content: joinLines(lines)}
 }
 
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func AsCodeBlock(path string, content string) string {
-	return joinLines([]string{BlockDelimiter, "//" + path, content, BlockDelimiter})
+func (cb *CodeBlock) Serialize() string {
+	return joinLines([]string{BlockDelimiter, "//" + cb.Path, cb.Content, BlockDelimiter})
 }
 
-func ReadAsCodeBlock(filePath string) (string, error) {
+func ReadAsFile(filePath string) (CodeBlock, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", err
+		return CodeBlock{}, err
 	}
 
-	return AsCodeBlock(filePath, string(content)), nil
+	return CodeBlock{Path: filePath, Content: string(content)}, nil
 }
 
 func (cb *CodeBlock) Write() error {
@@ -118,7 +117,7 @@ func (cb *CodeBlock) Write() error {
 	return nil
 }
 
-func ParseCodeBlocks(response string) ([]CodeBlock, []string) {
+func ParseCodeBlocks(response string) ([]CodeBlock, []string, bool) {
 	lines := strings.Split(response, "\n")
 	var codeBlocks = make([]CodeBlock, 0)
 	var lineBuffer = make([]string, 0)
@@ -144,9 +143,9 @@ func ParseCodeBlocks(response string) ([]CodeBlock, []string) {
 
 	if inBlock && len(lineBuffer) > 0 {
 		codeBlock := linesToCodeBlock(lineBuffer)
-		codeBlock.Complete = false
 		codeBlocks = append(codeBlocks, codeBlock)
+		return codeBlocks, text, false
 	}
 
-	return codeBlocks, text
+	return codeBlocks, text, true
 }

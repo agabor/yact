@@ -87,7 +87,7 @@ func (c *ClaudeClient) Call(transactions []logic.Transaction, think bool, system
 	for _, tx := range transactions {
 		blocks := make([]anthropic.ContentBlockParamUnion, 0)
 		for _, file := range tx.Context {
-			blocks = append(blocks, anthropic.NewTextBlock(file.Content))
+			blocks = append(blocks, anthropic.NewTextBlock(file.Serialize()))
 		}
 		for _, prompt := range tx.Request {
 			blocks = append(blocks, anthropic.NewTextBlock(prompt))

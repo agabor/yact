@@ -96,24 +96,24 @@ func CompactTransactions(transactions []Transaction) (Transaction, error) {
 			if seenPaths[path] {
 				continue
 			}
-			content, err := ReadAsCodeBlock(path)
+			file2, err := ReadAsFile(path)
 			if err != nil {
 				reloadErrors = append(reloadErrors, fmt.Sprintf("could not reload %s: %v", path, err))
 				continue
 			}
 			seenPaths[path] = true
-			newTransaction.Context = append(newTransaction.Context, File{Path: path, Content: content})
+			newTransaction.Context = append(newTransaction.Context, file2)
 		}
 		if transaction.Type == TransactionTypeAct {
-			blocks, _ := ParseCodeBlocks(transaction.Response)
+			blocks, _, _ := ParseCodeBlocks(transaction.Response)
 			for _, block := range blocks {
-				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
-				if seenPaths[path] {
+				block.Path = strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
+				if seenPaths[block.Path] {
 					continue
 				}
 
-				seenPaths[path] = true
-				newTransaction.Context = append(newTransaction.Context, File{Path: path, Content: block.Content})
+				seenPaths[block.Path] = true
+				newTransaction.Context = append(newTransaction.Context, block)
 			}
 		}
 	}
@@ -133,16 +133,11 @@ const (
 	TransactionTypeQuestion TransactionType = "Question"
 )
 
-type File struct {
-	Path    string
-	Content string
-}
-
 type Transaction struct {
 	Type                      TransactionType
 	Request                   []string
 	Response                  string
 	ResponseThinking          string
 	ResponseThinkingSignature string
-	Context                   []File
+	Context                   []CodeBlock
 }

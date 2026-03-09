@@ -8,7 +8,7 @@ import (
 
 func TestParseCodeBlocksBasic(t *testing.T) {
 	input := "````\n// src/main.go\npackage main\n````"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 code block, got %d", len(blocks))
@@ -25,7 +25,7 @@ func TestParseCodeBlocksBasic(t *testing.T) {
 
 func TestParseCodeBlocksMultiple(t *testing.T) {
 	input := "````\n// file1.go\ncontent1\n````\n\n````\n// file2.go\ncontent2\n````"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 2 {
 		t.Errorf("expected 2 code blocks, got %d", len(blocks))
@@ -42,7 +42,7 @@ func TestParseCodeBlocksMultiple(t *testing.T) {
 
 func TestParseCodeBlocksEmpty(t *testing.T) {
 	input := ""
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 0 {
 		t.Errorf("expected 0 code blocks for empty input, got %d", len(blocks))
@@ -51,7 +51,7 @@ func TestParseCodeBlocksEmpty(t *testing.T) {
 
 func TestParseCodeBlocksNoBlocks(t *testing.T) {
 	input := "just some text\nwithout any code blocks"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 0 {
 		t.Errorf("expected 0 code blocks, got %d", len(blocks))
@@ -60,7 +60,7 @@ func TestParseCodeBlocksNoBlocks(t *testing.T) {
 
 func TestParseCodeBlocksIncompleteBlock(t *testing.T) {
 	input := "````\n// file.go\ncontent\n"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 code block for incomplete delimiter, got %d", len(blocks))
@@ -69,7 +69,7 @@ func TestParseCodeBlocksIncompleteBlock(t *testing.T) {
 
 func TestParseCodeBlocksWithExtraText(t *testing.T) {
 	input := "some text before\n````\n// file.go\ncode\n````\nsome text after"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 code block, got %d", len(blocks))
@@ -82,7 +82,7 @@ func TestParseCodeBlocksWithExtraText(t *testing.T) {
 
 func TestParseCodeBlocksMultilineContent(t *testing.T) {
 	input := "````\n// src/test.go\nfunc main() {\n  fmt.Println(\"hello\")\n}\n````"
-	blocks, _ := logic.ParseCodeBlocks(input)
+	blocks, _, _ := logic.ParseCodeBlocks(input)
 
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 code block, got %d", len(blocks))

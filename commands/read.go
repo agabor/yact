@@ -39,10 +39,6 @@ func HandleReadCommand(args []string) error {
 			if err != nil {
 				return err
 			}
-			content, err := logic.ReadAsCodeBlock(filePath)
-			if err != nil {
-				return err
-			}
 
 			if hasMessageWithPath(transactions, filePath) {
 				fmt.Printf("Skipping: %s\n", filePath)
@@ -51,9 +47,12 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Reading: %s\n", filePath)
 			}
 
-			file := logic.File{Path: filePath, Content: content}
+			file, err := logic.ReadAsFile(filePath)
+			if err != nil {
+				return err
+			}
 			if !AppendFileToLastTransaction(transactions, file) {
-				transaction := logic.Transaction{Type: logic.TransactionTypeNone, Context: []logic.File{file}}
+				transaction := logic.Transaction{Type: logic.TransactionTypeNone, Context: []logic.CodeBlock{file}}
 				transactions = append(transactions, transaction)
 			}
 
@@ -67,7 +66,7 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.File) bool {
+func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.CodeBlock) bool {
 	count := len(transactions)
 	if count > 0 {
 		transaction := transactions[count-1]

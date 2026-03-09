@@ -22,7 +22,7 @@ func HandleRestoreCommand() error {
 		}
 
 		if transaction.Type == logic.TransactionTypeAct {
-			blocks, _ := logic.ParseCodeBlocks(transaction.Response)
+			blocks, _, _ := logic.ParseCodeBlocks(transaction.Response)
 			for _, block := range blocks {
 				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
 				fileVersions[path] = block.Content
