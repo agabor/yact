@@ -31,7 +31,10 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 	if err != nil {
 		return err
 	}
-	transactions = appendPromptToTransactions(prompt, transactions)
+
+	if strings.TrimSpace(prompt) != "" {
+		transactions = appendPromptToTransactions(prompt, transactions)
+	}
 
 	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
 
@@ -74,25 +77,6 @@ func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPromp
 
 	fmt.Println("\n" + transactions[len(transactions)-1].Response)
 	return nil
-}
-
-func HandleGoCommand(think bool, cfg *config.Config, systemPrompt string) error {
-
-	transactions, err := logic.LoadContextForMessageType(logic.TransactionTypeAct)
-	if err != nil {
-		return err
-	}
-
-	transactions, err = callClaudeAPI(transactions, think, cfg, systemPrompt)
-	if err != nil {
-		return err
-	}
-
-	if err = logic.SaveContext(transactions); err != nil {
-		return err
-	}
-
-	return processCodeBlocks(transactions[len(transactions)-1].Response)
 }
 
 func appendPromptToTransactions(prompt string, transactions []logic.Transaction) []logic.Transaction {

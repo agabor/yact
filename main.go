@@ -110,7 +110,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")
 			os.Exit(1)
 		}
-		commandErr = commands.HandleGoCommand(*thinkFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand("", *thinkFlag, cfg, systemprompt.Act)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")
