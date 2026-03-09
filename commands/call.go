@@ -60,7 +60,7 @@ func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemProm
 }
 
 func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForMessageType(logic.TransactionTypeQuestion)
+	transactions, err := logic.LoadQuestionsContext()
 	if err != nil {
 		return err
 	}
