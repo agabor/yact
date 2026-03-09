@@ -27,7 +27,7 @@ func showProgress(done chan bool) {
 }
 
 func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForMessageType(logic.TransactionTypeAct)
+	transactions, err := logic.LoadContextForAct()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 }
 
 func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForMessageType(logic.TransactionTypePlan)
+	transactions, err := logic.LoadContextForPlan()
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemProm
 }
 
 func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadQuestionsContext()
+	transactions, err := logic.LoadContextForQuestion()
 	if err != nil {
 		return err
 	}

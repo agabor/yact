@@ -15,7 +15,7 @@ func SaveContext(transactions []Transaction) error {
 	if err != nil {
 		return err
 	}
-	err = saveContextToJson("questions.json", []Transaction{compact})
+	err = SaveQuestionsContext([]Transaction{compact})
 	if err != nil {
 		return err
 	}

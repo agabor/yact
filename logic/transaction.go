@@ -5,33 +5,67 @@ import (
 	"strings"
 )
 
-func LoadContextForMessageType(transactionType TransactionType) ([]Transaction, error) {
+func LoadContextForPlan() ([]Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
 		return nil, err
 	}
 
-	newTransactions := make([]Transaction, 0)
-	newTransaction := Transaction{Type: transactionType}
-
-	if transactionType != getType(transactions) {
-		newTransaction, err = CompactTransactions(transactions)
+	if TransactionTypeAct == getType(transactions) {
+		tx, err := CompactTransactions(transactions)
 		if err != nil {
 			return nil, err
 		}
-		newTransaction.Type = transactionType
-	} else {
-		newTransactions = transactions
+		tx.Type = TransactionTypePlan
+		return []Transaction{tx}, nil
 	}
 
-	if transactionType == TransactionTypeAct {
+	if transactions[len(transactions)-1].Type == TransactionTypeNone {
+		transactions[len(transactions)-1].Type = TransactionTypePlan
+		return transactions, nil
+	}
+
+	return append(transactions, Transaction{Type: TransactionTypePlan}), nil
+}
+
+func LoadContextForAct() ([]Transaction, error) {
+	transactions, err := LoadContext()
+	if err != nil {
+		return nil, err
+	}
+
+	if TransactionTypePlan == getType(transactions) {
+		tx, err := CompactTransactions(transactions)
+		if err != nil {
+			return nil, err
+		}
+		tx.Type = TransactionTypeAct
 		lastPlan := strings.TrimSpace(getLastPlan(transactions))
 		if lastPlan != "" {
-			newTransaction.Request = []string{lastPlan}
+			tx.Request = []string{lastPlan}
 		}
+		return []Transaction{tx}, nil
 	}
 
-	return append(newTransactions, newTransaction), nil
+	if transactions[len(transactions)-1].Type == TransactionTypeNone {
+		transactions[len(transactions)-1].Type = TransactionTypeAct
+		return transactions, nil
+	}
+
+	return append(transactions, Transaction{Type: TransactionTypeAct}), nil
+}
+func LoadContextForQuestion() ([]Transaction, error) {
+	transactions, err := LoadQuestionsContext()
+	if err != nil {
+		return nil, err
+	}
+
+	if transactions[len(transactions)-1].Type == TransactionTypeNone {
+		transactions[len(transactions)-1].Type = TransactionTypeQuestion
+		return transactions, nil
+	}
+
+	return append(transactions, Transaction{Type: TransactionTypeQuestion}), nil
 }
 
 func getLastPlan(transactions []Transaction) string {
@@ -95,9 +129,9 @@ type TransactionType string
 
 const (
 	TransactionTypeNone     TransactionType = "None"
-	TransactionTypeQuestion TransactionType = "Question"
 	TransactionTypeAct      TransactionType = "Act"
 	TransactionTypePlan     TransactionType = "Plan"
+	TransactionTypeQuestion TransactionType = "Question"
 )
 
 type File struct {
