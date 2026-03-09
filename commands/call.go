@@ -104,15 +104,12 @@ func callClaudeAPI(prompt string, transactions []logic.Transaction, think bool, 
 func processCodeBlocks(content string) error {
 	fmt.Println("Processing response...")
 	var parseErrors []string
-	codeblocks, text, complete := logic.ParseCodeBlocks(content)
+	codeblocks, text := logic.ParseCodeBlocks(content)
 	for _, codeBlock := range codeblocks {
 		err := codeBlock.Write()
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 		}
-	}
-	if !complete {
-		fmt.Println("Warning: Incomplete code block.")
 	}
 
 	if len(text) > 0 && strings.TrimSpace(strings.Join(text, "")) != "" {

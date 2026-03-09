@@ -105,7 +105,7 @@ func CompactTransactions(transactions []Transaction) (Transaction, error) {
 			newTransaction.Context = append(newTransaction.Context, file2)
 		}
 		if transaction.Type == TransactionTypeAct {
-			blocks, _, _ := ParseCodeBlocks(transaction.Response)
+			blocks, _ := ParseCodeBlocks(transaction.Response)
 			for _, block := range blocks {
 				block.Path = strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
 				if seenPaths[block.Path] {

@@ -117,7 +117,7 @@ func (cf *CodeFile) Write() error {
 	return nil
 }
 
-func ParseCodeBlocks(response string) ([]CodeFile, []string, bool) {
+func ParseCodeBlocks(response string) ([]CodeFile, []string) {
 	lines := strings.Split(response, "\n")
 	var codeFiles = make([]CodeFile, 0)
 	var lineBuffer = make([]string, 0)
@@ -144,8 +144,8 @@ func ParseCodeBlocks(response string) ([]CodeFile, []string, bool) {
 	if inBlock && len(lineBuffer) > 0 {
 		codeFile := linesToCodeFile(lineBuffer)
 		codeFiles = append(codeFiles, codeFile)
-		return codeFiles, text, false
+		fmt.Println("Warning: Incomplete code block.")
 	}
 
-	return codeFiles, text, true
+	return codeFiles, text
 }
