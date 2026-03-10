@@ -51,7 +51,8 @@ const Act = "CODE GENERATION ASSISTANT\n\n" +
 	"[complete file content]\n" +
 	"````\n\n" +
 	"````\n" +
-	"// src/models/user.go\n" +
+	"#!/bin/bash\n" +
+	"# deploy.sh\n" +
 	"[complete file content]\n" +
 	"````\n\n" +
 	"INVALID OUTPUT EXAMPLES (DO NOT DO THIS):\n" +

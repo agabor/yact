@@ -11,6 +11,27 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+func requireArgCount(command string, args []string, validCounts ...int) {
+	for _, count := range validCounts {
+		if len(args) == count {
+			return
+		}
+	}
+	if len(validCounts) == 1 {
+		fmt.Fprintf(os.Stderr, "Error: %s command requires %d argument(s)\n", command, validCounts[0])
+	} else {
+		fmt.Fprintf(os.Stderr, "Error: %s command received %d argument(s), expected one of: %v\n", command, len(args), validCounts)
+	}
+	os.Exit(1)
+}
+
+func requireNoArgs(command string, args []string) {
+	if len(args) != 0 {
+		fmt.Fprintf(os.Stderr, "Error: %s command takes no arguments\n", command)
+		os.Exit(1)
+	}
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
@@ -51,65 +72,36 @@ func main() {
 	case "read":
 		commandErr = commands.HandleReadCommand(commandArgs)
 	case "config":
+		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
 	case "context":
-		if len(commandArgs) != 0 {
-			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")
-			os.Exit(1)
-		}
+		requireNoArgs("context", commandArgs)
 		commandErr = commands.HandleContextCommand()
 	case "pop":
 		commandErr = commands.HandlePop(commandArgs)
 	case "reset":
-		if len(commandArgs) != 0 {
-			fmt.Fprintf(os.Stderr, "Error: the reset command takes no arguments\n")
-			os.Exit(1)
-		}
+		requireNoArgs("reset", commandArgs)
 		commandErr = commands.HandleResetCommand()
 	case "restore":
-		if len(commandArgs) != 0 {
-			fmt.Fprintf(os.Stderr, "Error: the restore command takes no arguments\n")
-			os.Exit(1)
-		}
+		requireNoArgs("restore", commandArgs)
 		commandErr = commands.HandleRestoreCommand()
 	case "act":
-		if len(commandArgs) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: act command requires a prompt\n")
-			os.Exit(1)
-		}
+		requireArgCount("act", commandArgs, 1)
 		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Act)
-	case "bash":
-		if len(commandArgs) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: bash command requires a prompt\n")
-			os.Exit(1)
-		}
-		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Bash)
 	case "ask":
-		if len(commandArgs) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: ask command requires a prompt\n")
-			os.Exit(1)
-		}
+		requireArgCount("ask", commandArgs, 1)
 		commandErr = commands.HandleAskCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Ask)
 	case "plan":
-		if len(commandArgs) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: plan command requires a prompt\n")
-			os.Exit(1)
-		}
+		requireArgCount("plan", commandArgs, 1)
 		commandErr = commands.HandlePlanCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Plan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "step":
-		if len(commandArgs) != 1 {
-			fmt.Fprintf(os.Stderr, "Error: step index required\n")
-			os.Exit(1)
-		}
+		requireArgCount("step", commandArgs, 1)
 		prompt := "implement step " + commandArgs[0] + ". Make no other changes."
 		commandErr = commands.HandleActCommand(prompt, *thinkFlag, cfg, systemprompt.Act)
 	case "go":
-		if len(commandArgs) != 0 {
-			fmt.Fprintf(os.Stderr, "Error: the go command takes no arguments\n")
-			os.Exit(1)
-		}
+		requireNoArgs("go", commandArgs)
 		commandErr = commands.HandleActCommand("", *thinkFlag, cfg, systemprompt.Act)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
