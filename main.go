@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"yact/config/systemprompt"
 
 	"yact/commands"
@@ -88,6 +89,21 @@ func main() {
 	case "act":
 		requireArgCount("act", commandArgs, 1)
 		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Act)
+	case "snip":
+		requireArgCount("snip", commandArgs, 4)
+		inputFile := commandArgs[0]
+		startLine, err := strconv.Atoi(commandArgs[1])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: invalid start line number: %v\n", err)
+			os.Exit(1)
+		}
+		endLine, err := strconv.Atoi(commandArgs[2])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: invalid end line number: %v\n", err)
+			os.Exit(1)
+		}
+		prompt := commandArgs[3]
+		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, systemprompt.Snip)
 	case "ask":
 		requireArgCount("ask", commandArgs, 1)
 		commandErr = commands.HandleAskCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Ask)
