@@ -42,7 +42,8 @@ func HandleSnipCommand(inputFile string, startLine int, endLine int, prompt stri
 		return fmt.Errorf("no code blocks found in Claude's response")
 	}
 
-	replacement := codeblocks[0].Content
+	indent := getMinIndentation(snippet)
+	replacement := applyIndentation(codeblocks[0].Content, indent)
 
 	err = replaceLineRange(inputFile, startLine, endLine, replacement)
 	if err != nil {
@@ -69,6 +70,51 @@ func readLinesFromFile(filename string, startLine int, endLine int) (string, err
 	snippet := strings.Join(selectedLines, "\n")
 
 	return snippet, nil
+}
+
+func getMinIndentation(code string) int {
+	lines := strings.Split(code, "\n")
+	minIndent := -1
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		leadingSpaces := len(line) - len(strings.TrimLeft(line, " \t"))
+		if minIndent == -1 || leadingSpaces < minIndent {
+			minIndent = leadingSpaces
+		}
+	}
+
+	if minIndent == -1 {
+		return 0
+	}
+
+	return minIndent
+}
+
+func applyIndentation(code string, targetIndent int) string {
+	lines := strings.Split(code, "\n")
+	currentIndent := getMinIndentation(code)
+	indentDiff := targetIndent - currentIndent
+
+	var result []string
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			result = append(result, "")
+			continue
+		}
+
+		if indentDiff >= 0 {
+			result = append(result, strings.Repeat(" ", indentDiff)+line)
+		} else {
+			result = append(result, strings.TrimLeft(line, " \t"))
+			result[len(result)-1] = strings.Repeat(" ", targetIndent) + strings.TrimLeft(line, " \t")
+		}
+	}
+
+	return strings.Join(result, "\n")
 }
 
 func replaceLineRange(filename string, startLine int, endLine int, replacement string) error {
