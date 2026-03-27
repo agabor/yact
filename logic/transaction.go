@@ -46,7 +46,7 @@ func LoadContextForAct() ([]Transaction, error) {
 }
 
 func prepareNewTransaction(t TransactionType, transactions []Transaction) ([]Transaction, error) {
-	if transactions[len(transactions)-1].Type == TransactionTypeNone {
+	if len(transactions) > 0 && transactions[len(transactions)-1].Type == TransactionTypeNone {
 		transactions[len(transactions)-1].Type = t
 		return transactions, nil
 	}
