@@ -17,21 +17,19 @@ func HandleRestoreCommand() error {
 
 	for _, transaction := range transactions {
 		for _, file := range transaction.Context {
-			path := strings.TrimPrefix(strings.TrimSpace(file.Path), "./")
-			fileVersions[path] = file.Content
+			fileVersions[file.Path()] = file.Content
 		}
 
 		if transaction.Type == logic.TransactionTypeAct {
 			blocks, _ := logic.ParseCodeBlocks(transaction.Response)
 			for _, block := range blocks {
-				path := strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
-				fileVersions[path] = block.Content
+				fileVersions[block.Path()] = block.Content
 			}
 		}
 	}
 
 	for path, content := range fileVersions {
-		codeFile := logic.CodeFile{Path: path, Content: content}
+		codeFile := logic.NewCodeFile(path, content)
 		err := codeFile.Write()
 		if err != nil {
 			restoreErrors = append(restoreErrors, fmt.Sprintf("%v", err))

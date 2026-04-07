@@ -14,7 +14,7 @@ func TestParseCodeBlocksBasic(t *testing.T) {
 		t.Errorf("expected 1 code block, got %d", len(blocks))
 	}
 
-	if !strings.Contains(blocks[0].Path, "main.go") {
+	if !strings.Contains(blocks[0].Path(), "main.go") {
 		t.Error("expected file path to contain main.go")
 	}
 
@@ -31,11 +31,11 @@ func TestParseCodeBlocksMultiple(t *testing.T) {
 		t.Errorf("expected 2 code blocks, got %d", len(blocks))
 	}
 
-	if !strings.Contains(blocks[0].Path, "file1.go") {
+	if !strings.Contains(blocks[0].Path(), "file1.go") {
 		t.Error("expected first block file path to contain file1.go")
 	}
 
-	if !strings.Contains(blocks[1].Path, "file2.go") {
+	if !strings.Contains(blocks[1].Path(), "file2.go") {
 		t.Error("expected second block file path to contain file2.go")
 	}
 }

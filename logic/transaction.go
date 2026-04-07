@@ -34,7 +34,7 @@ func LoadContextForAct() ([]Transaction, error) {
 
 			filteredContext := []CodeFile{}
 			for _, file := range tx.Context {
-				if strings.Contains(lastPlan, file.Path) {
+				if strings.Contains(lastPlan, file.Path()) {
 					filteredContext = append(filteredContext, file)
 				}
 			}
@@ -89,26 +89,24 @@ func CompactTransactions(transactions []Transaction) Transaction {
 
 	for _, transaction := range transactions {
 		for _, file := range transaction.Context {
-			path := strings.TrimPrefix(strings.TrimSpace(file.Path), "./")
-			if seenPaths[path] {
+			if seenPaths[file.Path()] {
 				continue
 			}
-			file2, err := ReadAsFile(path)
+			file2, err := ReadAsFile(file.Path())
 			if err != nil {
 				continue
 			}
-			seenPaths[path] = true
+			seenPaths[file.Path()] = true
 			newTransaction.Context = append(newTransaction.Context, file2)
 		}
 		if transaction.Type == TransactionTypeAct {
 			blocks, _ := ParseCodeBlocks(transaction.Response)
 			for _, block := range blocks {
-				block.Path = strings.TrimPrefix(strings.TrimSpace(block.Path), "./")
-				if seenPaths[block.Path] {
+				if seenPaths[block.Path()] {
 					continue
 				}
 
-				seenPaths[block.Path] = true
+				seenPaths[block.Path()] = true
 				newTransaction.Context = append(newTransaction.Context, block)
 			}
 		}

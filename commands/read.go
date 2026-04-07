@@ -82,7 +82,7 @@ func AppendFileToLastTransaction(transactions []logic.Transaction, file logic.Co
 func hasMessageWithPath(transactions []logic.Transaction, path string) bool {
 	for _, transaction := range transactions {
 		for _, file := range transaction.Context {
-			if file.Path == path {
+			if file.Path() == path {
 				return true
 			}
 		}

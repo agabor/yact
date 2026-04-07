@@ -15,8 +15,19 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	Path    string
+	path    string
 	Content string
+}
+
+func NewCodeFile(path, content string) CodeFile {
+	return CodeFile{
+		path:    strings.TrimPrefix(strings.TrimSpace(path), "./"),
+		Content: content,
+	}
+}
+
+func (f CodeFile) Path() string {
+	return f.path
 }
 
 func extractFilenameFromComment(line string) string {
@@ -82,7 +93,7 @@ func linesToCodeFile(lines []string) CodeFile {
 		}
 	}
 
-	return CodeFile{Path: filePath, Content: joinLines(lines)}
+	return NewCodeFile(filePath, joinLines(lines))
 }
 
 func joinLines(lines []string) string {
@@ -90,7 +101,7 @@ func joinLines(lines []string) string {
 }
 
 func (cf *CodeFile) Serialize() string {
-	return joinLines([]string{BlockDelimiter, "//" + cf.Path, cf.Content, BlockDelimiter})
+	return joinLines([]string{BlockDelimiter, "//" + cf.Path(), cf.Content, BlockDelimiter})
 }
 
 func ReadAsFile(filePath string) (CodeFile, error) {
@@ -99,11 +110,11 @@ func ReadAsFile(filePath string) (CodeFile, error) {
 		return CodeFile{}, err
 	}
 
-	return CodeFile{Path: filePath, Content: string(content)}, nil
+	return NewCodeFile(filePath, string(content)), nil
 }
 
 func (cf *CodeFile) Write() error {
-	filePath := cf.Path
+	filePath := cf.Path()
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)
