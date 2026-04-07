@@ -6,20 +6,9 @@ import (
 	"path/filepath"
 )
 
-func getContextFilePath(jsonFileName string) (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(homeDir, ".yact", jsonFileName), nil
-}
+const contextPath = ".yact"
 
 func LoadContext() ([]Transaction, error) {
-	contextPath, err := getContextFilePath("context.json")
-	if err != nil {
-		return nil, err
-	}
-
 	data, err := os.ReadFile(contextPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -37,11 +26,6 @@ func LoadContext() ([]Transaction, error) {
 }
 
 func SaveContext(transactions []Transaction) error {
-	contextPath, err := getContextFilePath("context.json")
-	if err != nil {
-		return err
-	}
-
 	dir := filepath.Dir(contextPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
