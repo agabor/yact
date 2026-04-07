@@ -11,11 +11,7 @@ func HandleResetCommand() error {
 		return err
 	}
 
-	newTransaction, err := logic.CompactTransactions(transactions)
-
-	if err != nil {
-		return err
-	}
+	newTransaction := logic.CompactTransactions(transactions)
 
 	if err := logic.SaveContext([]logic.Transaction{newTransaction}); err != nil {
 		return err

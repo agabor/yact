@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -12,10 +11,7 @@ func LoadContextForPlan() ([]Transaction, error) {
 	}
 
 	if TransactionTypeAct == getType(transactions) {
-		tx, err := CompactTransactions(transactions)
-		if err != nil {
-			return nil, err
-		}
+		tx := CompactTransactions(transactions)
 		tx.Type = TransactionTypePlan
 		return []Transaction{tx}, nil
 	}
@@ -30,10 +26,7 @@ func LoadContextForAct() ([]Transaction, error) {
 	}
 
 	if TransactionTypePlan == getType(transactions) {
-		tx, err := CompactTransactions(transactions)
-		if err != nil {
-			return nil, err
-		}
+		tx := CompactTransactions(transactions)
 		tx.Type = TransactionTypeAct
 		lastPlan := strings.TrimSpace(getLastPlan(transactions))
 		if lastPlan != "" {
@@ -59,10 +52,7 @@ func LoadContextForQuestion() ([]Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	tx, err := CompactTransactions(transactions)
-	if err != nil {
-		return nil, err
-	}
+	tx := CompactTransactions(transactions)
 	tx.Type = TransactionTypeQuestion
 	return []Transaction{tx}, nil
 }
@@ -84,9 +74,8 @@ func getType(transactions []Transaction) TransactionType {
 	return TransactionTypeNone
 }
 
-func CompactTransactions(transactions []Transaction) (Transaction, error) {
+func CompactTransactions(transactions []Transaction) Transaction {
 	seenPaths := make(map[string]bool)
-	var reloadErrors []string
 
 	newTransaction := Transaction{Type: TransactionTypeNone}
 
@@ -98,7 +87,6 @@ func CompactTransactions(transactions []Transaction) (Transaction, error) {
 			}
 			file2, err := ReadAsFile(path)
 			if err != nil {
-				reloadErrors = append(reloadErrors, fmt.Sprintf("could not reload %s: %v", path, err))
 				continue
 			}
 			seenPaths[path] = true
@@ -118,10 +106,7 @@ func CompactTransactions(transactions []Transaction) (Transaction, error) {
 		}
 	}
 
-	if len(reloadErrors) > 0 {
-		return newTransaction, fmt.Errorf("reloaded context with errors: %s", strings.Join(reloadErrors, "; "))
-	}
-	return newTransaction, nil
+	return newTransaction
 }
 
 type TransactionType string
