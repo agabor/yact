@@ -31,6 +31,14 @@ func LoadContextForAct() ([]Transaction, error) {
 		lastPlan := strings.TrimSpace(getLastPlan(transactions))
 		if lastPlan != "" {
 			tx.Request = []string{lastPlan}
+
+			filteredContext := []CodeFile{}
+			for _, file := range tx.Context {
+				if strings.Contains(lastPlan, file.Path) {
+					filteredContext = append(filteredContext, file)
+				}
+			}
+			tx.Context = filteredContext
 		}
 		return []Transaction{tx}, nil
 	}
