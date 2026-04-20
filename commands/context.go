@@ -24,7 +24,7 @@ func HandleContextCommand() error {
 		fmt.Print(" - User: ")
 		fmt.Println()
 		for j, file := range transaction.Context {
-			fmt.Printf(" - [%d] %s", j, file.Path)
+			fmt.Printf(" - [%d] %s", j, file.Path())
 			fmt.Println()
 		}
 		for _, req := range transaction.Request {
