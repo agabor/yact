@@ -18,33 +18,27 @@ func LoadContext() (Transaction, error) {
 	}
 
 	content := string(data)
-	lines := strings.Split(strings.TrimSpace(content), "\n")
+	parts := strings.Split(content, separator)
 
 	transaction := Transaction{
 		Request: []string{},
 		Context: []string{},
 	}
 
-	separatorIndex := -1
-	for i, line := range lines {
-		if line == separator {
-			separatorIndex = i
-			break
+	if len(parts) > 0 {
+		contextLines := strings.Split(strings.TrimSpace(parts[0]), "\n")
+		for _, line := range contextLines {
+			if strings.TrimSpace(line) != "" {
+				transaction.Context = append(transaction.Context, line)
+			}
 		}
 	}
 
-	if separatorIndex == -1 {
-		return transaction, nil
-	}
-
-	for i := 0; i < separatorIndex; i++ {
-		if strings.TrimSpace(lines[i]) != "" {
-			transaction.Context = append(transaction.Context, lines[i])
+	if len(parts) > 1 {
+		requestContent := strings.TrimSpace(parts[1])
+		if requestContent != "" {
+			transaction.Request = []string{requestContent}
 		}
-	}
-
-	if separatorIndex+1 < len(lines) && strings.TrimSpace(lines[separatorIndex+1]) != "" {
-		transaction.Request = append(transaction.Request, lines[separatorIndex+1])
 	}
 
 	return transaction, nil
@@ -53,8 +47,8 @@ func LoadContext() (Transaction, error) {
 func SaveContext(transaction Transaction) error {
 	var builder strings.Builder
 
-	for _, contextPath := range transaction.Context {
-		builder.WriteString(contextPath)
+	for _, contextLine := range transaction.Context {
+		builder.WriteString(contextLine)
 		builder.WriteString("\n")
 	}
 
