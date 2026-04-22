@@ -39,7 +39,7 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 		return err
 	}
 
-	if err = logic.SaveTransaction(transaction); err != nil {
+	if err = logic.SaveContext(transaction); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemProm
 
 	transaction, err = callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
 
-	if err := logic.SaveTransaction(transaction); err != nil {
+	if err := logic.SaveContext(transaction); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 

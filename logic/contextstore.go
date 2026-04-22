@@ -8,34 +8,30 @@ import (
 
 const contextPath = ".yact"
 
-func LoadContext() ([]Transaction, error) {
+func LoadContext() (Transaction, error) {
 	data, err := os.ReadFile(contextPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []Transaction{}, nil
+			return Transaction{}, nil
 		}
-		return nil, err
+		return Transaction{}, err
 	}
 
-	var transactions []Transaction
-	if err := json.Unmarshal(data, &transactions); err != nil {
-		return nil, err
+	var transaction Transaction
+	if err := json.Unmarshal(data, &transaction); err != nil {
+		return Transaction{}, err
 	}
 
-	return transactions, nil
+	return transaction, nil
 }
 
-func SaveTransaction(transaction Transaction) error {
-	return SaveContext([]Transaction{transaction})
-}
-
-func SaveContext(transactions []Transaction) error {
+func SaveContext(transaction Transaction) error {
 	dir := filepath.Dir(contextPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
-	data, err := json.MarshalIndent(transactions, "", "  ")
+	data, err := json.MarshalIndent(transaction, "", "  ")
 	if err != nil {
 		return err
 	}
