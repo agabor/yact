@@ -26,13 +26,13 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error {
 	transaction, err := logic.LoadContext()
 	if err != nil {
 		return err
 	}
 
-	response, err := callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
+	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
 
 	transaction, err = processCodeBlocks(transaction, response)
 	if err != nil {
@@ -46,13 +46,13 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 	return nil
 }
 
-func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) error {
 	transaction, err := logic.LoadContext()
 	if err != nil {
 		return err
 	}
 
-	response, err := callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
+	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
 
 	transaction.Request = []string{response}
 
@@ -64,23 +64,19 @@ func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemProm
 	return nil
 }
 
-func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
+func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string) error {
 	transaction, err := logic.LoadContext()
 	if err != nil {
 		return err
 	}
 
-	response, err := callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
+	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
 
 	fmt.Println("\n" + response)
 	return nil
 }
 
-func callClaudeAPI(prompt string, transaction logic.Transaction, think bool, cfg *config.Config, systemPrompt string) (string, error) {
-
-	if strings.TrimSpace(prompt) != "" {
-		transaction.Request = append(transaction.Request, prompt)
-	}
+func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config, systemPrompt string) (string, error) {
 
 	fmt.Printf("Sending request to Claude...\n")
 

@@ -8,6 +8,7 @@ import (
 
 	"yact/commands"
 	"yact/config"
+	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -76,8 +77,8 @@ func main() {
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
 	case "act":
-		requireArgCount("act", commandArgs, 1)
-		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Act)
+		requireNoArgs("act", commandArgs)
+		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
 	case "snip":
 		requireArgCount("snip", commandArgs, 4)
 		inputFile := commandArgs[0]
@@ -94,20 +95,30 @@ func main() {
 		prompt := commandArgs[3]
 		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, systemprompt.Snip)
 	case "ask":
-		requireArgCount("ask", commandArgs, 1)
-		commandErr = commands.HandleAskCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Ask)
+		requireNoArgs("ask", commandArgs)
+		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, systemprompt.Ask)
 	case "plan":
-		requireArgCount("plan", commandArgs, 1)
-		commandErr = commands.HandlePlanCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Plan)
+		requireNoArgs("plan", commandArgs)
+		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, systemprompt.Plan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "step":
 		requireArgCount("step", commandArgs, 1)
-		prompt := "implement step " + commandArgs[0] + ". Make no other changes."
-		commandErr = commands.HandleActCommand(prompt, *thinkFlag, cfg, systemprompt.Act)
+		stepPrompt := "implement step " + commandArgs[0] + ". Make no other changes."
+		transaction, err := logic.LoadContext()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		transaction.Request = append([]string{stepPrompt}, transaction.Request...)
+		if err := logic.SaveContext(transaction); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
 	case "go":
 		requireNoArgs("go", commandArgs)
-		commandErr = commands.HandleActCommand("", *thinkFlag, cfg, systemprompt.Act)
+		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")

@@ -26,7 +26,7 @@ func HandleSnipCommand(inputFile string, startLine int, endLine int, prompt stri
 	transaction := logic.Transaction{
 		Request: []string{snippet, prompt},
 	}
-	response, err := callClaudeAPI("", transaction, think, cfg, systemPrompt)
+	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
