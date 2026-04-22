@@ -75,17 +75,6 @@ func main() {
 	case "config":
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
-	case "context":
-		requireNoArgs("context", commandArgs)
-		commandErr = commands.HandleContextCommand()
-	case "pop":
-		commandErr = commands.HandlePop(commandArgs)
-	case "reset":
-		requireNoArgs("reset", commandArgs)
-		commandErr = commands.HandleResetCommand()
-	case "restore":
-		requireNoArgs("restore", commandArgs)
-		commandErr = commands.HandleRestoreCommand()
 	case "act":
 		requireArgCount("act", commandArgs, 1)
 		commandErr = commands.HandleActCommand(commandArgs[0], *thinkFlag, cfg, systemprompt.Act)
