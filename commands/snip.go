@@ -31,7 +31,7 @@ func HandleSnipCommand(inputFile string, startLine int, endLine int, prompt stri
 		return err
 	}
 
-	codeblocks, _ := logic.ParseCodeBlocks(response)
+	codeblocks, _ := logic.ParseCodeFiles(response)
 
 	if len(codeblocks) == 0 {
 		return fmt.Errorf("no code blocks found in Claude's response")

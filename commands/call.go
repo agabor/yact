@@ -103,7 +103,7 @@ func callClaudeAPI(prompt string, transaction logic.Transaction, think bool, cfg
 
 func processCodeBlocks(transaction logic.Transaction, content string) (logic.Transaction, error) {
 	var parseErrors []string
-	codeblocks, text := logic.ParseCodeBlocks(content)
+	codeblocks, text := logic.ParseCodeFiles(content)
 
 	seenPaths := make(map[string]bool)
 	for _, filePath := range transaction.Context {

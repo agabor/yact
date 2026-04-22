@@ -148,7 +148,7 @@ func (cf *CodeFile) Write() error {
 	return nil
 }
 
-func ParseCodeBlocks(response string) ([]CodeFile, []string) {
+func ParseCodeFiles(response string) ([]CodeFile, []string) {
 	lines := strings.Split(response, "\n")
 	var codeFiles = make([]CodeFile, 0)
 	var lineBuffer = make([]string, 0)
