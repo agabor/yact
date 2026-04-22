@@ -15,7 +15,7 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	path    string
+	Path    string
 	Content string
 }
 
@@ -26,13 +26,9 @@ type codeFileJSON struct {
 
 func NewCodeFile(path, content string) CodeFile {
 	return CodeFile{
-		path:    strings.TrimPrefix(strings.TrimSpace(path), "./"),
+		Path:    strings.TrimPrefix(strings.TrimSpace(path), "./"),
 		Content: content,
 	}
-}
-
-func (f CodeFile) Path() string {
-	return f.path
 }
 
 func extractFilenameFromComment(line string) string {
@@ -115,7 +111,7 @@ func ReadAsFile(filePath string) (CodeFile, error) {
 }
 
 func (cf *CodeFile) Write() error {
-	filePath := cf.Path()
+	filePath := cf.Path
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)

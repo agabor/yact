@@ -36,7 +36,7 @@ func HandleReadCommand(args []string) error {
 				continue
 			}
 
-			transaction, err := logic.LoadContext()
+			transaction, err := logic.LoadTransaction()
 			if err != nil {
 				return err
 			}
@@ -50,7 +50,7 @@ func HandleReadCommand(args []string) error {
 
 			transaction.Context = append(transaction.Context, filePath)
 
-			err2 := logic.SaveContext(transaction)
+			err2 := transaction.Save()
 			if err2 != nil {
 				return err2
 			}

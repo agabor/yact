@@ -27,7 +27,7 @@ func showProgress(done chan bool) {
 }
 
 func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error {
-	transaction, err := logic.LoadContext()
+	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error
 		return err
 	}
 
-	if err = logic.SaveContext(transaction); err != nil {
+	if err = transaction.Save(); err != nil {
 		return err
 	}
 
@@ -47,7 +47,7 @@ func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error
 }
 
 func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) error {
-	transaction, err := logic.LoadContext()
+	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) erro
 
 	transaction.Request = []string{response}
 
-	if err := logic.SaveContext(transaction); err != nil {
+	if err := transaction.Save(); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
@@ -65,7 +65,7 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) erro
 }
 
 func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string) error {
-	transaction, err := logic.LoadContext()
+	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
 	}
@@ -112,9 +112,9 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 		} else {
-			if !seenPaths[codeBlock.Path()] {
-				seenPaths[codeBlock.Path()] = true
-				transaction.Context = append(transaction.Context, codeBlock.Path())
+			if !seenPaths[codeBlock.Path] {
+				seenPaths[codeBlock.Path] = true
+				transaction.Context = append(transaction.Context, codeBlock.Path)
 			}
 		}
 	}

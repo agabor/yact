@@ -105,13 +105,13 @@ func main() {
 	case "step":
 		requireArgCount("step", commandArgs, 1)
 		stepPrompt := "implement step " + commandArgs[0] + ". Make no other changes."
-		transaction, err := logic.LoadContext()
+		transaction, err := logic.LoadTransaction()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 		transaction.Request = append([]string{stepPrompt}, transaction.Request...)
-		if err := logic.SaveContext(transaction); err != nil {
+		if err := transaction.Save(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

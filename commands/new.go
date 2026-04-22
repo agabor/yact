@@ -6,7 +6,8 @@ import (
 )
 
 func HandleNewCommand() error {
-	err := logic.SaveContext(logic.Transaction{})
+	tx := logic.Transaction{}
+	err := tx.Save()
 	fmt.Println("New context created")
 	return err
 }
