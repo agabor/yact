@@ -18,5 +18,9 @@ func Serialize(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return strings.Join([]string{logic.BlockDelimiter, "//" + path, string(content), logic.BlockDelimiter}, "\n"), nil
+	delimiter := "//"
+	if strings.HasSuffix(path, ".sh") {
+		delimiter = "#"
+	}
+	return strings.Join([]string{logic.BlockDelimiter, delimiter + path, string(content), logic.BlockDelimiter}, "\n"), nil
 }
