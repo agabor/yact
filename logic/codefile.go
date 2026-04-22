@@ -124,10 +124,6 @@ func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (cf *CodeFile) Serialize() string {
-	return joinLines([]string{BlockDelimiter, "//" + cf.Path(), cf.Content, BlockDelimiter})
-}
-
 func ReadAsFile(filePath string) (CodeFile, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
