@@ -84,10 +84,12 @@ func (c *ClaudeClient) Call(transactions []logic.Transaction, think bool, system
 
 	messageParams := make([]anthropic.MessageParam, 0)
 
+	fileCount := 0
 	for _, tx := range transactions {
 		blocks := make([]anthropic.ContentBlockParamUnion, 0)
 		for _, file := range tx.Context {
 			blocks = append(blocks, anthropic.NewTextBlock(file.Serialize()))
+			fileCount += 1
 		}
 		for _, prompt := range tx.Request {
 			blocks = append(blocks, anthropic.NewTextBlock(prompt))
@@ -124,7 +126,7 @@ func (c *ClaudeClient) Call(transactions []logic.Transaction, think bool, system
 		}
 	}
 
-	fmt.Printf("Calling Claude with %d messages\n", len(messageParams))
+	fmt.Printf("Calling Claude with %d messages (%d files)\n", len(messageParams), fileCount)
 
 	message, err := client.Messages.New(context.Background(), params)
 
