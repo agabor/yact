@@ -17,7 +17,6 @@ func ShowHelp() {
 	fmt.Println("  y accept                # Accept last plan as user message")
 	fmt.Println("  y read <file>           # Add file reference to prompt")
 	fmt.Println("  y new                   # Create a new context")
-	fmt.Println("  y last                  # Show last AI response")
 	fmt.Println("  y config                # Show current configuration")
 	fmt.Println("  y config <key> <value>  # Set configuration value")
 	fmt.Println()
