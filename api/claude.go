@@ -73,9 +73,9 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return inputCost + outputCost
 }
 
-func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (logic.Transaction, error) {
+func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
 	if c.apiKey == "" {
-		return transaction, fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
+		return "", fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
 	}
 
 	startTime := time.Now()
@@ -97,17 +97,6 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		Role:    anthropic.MessageParamRoleUser,
 		Content: blocks,
 	})
-	blocks = make([]anthropic.ContentBlockParamUnion, 0)
-	if strings.TrimSpace(transaction.Response) != "" {
-		if strings.TrimSpace(transaction.ResponseThinkingSignature) != "" && strings.TrimSpace(transaction.ResponseThinking) != "" {
-			blocks = append(blocks, anthropic.NewThinkingBlock(transaction.ResponseThinkingSignature, transaction.ResponseThinking))
-		}
-		blocks = append(blocks, anthropic.NewTextBlock(transaction.Response))
-		messageParams = append(messageParams, anthropic.MessageParam{
-			Role:    anthropic.MessageParamRoleAssistant,
-			Content: blocks,
-		})
-	}
 	params := anthropic.MessageNewParams{
 		Model:     c.model,
 		MaxTokens: int64(c.maxOutputTokens),
@@ -129,7 +118,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 	message, err := client.Messages.New(context.Background(), params)
 
 	if err != nil {
-		return transaction, fmt.Errorf("error calling Claude API: %w", err)
+		return "", fmt.Errorf("error calling Claude API: %w", err)
 	}
 
 	duration := time.Since(startTime)
@@ -140,12 +129,10 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 
 	var responseText string
 	var thinkingText string
-	var thinkingSignature string
 
 	for _, block := range message.Content {
 		if block.Type == "thinking" {
 			thinkingText = block.Thinking
-			thinkingSignature = block.Signature
 		} else {
 			responseText += block.Text
 		}
@@ -164,13 +151,5 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
 	}
 
-	transaction.Response = responseText
-	transaction.ResponseThinking = thinkingText
-	transaction.ResponseThinkingSignature = thinkingSignature
-
-	if strings.TrimSpace(responseText) == "" {
-		return transaction, fmt.Errorf("error: empty response from Claude API")
-	}
-
-	return transaction, nil
+	return strings.TrimSpace(responseText), nil
 }

@@ -8,5 +8,5 @@ import (
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(transaction logic.Transaction, think bool, systemPrompt string) (logic.Transaction, error)
+	Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error)
 }
