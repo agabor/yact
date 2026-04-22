@@ -131,21 +131,22 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		message.Usage.InputTokens,
 		message.Usage.OutputTokens)
 
-	var responseText string
+	var responseText strings.Builder
 	var thinkingText string
 
 	for _, block := range message.Content {
 		if block.Type == "thinking" {
 			thinkingText = block.Thinking
 		} else {
-			responseText += block.Text
+			responseText.WriteString(block.Text)
 		}
 	}
 
 	if thinkingText != "" {
 		fmt.Println("\n=== Claude's Thinking ===")
 		fmt.Println(thinkingText)
-		fmt.Println("===\n")
+		fmt.Println("===")
+		fmt.Println("")
 	}
 
 	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
@@ -155,5 +156,5 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
 	}
 
-	return strings.TrimSpace(responseText), nil
+	return strings.TrimSpace(responseText.String()), nil
 }
