@@ -35,6 +35,7 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Skipping directory: %s\n", filePath)
 				continue
 			}
+
 			transaction, err := logic.LoadContext()
 			if err != nil {
 				return err
@@ -47,12 +48,7 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Reading: %s\n", filePath)
 			}
 
-			file, err := logic.ReadAsFile(filePath)
-			if err != nil {
-				return err
-			}
-
-			transaction.Context = append(transaction.Context, file)
+			transaction.Context = append(transaction.Context, filePath)
 
 			err2 := logic.SaveContext(transaction)
 			if err2 != nil {
@@ -65,8 +61,8 @@ func HandleReadCommand(args []string) error {
 }
 
 func hasFileWithPath(transaction logic.Transaction, path string) bool {
-	for _, file := range transaction.Context {
-		if file.Path() == path {
+	for _, contextPath := range transaction.Context {
+		if contextPath == path {
 			return true
 		}
 	}

@@ -13,9 +13,10 @@ type Client interface {
 	Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error)
 }
 
-func Serialize(path string) string {
+func Serialize(path string) (string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
+		return "", err
 	}
-	return strings.Join([]string{logic.BlockDelimiter, "//" + path, string(content), logic.BlockDelimiter}, "\n")
+	return strings.Join([]string{logic.BlockDelimiter, "//" + path, string(content), logic.BlockDelimiter}, "\n"), nil
 }

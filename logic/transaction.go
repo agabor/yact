@@ -4,5 +4,5 @@ type TransactionType string
 
 type Transaction struct {
 	Request []string
-	Context []CodeFile
+	Context []string
 }

@@ -86,8 +86,12 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 
 	fileCount := 0
 	blocks := make([]anthropic.ContentBlockParamUnion, 0)
-	for _, file := range transaction.Context {
-		blocks = append(blocks, anthropic.NewTextBlock(Serialize(file.Path())))
+	for _, filePath := range transaction.Context {
+		fileContent, err := Serialize(filePath)
+		if err != nil {
+			return "", err
+		}
+		blocks = append(blocks, anthropic.NewTextBlock(fileContent))
 		fileCount += 1
 	}
 	for _, prompt := range transaction.Request {

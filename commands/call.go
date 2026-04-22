@@ -106,8 +106,8 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 	codeblocks, text := logic.ParseCodeBlocks(content)
 
 	seenPaths := make(map[string]bool)
-	for _, file := range transaction.Context {
-		seenPaths[file.Path()] = true
+	for _, filePath := range transaction.Context {
+		seenPaths[filePath] = true
 	}
 
 	for _, codeBlock := range codeblocks {
@@ -118,7 +118,7 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 		} else {
 			if !seenPaths[codeBlock.Path()] {
 				seenPaths[codeBlock.Path()] = true
-				transaction.Context = append(transaction.Context, codeBlock)
+				transaction.Context = append(transaction.Context, codeBlock.Path())
 			}
 		}
 	}
