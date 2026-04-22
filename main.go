@@ -8,7 +8,6 @@ import (
 
 	"yact/commands"
 	"yact/config"
-	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -102,23 +101,6 @@ func main() {
 		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, systemprompt.Plan)
 	case "new":
 		commandErr = commands.HandleNewCommand()
-	case "step":
-		requireArgCount("step", commandArgs, 1)
-		stepPrompt := "implement step " + commandArgs[0] + ". Make no other changes."
-		transaction, err := logic.LoadTransaction()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		transaction.Request = append([]string{stepPrompt}, transaction.Request...)
-		if err := transaction.Save(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
-	case "go":
-		requireNoArgs("go", commandArgs)
-		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")
