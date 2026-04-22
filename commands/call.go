@@ -34,11 +34,16 @@ func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPromp
 
 	transaction, err = callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
 
-	if err = logic.SaveTransaction(transaction); err != nil {
-		fmt.Printf("Warning: could not save context: %v\n", err)
+	transaction, err = processCodeBlocks(transaction)
+	if err != nil {
+		return err
 	}
 
-	return processCodeBlocks(transaction.Response)
+	if err = logic.SaveTransaction(transaction); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
@@ -94,14 +99,25 @@ func callClaudeAPI(prompt string, transaction logic.Transaction, think bool, cfg
 	return transaction, err
 }
 
-func processCodeBlocks(content string) error {
-	fmt.Println("Processing response...")
+func processCodeBlocks(transaction logic.Transaction) (logic.Transaction, error) {
 	var parseErrors []string
-	codeblocks, text := logic.ParseCodeBlocks(content)
+	codeblocks, text := logic.ParseCodeBlocks(transaction.Response)
+
+	seenPaths := make(map[string]bool)
+	for _, file := range transaction.Context {
+		seenPaths[file.Path()] = true
+	}
+
 	for _, codeBlock := range codeblocks {
 		err := codeBlock.Write()
+
 		if err != nil {
 			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+		} else {
+			if !seenPaths[codeBlock.Path()] {
+				seenPaths[codeBlock.Path()] = true
+				transaction.Context = append(transaction.Context, codeBlock)
+			}
 		}
 	}
 
@@ -114,9 +130,9 @@ func processCodeBlocks(content string) error {
 	}
 
 	if len(parseErrors) > 0 {
-		return fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
+		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 
 	fmt.Println("Done!")
-	return nil
+	return transaction, nil
 }
