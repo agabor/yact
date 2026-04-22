@@ -23,19 +23,16 @@ func HandleSnipCommand(inputFile string, startLine int, endLine int, prompt stri
 		return err
 	}
 
-	transactions := []logic.Transaction{
-		{
-			Request:  []string{snippet, prompt},
-			Response: "",
-		},
+	transaction := logic.Transaction{
+		Request:  []string{snippet, prompt},
+		Response: "",
 	}
-
-	transactions, err = callClaudeAPI("", transactions, think, cfg, systemPrompt)
+	transaction, err = callClaudeAPI("", transaction, think, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
 
-	response := transactions[len(transactions)-1].Response
+	response := transaction.Response
 	codeblocks, _ := logic.ParseCodeBlocks(response)
 
 	if len(codeblocks) == 0 {

@@ -27,59 +27,52 @@ func showProgress(done chan bool) {
 }
 
 func HandleActCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForAct()
+	transaction, err := logic.LoadContextForAct()
 	if err != nil {
 		return err
 	}
 
-	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
+	transaction, err = callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
 
-	if err = logic.SaveContext(transactions); err != nil {
+	if err = logic.SaveTransaction(transaction); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
-	return processCodeBlocks(transactions[len(transactions)-1].Response)
+	return processCodeBlocks(transaction.Response)
 }
 
 func HandlePlanCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForPlan()
+	transaction, err := logic.LoadContextForPlan()
 	if err != nil {
 		return err
 	}
 
-	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
+	transaction, err = callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
 
-	if err := logic.SaveContext(transactions); err != nil {
+	if err := logic.SaveTransaction(transaction); err != nil {
 		fmt.Printf("Warning: could not save context: %v\n", err)
 	}
 
-	fmt.Println("\n" + transactions[len(transactions)-1].Response)
+	fmt.Println("\n" + transaction.Response)
 	return nil
 }
 
 func HandleAskCommand(prompt string, think bool, cfg *config.Config, systemPrompt string) error {
-	transactions, err := logic.LoadContextForQuestion()
+	transaction, err := logic.LoadContextForQuestion()
 	if err != nil {
 		return err
 	}
 
-	transactions, err = callClaudeAPI(prompt, transactions, think, cfg, systemPrompt)
+	transaction, err = callClaudeAPI(prompt, transaction, think, cfg, systemPrompt)
 
-	fmt.Println("\n" + transactions[len(transactions)-1].Response)
+	fmt.Println("\n" + transaction.Response)
 	return nil
 }
 
-func appendPromptToTransactions(prompt string, transactions []logic.Transaction) []logic.Transaction {
-	tx := transactions[len(transactions)-1]
-	tx.Request = append(tx.Request, prompt)
-	transactions[len(transactions)-1] = tx
-	return transactions
-}
-
-func callClaudeAPI(prompt string, transactions []logic.Transaction, think bool, cfg *config.Config, systemPrompt string) ([]logic.Transaction, error) {
+func callClaudeAPI(prompt string, transaction logic.Transaction, think bool, cfg *config.Config, systemPrompt string) (logic.Transaction, error) {
 
 	if strings.TrimSpace(prompt) != "" {
-		transactions = appendPromptToTransactions(prompt, transactions)
+		transaction.Request = append(transaction.Request, prompt)
 	}
 
 	fmt.Printf("Sending request to Claude...\n")
@@ -93,12 +86,12 @@ func callClaudeAPI(prompt string, transactions []logic.Transaction, think bool, 
 	done := make(chan bool)
 	go showProgress(done)
 
-	transactions, err := client.Call(transactions, think, systemPrompt)
+	transaction, err := client.Call(transaction, think, systemPrompt)
 
 	done <- true
 	close(done)
 
-	return transactions, err
+	return transaction, err
 }
 
 func processCodeBlocks(content string) error {

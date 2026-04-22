@@ -4,57 +4,44 @@ import (
 	"strings"
 )
 
-func LoadContextForPlan() ([]Transaction, error) {
+func LoadContextForPlan() (Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
-		return nil, err
+		return Transaction{Type: TransactionTypePlan}, err
 	}
+	tx := CompactTransactions(transactions)
+	tx.Type = TransactionTypePlan
 
-	if TransactionTypeAct == getType(transactions) {
-		tx := CompactTransactions(transactions)
-		tx.Type = TransactionTypePlan
-		return []Transaction{tx}, nil
-	}
-
-	return prepareNewTransaction(TransactionTypePlan, transactions)
+	return tx, nil
 }
 
-func LoadContextForAct() ([]Transaction, error) {
+func LoadContextForAct() (Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
-		return nil, err
+		return Transaction{Type: TransactionTypeAct}, err
 	}
 
+	tx := CompactTransactions(transactions)
+	tx.Type = TransactionTypeAct
+
 	if TransactionTypePlan == getType(transactions) {
-		tx := CompactTransactions(transactions)
-		tx.Type = TransactionTypeAct
 		lastPlan := strings.TrimSpace(getLastPlan(transactions))
 		if lastPlan != "" {
 			tx.Request = []string{lastPlan}
 		}
-		return []Transaction{tx}, nil
 	}
 
-	return prepareNewTransaction(TransactionTypeAct, transactions)
+	return tx, nil
 }
 
-func prepareNewTransaction(t TransactionType, transactions []Transaction) ([]Transaction, error) {
-	if len(transactions) > 0 && transactions[len(transactions)-1].Type == TransactionTypeNone {
-		transactions[len(transactions)-1].Type = t
-		return transactions, nil
-	}
-
-	return append(transactions, Transaction{Type: TransactionTypePlan}), nil
-}
-
-func LoadContextForQuestion() ([]Transaction, error) {
+func LoadContextForQuestion() (Transaction, error) {
 	transactions, err := LoadContext()
 	if err != nil {
-		return nil, err
+		return Transaction{Type: TransactionTypeQuestion}, err
 	}
 	tx := CompactTransactions(transactions)
 	tx.Type = TransactionTypeQuestion
-	return []Transaction{tx}, nil
+	return tx, nil
 }
 
 func getLastPlan(transactions []Transaction) string {

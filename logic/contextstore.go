@@ -25,6 +25,10 @@ func LoadContext() ([]Transaction, error) {
 	return transactions, nil
 }
 
+func SaveTransaction(transaction Transaction) error {
+	return SaveContext([]Transaction{transaction})
+}
+
 func SaveContext(transactions []Transaction) error {
 	dir := filepath.Dir(contextPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
