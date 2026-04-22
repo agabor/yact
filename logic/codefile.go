@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,24 +33,6 @@ func NewCodeFile(path, content string) CodeFile {
 
 func (f CodeFile) Path() string {
 	return f.path
-}
-
-func (cf CodeFile) MarshalJSON() ([]byte, error) {
-	jsonData := codeFileJSON{
-		Path:    cf.path,
-		Content: cf.Content,
-	}
-	return json.Marshal(jsonData)
-}
-
-func (cf *CodeFile) UnmarshalJSON(data []byte) error {
-	jsonData := codeFileJSON{}
-	if err := json.Unmarshal(data, &jsonData); err != nil {
-		return err
-	}
-	cf.path = jsonData.Path
-	cf.Content = jsonData.Content
-	return nil
 }
 
 func extractFilenameFromComment(line string) string {
