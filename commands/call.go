@@ -33,6 +33,9 @@ func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error
 	}
 
 	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
+	if err != nil {
+		return err
+	}
 
 	transaction, err = processCodeBlocks(transaction, response)
 	if err != nil {
@@ -53,11 +56,14 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) erro
 	}
 
 	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
+	if err != nil {
+		return err
+	}
 
 	transaction.Request = []string{response}
 
 	if err := transaction.Save(); err != nil {
-		fmt.Printf("Warning: could not save context: %v\n", err)
+		return err
 	}
 
 	fmt.Println("\n" + response)
