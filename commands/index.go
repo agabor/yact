@@ -1,0 +1,164 @@
+package commands
+
+import (
+	"fmt"
+	"strings"
+	"regexp"
+	"yact/api"
+	"yact/config"
+	"yact/config/systemprompt"
+	"yact/logic"
+)
+
+func HandleIndexCommand(cfg *config.Config) error {
+	indexFile := "yact-index.txt"
+
+	fmt.Println("Loading existing index...")
+	indexedFiles, err := logic.LoadIndex(indexFile)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Loaded %d entries from index\n", len(indexedFiles))
+
+	fmt.Println("Scanning disk for files...")
+	diskFiles, err := logic.GetAllFiles([]string{"yact-index.txt"})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Found %d file(s) on disk\n", len(diskFiles))
+
+	newCount := 0
+	updatedCount := 0
+	indexMap := make(map[string]string)
+	for _, entry := range indexedFiles {
+		indexMap[entry.Path] = entry.Checksum
+	}
+
+	for _, diskFile := range diskFiles {
+		if oldChecksum, exists := indexMap[diskFile.Path]; exists {
+			if oldChecksum != diskFile.Checksum {
+				updatedCount++
+			}
+		} else {
+			newCount++
+		}
+	}
+
+	fmt.Printf("New files: %d\n", newCount)
+	fmt.Printf("Updated files: %d\n", updatedCount)
+
+	mergedEntries := logic.MergeIndex(diskFiles, indexedFiles)
+
+	fmt.Println("Fetching file descriptions...")
+	mergedEntries, err = GetFileDescriptions(mergedEntries, cfg)
+	if err != nil {
+		fmt.Printf("Warning: Could not fetch descriptions: %v\n", err)
+	}
+
+	fmt.Println("Saving index...")
+	if err := logic.SaveIndex(indexFile, mergedEntries); err != nil {
+		return err
+	}
+
+	describedCount := 0
+	for _, entry := range mergedEntries {
+		if entry.Description != "" {
+			describedCount++
+		}
+	}
+
+	fmt.Printf("Index updated: %s (%d total entries, %d with descriptions)\n", indexFile, len(mergedEntries), describedCount)
+	return nil
+}
+
+func GetFileDescriptions(entries []logic.FileEntry, cfg *config.Config) ([]logic.FileEntry, error) {
+	if len(entries) == 0 {
+		return entries, nil
+	}
+
+	filePaths := make([]string, 0)
+	for _, entry := range entries {
+		if entry.Description == "" {
+			filePaths = append(filePaths, entry.Path)
+		}
+	}
+
+	if len(filePaths) == 0 {
+		return entries, nil
+	}
+
+	fmt.Printf("Fetching descriptions for %d file(s)...\n", len(filePaths))
+
+	transaction := logic.Transaction{
+		Context: filePaths,
+		Request: []string{"Provide descriptions for these files."},
+	}
+
+	var client api.Client
+	client = &api.ClaudeClient{}
+	client.Init(cfg)
+
+	response, err := client.Call(transaction, false, systemprompt.Describe)
+	if err != nil {
+		return entries, fmt.Errorf("error fetching descriptions: %w", err)
+	}
+
+	descriptionMap := parseDescriptions(response)
+
+	updatedEntries := make([]logic.FileEntry, 0)
+	for _, entry := range entries {
+		if desc, exists := descriptionMap[entry.Path]; exists && desc != "" {
+			entry.Description = desc
+		}
+		updatedEntries = append(updatedEntries, entry)
+	}
+
+	return updatedEntries, nil
+}
+
+func parseDescriptions(response string) map[string]string {
+	descriptionMap := make(map[string]string)
+
+	lines := strings.Split(response, "\n")
+	i := 0
+	for i < len(lines) {
+		currentLine := strings.TrimSpace(lines[i])
+
+		if currentLine == "" {
+			i++
+			continue
+		}
+
+		filePath := currentLine
+		if !isValidFilePath(filePath) {
+			i++
+			continue
+		}
+
+		i++
+		if i >= len(lines) {
+			break
+		}
+
+		descriptionLine := strings.TrimSpace(lines[i])
+		if descriptionLine != "" && !isValidFilePath(descriptionLine) {
+			descriptionMap[filePath] = descriptionLine
+		}
+
+		i++
+	}
+
+	return descriptionMap
+}
+
+func isValidFilePath(str string) bool {
+	if str == "" || strings.HasPrefix(str, " ") || strings.HasSuffix(str, " ") {
+		return false
+	}
+
+	if regexp.MustCompile(`^[a-zA-Z0-9._\-/]+$`).MatchString(str) {
+		return true
+	}
+
+	return false
+}
