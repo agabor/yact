@@ -129,7 +129,7 @@ func parseDescriptions(response string) map[string]string {
 			continue
 		}
 
-		filePath := currentLine
+		filePath := unquoteString(currentLine)
 		if !isValidFilePath(filePath) {
 			i++
 			continue
@@ -142,7 +142,7 @@ func parseDescriptions(response string) map[string]string {
 
 		descriptionLine := strings.TrimSpace(lines[i])
 		if descriptionLine != "" && !isValidFilePath(descriptionLine) {
-			descriptionMap[filePath] = descriptionLine
+			descriptionMap[filePath] = unquoteString(descriptionLine)
 		}
 
 		i++
@@ -161,4 +161,11 @@ func isValidFilePath(str string) bool {
 	}
 
 	return false
+}
+
+func unquoteString(s string) string {
+	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") && len(s) >= 2 {
+		return s[1 : len(s)-1]
+	}
+	return s
 }

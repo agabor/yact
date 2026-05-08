@@ -36,11 +36,11 @@ func LoadIndex(filename string) ([]FileEntry, error) {
 		parts := strings.SplitN(line, "  ", 3)
 		if len(parts) >= 2 {
 			entry := FileEntry{
-				Path:     parts[1],
+				Path:     unquoteString(parts[1]),
 				Checksum: parts[0],
 			}
 			if len(parts) == 3 {
-				entry.Description = parts[2]
+				entry.Description = unquoteString(parts[2])
 			}
 			entries = append(entries, entry)
 		}
@@ -173,13 +173,24 @@ func SaveIndex(filename string, entries []FileEntry) error {
 	for _, entry := range entries {
 		builder.WriteString(entry.Checksum)
 		builder.WriteString("  ")
-		builder.WriteString(entry.Path)
+		builder.WriteString(quoteString(entry.Path))
 		if entry.Description != "" {
 			builder.WriteString("  ")
-			builder.WriteString(entry.Description)
+			builder.WriteString(quoteString(entry.Description))
 		}
 		builder.WriteString("\n")
 	}
 
 	return os.WriteFile(filename, []byte(builder.String()), 0644)
+}
+
+func quoteString(s string) string {
+	return "\"" + s + "\""
+}
+
+func unquoteString(s string) string {
+	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") && len(s) >= 2 {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
