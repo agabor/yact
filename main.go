@@ -99,6 +99,9 @@ func main() {
 	case "plan":
 		requireNoArgs("plan", commandArgs)
 		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, systemprompt.Plan)
+	case "index":
+		requireNoArgs("index", commandArgs)
+		commandErr = commands.HandleIndexCommand(cfg)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	default:

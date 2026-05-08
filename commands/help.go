@@ -12,6 +12,7 @@ func ShowHelp() {
 	fmt.Println("  y ask [question]        # Ask questions about the codebase")
 	fmt.Println("  y plan [prompt]         # Get a plan for implementation")
 	fmt.Println("  y read <file>           # Add file reference to prompt")
+	fmt.Println("  y index                 # Build/update project file index with descriptions")
 	fmt.Println("  y new                   # Create a new context")
 	fmt.Println("  y config                # Show current configuration")
 	fmt.Println("  y config <key> <value>  # Set configuration value")
