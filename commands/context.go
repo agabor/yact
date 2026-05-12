@@ -3,10 +3,9 @@ package commands
 import (
 	"fmt"
 	"strings"
-	"yact/config"
-	"yact/config/systemprompt"
-	"yact/logic"
 	"yact/api"
+	"yact/config"
+	"yact/logic"
 )
 
 func HandleContextCommand(cfg *config.Config) error {
@@ -66,7 +65,12 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 	client = &api.ClaudeClient{}
 	client.Init(cfg)
 
-	response, err := client.Call(transaction, false, systemprompt.ContextDiscovery)
+	discoveryPrompt, err := config.LoadPrompt("discover")
+	if err != nil {
+		return nil, fmt.Errorf("error loading system prompt: %w", err)
+	}
+
+	response, err := client.Call(transaction, false, discoveryPrompt)
 	if err != nil {
 		return nil, fmt.Errorf("error discovering relevant files: %w", err)
 	}

@@ -2,11 +2,10 @@ package commands
 
 import (
 	"fmt"
-	"strings"
 	"regexp"
+	"strings"
 	"yact/api"
 	"yact/config"
-	"yact/config/systemprompt"
 	"yact/logic"
 )
 
@@ -98,7 +97,12 @@ func GetFileDescriptions(entries []logic.FileEntry, cfg *config.Config) ([]logic
 	client = &api.ClaudeClient{}
 	client.Init(cfg)
 
-	response, err := client.Call(transaction, false, systemprompt.Describe)
+	describePrompt, err := config.LoadPrompt("describe")
+	if err != nil {
+		return entries, fmt.Errorf("error loading system prompt: %w", err)
+	}
+
+	response, err := client.Call(transaction, false, describePrompt)
 	if err != nil {
 		return entries, fmt.Errorf("error fetching descriptions: %w", err)
 	}
