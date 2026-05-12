@@ -34,6 +34,23 @@ func getConfigFile() (string, error) {
 	}
 	return filepath.Join(dir, "config"), nil
 }
+
+func getPromptsDir() (string, error) {
+	dir, err := getConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "systemprompts"), nil
+}
+
+func getPromptFile(name string) (string, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, name+".txt"), nil
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
@@ -87,4 +104,18 @@ func (c *Config) Save() error {
 	}
 
 	return os.WriteFile(configFile, data, 0644)
+}
+
+func LoadPrompt(name string) (string, error) {
+	promptFile, err := getPromptFile(name)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(promptFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }

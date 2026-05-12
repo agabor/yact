@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"yact/config/systemprompt"
 
 	"yact/commands"
 	"yact/config"
@@ -77,7 +76,12 @@ func main() {
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
 	case "act":
 		requireNoArgs("act", commandArgs)
-		commandErr = commands.HandleActCommand(*thinkFlag, cfg, systemprompt.Act)
+		actPrompt, err := config.LoadPrompt("act")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading act prompt: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandleActCommand(*thinkFlag, cfg, actPrompt)
 	case "snip":
 		requireArgCount("snip", commandArgs, 4)
 		inputFile := commandArgs[0]
@@ -92,13 +96,28 @@ func main() {
 			os.Exit(1)
 		}
 		prompt := commandArgs[3]
-		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, systemprompt.Snip)
+		snippetPrompt, err := config.LoadPrompt("snip")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading snip prompt: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, snippetPrompt)
 	case "ask":
 		requireNoArgs("ask", commandArgs)
-		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, systemprompt.Ask)
+		askPrompt, err := config.LoadPrompt("ask")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading ask prompt: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt)
 	case "plan":
 		requireNoArgs("plan", commandArgs)
-		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, systemprompt.Plan)
+		planPrompt, err := config.LoadPrompt("plan")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading plan prompt: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt)
 	case "context":
 		requireNoArgs("context", commandArgs)
 		commandErr = commands.HandleContextCommand(cfg)
