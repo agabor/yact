@@ -35,6 +35,7 @@ func requireNoArgs(command string, args []string) {
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
+	noWriteFlag := flag.BoolP("no-write", "nw", false, "Do not write files, print response instead")
 
 	flag.Parse()
 
@@ -81,7 +82,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading act prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleActCommand(*thinkFlag, cfg, actPrompt)
+		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt)
 	case "snip":
 		requireArgCount("snip", commandArgs, 4)
 		inputFile := commandArgs[0]

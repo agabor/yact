@@ -26,7 +26,7 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error {
+func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string) error {
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -35,6 +35,11 @@ func HandleActCommand(think bool, cfg *config.Config, systemPrompt string) error
 	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
 	if err != nil {
 		return err
+	}
+
+	if noWrite {
+		fmt.Println("\n" + response)
+		return nil
 	}
 
 	transaction, err = processCodeBlocks(transaction, response)
