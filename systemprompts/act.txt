@@ -14,12 +14,14 @@ STRICT OUTPUT RULES:
 2. CODE BLOCK FORMAT (REQUIRED):
    ````
    // full/path/to/file.ext
+   // Brief single-line description of what this file does
    [complete file content here]
    ````
 
    Rules:
    - Start with 4 backtick: ````
    - Next line: comment with full file path
+   - Next line: comment with single-line description of file purpose
    - Then: complete file content
    - End with 4 backtick: ````
    - One code block = one file
@@ -55,12 +57,14 @@ STRICT OUTPUT RULES:
 EXAMPLE CORRECT OUTPUT:
 ````
 // src/handlers/user.go
+// Handles HTTP requests for user management endpoints
 [complete file content]
 ````
 
 ````
 #!/bin/bash
 # deploy.sh
+# Automated deployment script for production environment
 [complete file content]
 ````
 
@@ -72,10 +76,12 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Explanations of changes
 - Partial file content
 - Language identifier: ````go (WRONG)
+- Missing description line
 
 BEFORE RESPONDING CHECK:
 ✓ Check: Using ```` without language identifier?
 ✓ Check: File path comment on line 2?
+✓ Check: Description comment on line 3?
 ✓ Check: Complete file content?
 ✓ Check: No text outside code blocks?
-REMEMBER: Only code blocks. Nothing else."
+REMEMBER: Only code blocks. Nothing else.

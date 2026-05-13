@@ -35,7 +35,7 @@ func requireNoArgs(command string, args []string) {
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
-	noWriteFlag := flag.BoolP("no-write", "nw", false, "Do not write files, print response instead")
+	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
 
 	flag.Parse()
 
