@@ -15,8 +15,9 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	Path    string
-	Content string
+	Path        string
+	Content     string
+	Description string
 }
 
 type codeFileJSON struct {
@@ -31,7 +32,7 @@ func NewCodeFile(path, content string) CodeFile {
 	}
 }
 
-func extractFilenameFromComment(line string) string {
+func extractFilenameFromComment(line string) (string, string) {
 	patterns := []string{
 		`^\s*//\s*(.+?)(?:\s*//.*)?$`,
 		`^\s*#\s*(.+?)(?:\s*#.*)?$`,
@@ -45,19 +46,31 @@ func extractFilenameFromComment(line string) string {
 		re := regexp.MustCompile(pattern)
 		matches := re.FindStringSubmatch(line)
 		if len(matches) > 1 {
-			filename := strings.TrimSpace(matches[1])
-			if strings.Contains(filename, "!") {
+			extracted := strings.TrimSpace(matches[1])
+			if strings.Contains(extracted, "!") {
 				continue
 			}
-			filename = regexp.MustCompile(`\s*\*+/$`).ReplaceAllString(filename, "")
-			return filename
+			extracted = regexp.MustCompile(`\s*\*+/$`).ReplaceAllString(extracted, "")
+
+			var filename, description string
+			if strings.Contains(extracted, " - ") {
+				parts := strings.SplitN(extracted, " - ", 2)
+				filename = strings.TrimSpace(parts[0])
+				description = strings.TrimSpace(parts[1])
+			} else {
+				filename = extracted
+				description = ""
+			}
+
+			return filename, description
 		}
 	}
-	return ""
+	return "", ""
 }
 
 func linesToCodeFile(lines []string) CodeFile {
 	filePath := ""
+	description := ""
 	lineIndex := 0
 
 	for lineIndex < len(lines) && strings.TrimSpace(lines[lineIndex]) == "" {
@@ -69,9 +82,10 @@ func linesToCodeFile(lines []string) CodeFile {
 	}
 
 	if lineIndex < len(lines) {
-		extractedPath := extractFilenameFromComment(lines[lineIndex])
+		extractedPath, extractedDesc := extractFilenameFromComment(lines[lineIndex])
 		if extractedPath != "" {
 			filePath = extractedPath
+			description = extractedDesc
 			lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
 		}
 	}
@@ -94,7 +108,11 @@ func linesToCodeFile(lines []string) CodeFile {
 		}
 	}
 
-	return NewCodeFile(filePath, joinLines(lines))
+	return CodeFile{
+		Path:        strings.TrimPrefix(strings.TrimSpace(filePath), "./"),
+		Content:     joinLines(lines),
+		Description: description,
+	}
 }
 
 func joinLines(lines []string) string {
@@ -107,7 +125,10 @@ func ReadAsFile(filePath string) (CodeFile, error) {
 		return CodeFile{}, err
 	}
 
-	return NewCodeFile(filePath, string(content)), nil
+	return CodeFile{
+		Path:    filePath,
+		Content: string(content),
+	}, nil
 }
 
 func (cf *CodeFile) Write() error {
