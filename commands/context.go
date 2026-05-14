@@ -3,6 +3,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"yact/api"
 	"yact/config"
@@ -57,8 +58,13 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 
 	listingText := BuildFileListingText(fileListings)
 
+	context := []string{}
+	if _, err := os.Stat("devdocs.md"); err == nil {
+		context = append(context, "devdocs.md")
+	}
+
 	transaction := logic.Transaction{
-		Context: []string{},
+		Context: context,
 		Request: []string{listingText, taskPrompt},
 	}
 
