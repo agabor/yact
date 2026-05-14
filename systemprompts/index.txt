@@ -29,16 +29,7 @@ STRICT OUTPUT RULES:
    - Do NOT use quotes around the description
    - Do NOT add numbering (1. 2. 3. etc.)
 
-3. FILE SELECTION RULES:
-   Include these files:
-   - New files that would be created
-   - Existing files where code logic would change
-
-   Do NOT include:
-   - Files with no changes
-   - Files with only whitespace changes
-
-4. DESCRIPTION RULES:
+3. DESCRIPTION RULES:
    - Keep descriptions to a single line
    - Be specific about what the file does
    - Use plain language, no jargon

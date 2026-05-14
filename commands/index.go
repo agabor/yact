@@ -78,7 +78,7 @@ func GetFileDescriptions(entries []logic.FileEntry, cfg *config.Config) ([]logic
 	client = &api.ClaudeClient{}
 	client.Init(cfg)
 
-	describePrompt, err := config.LoadPrompt("describe")
+	describePrompt, err := config.LoadPrompt("index")
 	if err != nil {
 		return entries, fmt.Errorf("error loading system prompt: %w", err)
 	}

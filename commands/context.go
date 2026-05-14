@@ -66,7 +66,7 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 	client = &api.ClaudeClient{}
 	client.Init(cfg)
 
-	discoveryPrompt, err := config.LoadPrompt("discover")
+	discoveryPrompt, err := config.LoadPrompt("context")
 	if err != nil {
 		return nil, fmt.Errorf("error loading system prompt: %w", err)
 	}

@@ -52,15 +52,15 @@ func LoadIndex(filename string) ([]FileEntry, error) {
 func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 	var entries []FileEntry
 	var excludeDirs = map[string]bool{
-		".git":        true,
-		".yact":       true,
+		".git":         true,
+		".yact":        true,
 		"node_modules": true,
-		".venv":       true,
-		"venv":        true,
-		"__pycache__": true,
-		"target":      true,
-		"dist":        true,
-		"build":       true,
+		".venv":        true,
+		"venv":         true,
+		"__pycache__":  true,
+		"target":       true,
+		"dist":         true,
+		"build":        true,
 	}
 
 	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
@@ -70,7 +70,7 @@ func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 
 		baseName := filepath.Base(path)
 
-		if strings.HasPrefix(baseName, ".") && baseName != "." && baseName != ".." {
+		if strings.HasPrefix(baseName, ".") && baseName != "." {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -84,10 +84,7 @@ func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 			return nil
 		}
 
-		relPath := path
-		if strings.HasPrefix(relPath, "./") {
-			relPath = relPath[2:]
-		}
+		relPath := strings.TrimPrefix(path, "./")
 
 		shouldExclude := false
 		for _, pattern := range excludePatterns {
