@@ -2,15 +2,13 @@ api/claude.go,"Implements Claude API client with model selection, token cost cal
 api/client.go,Defines the Client interface and Serialize function for preparing files for API calls
 commands/call.go,"Handles code generation, planning, and question-answering commands with progress indicators"
 commands/config.go,Manages configuration settings for API keys and model parameters
-commands/context.go,Discovers relevant files for a task using AI analysis of file listings
+commands/context.go,Discovers relevant files for a given task using AI analysis and keyword matching
 commands/help.go,Displays command reference and usage information
 commands/index.go,Scans project files and generates descriptions using Claude API
 commands/new.go,Creates a new conversation context
 commands/read.go,Adds files to the current context using glob pattern matching
 commands/snip.go,Edits specific line ranges in files with AI-assisted code generation
 config/config.go,Loads and saves configuration from ~/.yact directory with JSON persistence
-go.mod
-go.sum
 logic/codefile.go,Parses code blocks from responses and extracts file paths and descriptions
 logic/index.go,Manages file indexing in CSV format with deduplication and sorting
 logic/transaction.go,Stores and retrieves conversation context and prompts from .yact file

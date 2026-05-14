@@ -1,9 +1,10 @@
-// Discovers relevant files for a given task using AI analysis
+// Discovers relevant files for a given task using AI analysis and keyword matching
 package commands
 
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"yact/api"
 	"yact/config"
@@ -31,12 +32,26 @@ func HandleContextCommand(cfg *config.Config) error {
 	taskPrompt := transaction.Request[0]
 
 	fmt.Println("Discovering relevant files for task...")
-	relevantPaths, err := DiscoverRelevantFiles(indexedFiles, taskPrompt, cfg)
+
+	keywords := extractKeywords(taskPrompt)
+	cleanPrompt := removeKeywordMarkers(taskPrompt)
+
+	keywordMatches := MatchKeywordFiles(indexedFiles, keywords)
+	if len(keywordMatches) > 0 {
+		fmt.Printf("Found %d file(s) by keyword matching\n", len(keywordMatches))
+		for _, path := range keywordMatches {
+			fmt.Printf("  - %s (keyword match)\n", path)
+		}
+	}
+
+	aiMatches, err := DiscoverRelevantFiles(indexedFiles, cleanPrompt, cfg)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Discovered %d relevant file(s)\n", len(relevantPaths))
+	relevantPaths := mergeAndDeduplicatePaths(append(keywordMatches, aiMatches...))
+
+	fmt.Printf("Discovered %d relevant file(s) total\n", len(relevantPaths))
 	for _, path := range relevantPaths {
 		fmt.Printf("  - %s\n", path)
 	}
@@ -86,6 +101,44 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 	return filePaths, nil
 }
 
+func MatchKeywordFiles(indexedFiles []logic.FileEntry, keywords []string) []string {
+	if len(keywords) == 0 {
+		return []string{}
+	}
+
+	keywordMap := make(map[string]bool)
+	for _, keyword := range keywords {
+		keywordMap[strings.ToLower(keyword)] = true
+	}
+
+	var matchedPaths []string
+	for _, entry := range indexedFiles {
+		description := strings.ToLower(entry.Description)
+		for keyword := range keywordMap {
+			if strings.Contains(description, keyword) {
+				matchedPaths = append(matchedPaths, entry.Path)
+				break
+			}
+		}
+	}
+
+	return matchedPaths
+}
+
+func mergeAndDeduplicatePaths(paths []string) []string {
+	seen := make(map[string]bool)
+	var merged []string
+
+	for _, path := range paths {
+		if !seen[path] {
+			seen[path] = true
+			merged = append(merged, path)
+		}
+	}
+
+	return merged
+}
+
 func BuildFileListingText(entries []logic.FileEntry) string {
 	var builder strings.Builder
 	for _, entry := range entries {
@@ -110,4 +163,22 @@ func parseFilePaths(response string) []string {
 	}
 
 	return filePaths
+}
+
+func extractKeywords(prompt string) []string {
+	re := regexp.MustCompile(`\[=([^=]+)=\]`)
+	matches := re.FindAllStringSubmatch(prompt, -1)
+
+	var keywords []string
+	for _, match := range matches {
+		if len(match) > 1 {
+			keywords = append(keywords, match[1])
+		}
+	}
+	return keywords
+}
+
+func removeKeywordMarkers(prompt string) string {
+	re := regexp.MustCompile(`\[=[^=]+=\]`)
+	return re.ReplaceAllString(prompt, "")
 }
