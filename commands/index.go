@@ -11,7 +11,7 @@ import (
 )
 
 func HandleIndexCommand(cfg *config.Config) error {
-	indexFile := "yact-index.txt"
+	indexFile := "yact-index.csv"
 
 	fmt.Println("Loading existing index...")
 	indexedFiles, err := logic.LoadIndex(indexFile)
@@ -21,7 +21,7 @@ func HandleIndexCommand(cfg *config.Config) error {
 	fmt.Printf("Loaded %d entries from index\n", len(indexedFiles))
 
 	fmt.Println("Scanning disk for files...")
-	diskFiles, err := logic.GetAllFiles([]string{"yact-index.txt"})
+	diskFiles, err := logic.GetAllFiles([]string{"yact-index.csv"})
 	if err != nil {
 		return err
 	}

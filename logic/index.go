@@ -2,6 +2,7 @@
 package logic
 
 import (
+	"encoding/csv"
 	"fmt"
 	"io/fs"
 	"os"
@@ -24,24 +25,27 @@ func LoadIndex(filename string) ([]FileEntry, error) {
 		return nil, err
 	}
 
+	reader := csv.NewReader(strings.NewReader(string(data)))
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
 	var entries []FileEntry
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
+	for _, record := range records {
+		if len(record) == 0 || record[0] == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "  ", 2)
-		if len(parts) >= 1 {
-			entry := FileEntry{
-				Path: unquoteString(parts[0]),
-			}
-			if len(parts) == 2 {
-				entry.Description = unquoteString(parts[1])
-			}
-			entries = append(entries, entry)
+
+		entry := FileEntry{
+			Path: record[0],
 		}
+		if len(record) > 1 {
+			entry.Description = record[1]
+		}
+		entries = append(entries, entry)
 	}
+
 	return entries, nil
 }
 
@@ -148,26 +152,23 @@ func MergeIndex(diskFiles, indexedFiles []FileEntry) []FileEntry {
 }
 
 func SaveIndex(filename string, entries []FileEntry) error {
-	var builder strings.Builder
+	var records [][]string
 	for _, entry := range entries {
-		builder.WriteString(quoteString(entry.Path))
+		record := []string{entry.Path}
 		if entry.Description != "" {
-			builder.WriteString("  ")
-			builder.WriteString(quoteString(entry.Description))
+			record = append(record, entry.Description)
 		}
-		builder.WriteString("\n")
+		records = append(records, record)
 	}
+
+	var builder strings.Builder
+	w := csv.NewWriter(&builder)
+	for _, record := range records {
+		if err := w.Write(record); err != nil {
+			return err
+		}
+	}
+	w.Flush()
 
 	return os.WriteFile(filename, []byte(builder.String()), 0644)
-}
-
-func quoteString(s string) string {
-	return "\"" + s + "\""
-}
-
-func unquoteString(s string) string {
-	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") && len(s) >= 2 {
-		return s[1 : len(s)-1]
-	}
-	return s
 }

@@ -1,3 +1,4 @@
+// Discovers relevant files for a given task using AI analysis
 package commands
 
 import (
@@ -10,7 +11,7 @@ import (
 
 func HandleContextCommand(cfg *config.Config) error {
 	fmt.Println("Loading project index...")
-	indexedFiles, err := logic.LoadIndex("yact-index.txt")
+	indexedFiles, err := logic.LoadIndex("yact-index.csv")
 	if err != nil {
 		return err
 	}
