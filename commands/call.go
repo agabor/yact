@@ -153,7 +153,7 @@ func processCodeBlocks(transaction logic.Transaction, content string) ([]logic.C
 }
 
 func updateIndexWithDescriptions(codeFiles []logic.CodeFile) error {
-	indexFile := "yact-index.txt"
+	indexFile := "yact-index.csv"
 
 	indexedFiles, err := logic.LoadIndex(indexFile)
 	if err != nil {
