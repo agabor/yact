@@ -1,9 +1,8 @@
+// File indexing and management functions
 package logic
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,7 +12,6 @@ import (
 
 type FileEntry struct {
 	Path        string
-	Checksum    string
 	Description string
 }
 
@@ -33,34 +31,18 @@ func LoadIndex(filename string) ([]FileEntry, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "  ", 3)
-		if len(parts) >= 2 {
+		parts := strings.SplitN(line, "  ", 2)
+		if len(parts) >= 1 {
 			entry := FileEntry{
-				Path:     unquoteString(parts[1]),
-				Checksum: parts[0],
+				Path: unquoteString(parts[0]),
 			}
-			if len(parts) == 3 {
-				entry.Description = unquoteString(parts[2])
+			if len(parts) == 2 {
+				entry.Description = unquoteString(parts[1])
 			}
 			entries = append(entries, entry)
 		}
 	}
 	return entries, nil
-}
-
-func CalculateChecksum(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hash := md5.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
@@ -116,14 +98,8 @@ func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 			return nil
 		}
 
-		checksum, err := CalculateChecksum(path)
-		if err != nil {
-			return nil
-		}
-
 		entries = append(entries, FileEntry{
-			Path:     relPath,
-			Checksum: checksum,
+			Path: relPath,
 		})
 
 		return nil
@@ -133,10 +109,8 @@ func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 }
 
 func MergeIndex(diskFiles, indexedFiles []FileEntry) []FileEntry {
-	indexMap := make(map[string]string)
 	descriptionMap := make(map[string]string)
 	for _, entry := range indexedFiles {
-		indexMap[entry.Path] = entry.Checksum
 		if entry.Description != "" {
 			descriptionMap[entry.Path] = entry.Description
 		}
@@ -150,11 +124,16 @@ func MergeIndex(diskFiles, indexedFiles []FileEntry) []FileEntry {
 			diskFile.Description = description
 		}
 		merged = append(merged, diskFile)
-		delete(indexMap, diskFile.Path)
 	}
 
-	for _ = range indexMap {
-		deletedCount++
+	indexMap := make(map[string]bool)
+	for _, diskFile := range diskFiles {
+		indexMap[diskFile.Path] = true
+	}
+	for _, indexedFile := range indexedFiles {
+		if !indexMap[indexedFile.Path] {
+			deletedCount++
+		}
 	}
 
 	if deletedCount > 0 {
@@ -171,8 +150,6 @@ func MergeIndex(diskFiles, indexedFiles []FileEntry) []FileEntry {
 func SaveIndex(filename string, entries []FileEntry) error {
 	var builder strings.Builder
 	for _, entry := range entries {
-		builder.WriteString(entry.Checksum)
-		builder.WriteString("  ")
 		builder.WriteString(quoteString(entry.Path))
 		if entry.Description != "" {
 			builder.WriteString("  ")

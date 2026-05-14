@@ -1,3 +1,4 @@
+// Handles index command for scanning and describing project files
 package commands
 
 import (
@@ -25,26 +26,6 @@ func HandleIndexCommand(cfg *config.Config) error {
 		return err
 	}
 	fmt.Printf("Found %d file(s) on disk\n", len(diskFiles))
-
-	newCount := 0
-	updatedCount := 0
-	indexMap := make(map[string]string)
-	for _, entry := range indexedFiles {
-		indexMap[entry.Path] = entry.Checksum
-	}
-
-	for _, diskFile := range diskFiles {
-		if oldChecksum, exists := indexMap[diskFile.Path]; exists {
-			if oldChecksum != diskFile.Checksum {
-				updatedCount++
-			}
-		} else {
-			newCount++
-		}
-	}
-
-	fmt.Printf("New files: %d\n", newCount)
-	fmt.Printf("Updated files: %d\n", updatedCount)
 
 	mergedEntries := logic.MergeIndex(diskFiles, indexedFiles)
 
