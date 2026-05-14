@@ -1,4 +1,3 @@
-// Discovers relevant files for a given task using AI analysis and keyword matching
 package commands
 
 import (
@@ -92,7 +91,12 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 		return nil, fmt.Errorf("error loading system prompt: %w", err)
 	}
 
-	response, err := client.Call(transaction, false, discoveryPrompt)
+	indexedFiles, err := logic.LoadIndex("yact-index.csv")
+	if err != nil {
+		return nil, fmt.Errorf("error loading index: %w", err)
+	}
+
+	response, err := client.Call(transaction, false, discoveryPrompt, indexedFiles)
 	if err != nil {
 		return nil, fmt.Errorf("error discovering relevant files: %w", err)
 	}

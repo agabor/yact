@@ -83,7 +83,7 @@ func GetFileDescriptions(entries []logic.FileEntry, cfg *config.Config) ([]logic
 		return entries, fmt.Errorf("error loading system prompt: %w", err)
 	}
 
-	response, err := client.Call(transaction, false, describePrompt)
+	response, err := client.Call(transaction, false, describePrompt, entries)
 	if err != nil {
 		return entries, fmt.Errorf("error fetching descriptions: %w", err)
 	}

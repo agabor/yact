@@ -73,7 +73,7 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return inputCost + outputCost
 }
 
-func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
+func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string, index []logic.FileEntry) (string, error) {
 	if c.apiKey == "" {
 		return "", fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
 	}
@@ -87,7 +87,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 	fileCount := 0
 	blocks := make([]anthropic.ContentBlockParamUnion, 0)
 	for _, filePath := range transaction.Context {
-		fileContent, err := Serialize(filePath)
+		fileContent, err := Serialize(filePath, index)
 		if err != nil {
 			return "", err
 		}
