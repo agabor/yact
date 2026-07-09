@@ -42,19 +42,13 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 		return nil
 	}
 
-	codeFiles, transaction, err := processCodeBlocks(transaction, response)
+	transaction, err = processCodeBlocks(transaction, response)
 	if err != nil {
 		return err
 	}
 
 	if err = transaction.Save(); err != nil {
 		return err
-	}
-
-	if len(codeFiles) > 0 {
-		if err := updateIndexWithDescriptions(codeFiles); err != nil {
-			fmt.Printf("Warning: Could not update index with descriptions: %v\n", err)
-		}
 	}
 
 	return nil
@@ -119,7 +113,7 @@ func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config
 	return response, err
 }
 
-func processCodeBlocks(transaction logic.Transaction, content string) ([]logic.CodeFile, logic.Transaction, error) {
+func processCodeBlocks(transaction logic.Transaction, content string) (logic.Transaction, error) {
 	var parseErrors []string
 	codeblocks, text := logic.ParseCodeFiles(content)
 
@@ -150,44 +144,9 @@ func processCodeBlocks(transaction logic.Transaction, content string) ([]logic.C
 	}
 
 	if len(parseErrors) > 0 {
-		return codeblocks, transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
+		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 
 	fmt.Println("Done!")
-	return codeblocks, transaction, nil
-}
-
-func updateIndexWithDescriptions(codeFiles []logic.CodeFile) error {
-	indexFile := "yact-index.csv"
-
-	indexedFiles, err := logic.LoadIndex(indexFile)
-	if err != nil {
-		return err
-	}
-
-	indexMap := make(map[string]*logic.FileEntry)
-	for i := range indexedFiles {
-		indexMap[indexedFiles[i].Path] = &indexedFiles[i]
-	}
-
-	updated := false
-	for _, codeFile := range codeFiles {
-		if codeFile.Description != "" {
-			if entry, exists := indexMap[codeFile.Path]; exists {
-				if entry.Description != codeFile.Description {
-					entry.Description = codeFile.Description
-					updated = true
-				}
-			}
-		}
-	}
-
-	if updated {
-		if err := logic.SaveIndex(indexFile, indexedFiles); err != nil {
-			return err
-		}
-		fmt.Println("Index descriptions updated")
-	}
-
-	return nil
+	return transaction, nil
 }

@@ -15,9 +15,8 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	Path        string
-	Content     string
-	Description string
+	Path    string
+	Content string
 }
 
 type codeFileJSON struct {
@@ -32,7 +31,7 @@ func NewCodeFile(path, content string) CodeFile {
 	}
 }
 
-func extractFilenameFromComment(line string) (string, string) {
+func extractFilenameFromComment(line string) string {
 	patterns := []string{
 		`^\s*//\s*(.+?)(?:\s*//.*)?$`,
 		`^\s*#\s*(.+?)(?:\s*#.*)?$`,
@@ -50,27 +49,14 @@ func extractFilenameFromComment(line string) (string, string) {
 			if strings.Contains(extracted, "!") {
 				continue
 			}
-			extracted = regexp.MustCompile(`\s*\*+/$`).ReplaceAllString(extracted, "")
-
-			var filename, description string
-			if strings.Contains(extracted, " - ") {
-				parts := strings.SplitN(extracted, " - ", 2)
-				filename = strings.TrimSpace(parts[0])
-				description = strings.TrimSpace(parts[1])
-			} else {
-				filename = extracted
-				description = ""
-			}
-
-			return filename, description
+			return regexp.MustCompile(`\s*\*+/$`).ReplaceAllString(extracted, "")
 		}
 	}
-	return "", ""
+	return ""
 }
 
 func linesToCodeFile(lines []string) CodeFile {
 	filePath := ""
-	description := ""
 	lineIndex := 0
 
 	for lineIndex < len(lines) && strings.TrimSpace(lines[lineIndex]) == "" {
@@ -82,10 +68,9 @@ func linesToCodeFile(lines []string) CodeFile {
 	}
 
 	if lineIndex < len(lines) {
-		extractedPath, extractedDesc := extractFilenameFromComment(lines[lineIndex])
+		extractedPath := extractFilenameFromComment(lines[lineIndex])
 		if extractedPath != "" {
 			filePath = extractedPath
-			description = extractedDesc
 			lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
 		}
 	}
@@ -109,9 +94,8 @@ func linesToCodeFile(lines []string) CodeFile {
 	}
 
 	return CodeFile{
-		Path:        strings.TrimPrefix(strings.TrimSpace(filePath), "./"),
-		Content:     joinLines(lines),
-		Description: description,
+		Path:    strings.TrimPrefix(strings.TrimSpace(filePath), "./"),
+		Content: joinLines(lines),
 	}
 }
 
