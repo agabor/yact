@@ -1,4 +1,3 @@
-// File indexing and management functions
 package logic
 
 import (
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"yact/config"
 )
 
 type FileEntry struct {
@@ -16,8 +16,8 @@ type FileEntry struct {
 	Description string
 }
 
-func LoadIndex(filename string) ([]FileEntry, error) {
-	data, err := os.ReadFile(filename)
+func LoadIndex() ([]FileEntry, error) {
+	data, err := os.ReadFile(config.GetProjectIndexPath())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []FileEntry{}, nil
@@ -49,7 +49,7 @@ func LoadIndex(filename string) ([]FileEntry, error) {
 	return entries, nil
 }
 
-func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
+func GetAllFiles() ([]FileEntry, error) {
 	var entries []FileEntry
 	var excludeDirs = map[string]bool{
 		".git":         true,
@@ -85,19 +85,6 @@ func GetAllFiles(excludePatterns []string) ([]FileEntry, error) {
 		}
 
 		relPath := strings.TrimPrefix(path, "./")
-
-		shouldExclude := false
-		for _, pattern := range excludePatterns {
-			matched, err := filepath.Match(pattern, relPath)
-			if err == nil && matched {
-				shouldExclude = true
-				break
-			}
-		}
-
-		if shouldExclude {
-			return nil
-		}
 
 		entries = append(entries, FileEntry{
 			Path: relPath,
@@ -149,6 +136,13 @@ func MergeIndex(diskFiles, indexedFiles []FileEntry) []FileEntry {
 }
 
 func SaveIndex(filename string, entries []FileEntry) error {
+	filePath := filepath.Join(".yact", filename)
+
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	var records [][]string
 	for _, entry := range entries {
 		record := []string{entry.Path}
@@ -167,5 +161,5 @@ func SaveIndex(filename string, entries []FileEntry) error {
 	}
 	w.Flush()
 
-	return os.WriteFile(filename, []byte(builder.String()), 0644)
+	return os.WriteFile(filePath, []byte(builder.String()), 0644)
 }

@@ -1,11 +1,13 @@
+// Stores and retrieves conversation context and prompts from .yact directory
 package logic
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
+	"yact/config"
 )
 
-const contextPath = ".yact"
 const separator = "=========="
 
 type Transaction struct {
@@ -14,7 +16,9 @@ type Transaction struct {
 }
 
 func LoadTransaction() (Transaction, error) {
-	data, err := os.ReadFile(contextPath)
+	promptPath := config.GetProjectPromptPath()
+
+	data, err := os.ReadFile(promptPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return Transaction{}, nil
@@ -50,6 +54,13 @@ func LoadTransaction() (Transaction, error) {
 }
 
 func (transaction *Transaction) Save() error {
+	promptPath := config.GetProjectPromptPath()
+
+	dir := filepath.Dir(promptPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	var builder strings.Builder
 
 	for _, contextLine := range transaction.Context {
@@ -65,5 +76,5 @@ func (transaction *Transaction) Save() error {
 		builder.WriteString("\n")
 	}
 
-	return os.WriteFile(contextPath, []byte(builder.String()), 0644)
+	return os.WriteFile(promptPath, []byte(builder.String()), 0644)
 }

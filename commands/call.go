@@ -97,7 +97,7 @@ func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config
 
 	fmt.Printf("Model: %s\n", client.GetModelName())
 
-	indexedFiles, err := logic.LoadIndex("yact-index.csv")
+	indexedFiles, err := logic.LoadIndex()
 	if err != nil {
 		return "", fmt.Errorf("error loading index: %w", err)
 	}

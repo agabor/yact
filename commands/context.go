@@ -12,7 +12,7 @@ import (
 
 func HandleContextCommand(cfg *config.Config) error {
 	fmt.Println("Loading project index...")
-	indexedFiles, err := logic.LoadIndex("yact-index.csv")
+	indexedFiles, err := logic.LoadIndex()
 	if err != nil {
 		return err
 	}
@@ -35,11 +35,16 @@ func HandleContextCommand(cfg *config.Config) error {
 	keywords := extractKeywords(taskPrompt)
 	cleanPrompt := removeKeywordMarkers(taskPrompt)
 
+	fmt.Print("Matching keywords:\n")
+	for _, keyword := range keywords {
+		fmt.Printf("  - %s\n", keyword)
+	}
+
 	keywordMatches := MatchKeywordFiles(indexedFiles, keywords)
 	if len(keywordMatches) > 0 {
 		fmt.Printf("Found %d file(s) by keyword matching\n", len(keywordMatches))
 		for _, path := range keywordMatches {
-			fmt.Printf("  - %s (keyword match)\n", path)
+			fmt.Printf("  - %s\n", path)
 		}
 	}
 
@@ -91,7 +96,7 @@ func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cf
 		return nil, fmt.Errorf("error loading system prompt: %w", err)
 	}
 
-	indexedFiles, err := logic.LoadIndex("yact-index.csv")
+	indexedFiles, err := logic.LoadIndex()
 	if err != nil {
 		return nil, fmt.Errorf("error loading index: %w", err)
 	}

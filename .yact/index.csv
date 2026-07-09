@@ -1,0 +1,21 @@
+api/claude.go,"Integrates with Anthropic Claude API to send requests and handle model selection, token calculation, and cost tracking"
+api/client.go,Defines the Client interface and file serialization logic for preparing code files to send to the API
+commands/call.go,"Handles act, plan, and ask commands for code generation, planning, and question-answering operations"
+commands/config.go,"Manages user configuration including API keys, model selection, and token limits"
+commands/context.go,Discovers relevant project files for a task using keyword matching and AI-powered file selection
+commands/help.go,Displays command reference and usage information
+commands/index.go,"Scans project directory, manages file index with descriptions, and fetches AI-generated file descriptions"
+commands/new.go,Creates a new empty task context for starting fresh work
+commands/read.go,Adds file references to the current task context using glob pattern matching
+commands/snip.go,Modifies specific line ranges in files using AI assistance while preserving indentation
+config/config.go,"Loads and saves user configuration, manages system prompts, and provides default settings"
+logic/codefile.go,"Parses Claude's code block responses, extracts file paths and content, and writes files to disk"
+logic/index.go,"Manages project file indexing including loading, scanning, merging, and saving file metadata"
+logic/transaction.go,Stores and retrieves task context and prompts from the .yact directory
+main.go,"CLI entry point that parses commands, manages flags, and delegates to command handlers"
+systemprompts/act.txt,System prompt instructing Claude to generate complete code files with strict output formatting rules
+systemprompts/ask.txt,System prompt for answering questions about codebase with explanations and file references
+systemprompts/context.txt,System prompt for identifying relevant files from project index based on task requirements
+systemprompts/index.txt,System prompt for generating file descriptions in standardized format
+systemprompts/plan.txt,System prompt for breaking down implementation tasks into structured steps
+systemprompts/snip.txt,System prompt for generating code modifications for specific line ranges

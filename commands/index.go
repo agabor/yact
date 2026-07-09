@@ -1,4 +1,3 @@
-// Handles index command for scanning and describing project files
 package commands
 
 import (
@@ -11,17 +10,17 @@ import (
 )
 
 func HandleIndexCommand(cfg *config.Config) error {
-	indexFile := "yact-index.csv"
+	indexFile := "index.csv"
 
 	fmt.Println("Loading existing index...")
-	indexedFiles, err := logic.LoadIndex(indexFile)
+	indexedFiles, err := logic.LoadIndex()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Loaded %d entries from index\n", len(indexedFiles))
 
 	fmt.Println("Scanning disk for files...")
-	diskFiles, err := logic.GetAllFiles([]string{"yact-index.csv"})
+	diskFiles, err := logic.GetAllFiles()
 	if err != nil {
 		return err
 	}
@@ -47,7 +46,7 @@ func HandleIndexCommand(cfg *config.Config) error {
 		}
 	}
 
-	fmt.Printf("Index updated: %s (%d total entries, %d with descriptions)\n", indexFile, len(mergedEntries), describedCount)
+	fmt.Printf("Index updated: %s (%d total entries, %d with descriptions)\n", config.GetProjectIndexPath(), len(mergedEntries), describedCount)
 	return nil
 }
 

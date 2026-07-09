@@ -51,6 +51,18 @@ func getPromptFile(name string) (string, error) {
 	return filepath.Join(dir, name+".txt"), nil
 }
 
+func GetProjectYactDir() string {
+	return ".yact"
+}
+
+func GetProjectPromptPath() string {
+	return filepath.Join(GetProjectYactDir(), "prompt.txt")
+}
+
+func GetProjectIndexPath() string {
+	return filepath.Join(GetProjectYactDir(), "index.csv")
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
