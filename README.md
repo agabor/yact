@@ -1,7 +1,5 @@
 [![GitHub](https://img.shields.io/badge/GitHub-View%20Repository-blue?logo=github)](https://github.com/agabor/yact)
 
-# Your Project Title
-
 # YACT - Yet Another Coding Tool
 
 Minimal, responsive, transparent LLM coding assistant
