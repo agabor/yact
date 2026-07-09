@@ -170,7 +170,7 @@ func parseFilePaths(response string) []string {
 }
 
 func extractKeywords(prompt string) []string {
-	re := regexp.MustCompile(`\[=([^=]+)=\]`)
+	re := regexp.MustCompile(`\(\(([^)]+)\)\)`)
 	matches := re.FindAllStringSubmatch(prompt, -1)
 
 	var keywords []string
@@ -183,6 +183,6 @@ func extractKeywords(prompt string) []string {
 }
 
 func removeKeywordMarkers(prompt string) string {
-	re := regexp.MustCompile(`\[=[^=]+=\]`)
+	re := regexp.MustCompile(`\(\([^)]+\)\)`)
 	return re.ReplaceAllString(prompt, "")
 }
