@@ -12,15 +12,15 @@ Usage:
 
 Commands:
   help                                 Show this help message
-  read <file>                          Read and display file contents
+  read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
   config [key] [value]                 Manage configuration settings
   act                                  Generate code modifications based on context
-  snip <file> <start> <end> <prompt>   Modify specific code snippet
+  snip <file> <start> <end> <prompt>   Modify specific line range in a file
   ask                                  Answer questions about code
   plan                                 Create implementation plans
-  context                              Display current context files
-  index                                Create or update file index
-  new                                  Create new project
+  context                              Discover relevant files for the current task
+  index                                Create or update file index with descriptions
+  new                                  Create a new empty task context
 
 Global Flags:
   -h, --help                           Show help message
@@ -34,10 +34,11 @@ Global Flags:
 Examples:
   y --help                             Show this help message
   y config                             Show current configuration
-  y config anthropic_api_key <key>    Set API key
+  y config anthropic_api_key <key>     Set API key
+  y read main.go "commands/*.go"       Add files to the task context
   y -t act                             Generate code with thinking enabled
   y -o ask                             Answer question using Opus model
-  y snip main.go 10 20 "fix this"     Modify lines 10-20 with prompt
+  y snip main.go 10 20 "fix this"      Modify lines 10-20 with prompt
   y --think --sonnet plan              Create plan using Sonnet with thinking
 
 For more information, visit: https://github.com/yourusername/yact`)
