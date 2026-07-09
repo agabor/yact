@@ -32,10 +32,30 @@ func requireNoArgs(command string, args []string) {
 	}
 }
 
+func getModelOverride(fable, opus, sonnet, haiku bool) string {
+	if fable {
+		return "fable"
+	}
+	if opus {
+		return "opus"
+	}
+	if sonnet {
+		return "sonnet"
+	}
+	if haiku {
+		return "haiku"
+	}
+	return ""
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
+	fableFlag := flag.BoolP("fable", "f", false, "Use Claude Fable model")
+	opusFlag := flag.BoolP("opus", "o", false, "Use Claude Opus model")
+	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
+	haikuFlag := flag.Bool("haiku", false, "Use Claude Haiku model")
 
 	flag.Parse()
 
@@ -64,6 +84,8 @@ func main() {
 		commandArgs = args[1:]
 	}
 
+	modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag)
+
 	var commandErr error
 
 	switch command {
@@ -82,7 +104,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading act prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt)
+		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt, modelOverride)
 	case "snip":
 		requireArgCount("snip", commandArgs, 4)
 		inputFile := commandArgs[0]
@@ -110,7 +132,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading ask prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt)
+		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt, modelOverride)
 	case "plan":
 		requireNoArgs("plan", commandArgs)
 		planPrompt, err := config.LoadPrompt("plan")
@@ -118,7 +140,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading plan prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt)
+		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt, modelOverride)
 	case "context":
 		requireNoArgs("context", commandArgs)
 		commandErr = commands.HandleContextCommand(cfg)

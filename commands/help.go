@@ -5,20 +5,40 @@ import (
 )
 
 func ShowHelp() {
-	fmt.Println("y - Yet Another Coding Tool")
-	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  y act [prompt]          # Generate code with prompt")
-	fmt.Println("  y ask [question]        # Ask questions about the codebase")
-	fmt.Println("  y plan [prompt]         # Get a plan for implementation")
-	fmt.Println("  y read <file>           # Add file reference to prompt")
-	fmt.Println("  y context               # Discover relevant files for current task")
-	fmt.Println("  y index                 # Build/update project file index with descriptions")
-	fmt.Println("  y new                   # Create a new context")
-	fmt.Println("  y config                # Show current configuration")
-	fmt.Println("  y config <key> <value>  # Set configuration value")
-	fmt.Println()
-	fmt.Println("Configuration keys:")
-	fmt.Println("  anthropic_api_key   Claude API key")
-	fmt.Println("  claude_model        Claude model name")
+	fmt.Println(`yact - AI-powered code transformation tool
+
+Usage:
+  y [flags] <command> [arguments]
+
+Commands:
+  help                                 Show this help message
+  read <file>                          Read and display file contents
+  config [key] [value]                 Manage configuration settings
+  act                                  Generate code modifications based on context
+  snip <file> <start> <end> <prompt>   Modify specific code snippet
+  ask                                  Answer questions about code
+  plan                                 Create implementation plans
+  context                              Display current context files
+  index                                Create or update file index
+  new                                  Create new project
+
+Global Flags:
+  -h, --help                           Show help message
+  -t, --think                          Enable Claude's extended thinking mode
+  -n, --no-write                       Do not write files, print response instead
+  -f, --fable                          Use Claude Fable model
+  -o, --opus                           Use Claude Opus model
+  -s, --sonnet                         Use Claude Sonnet model
+      --haiku                          Use Claude Haiku model
+
+Examples:
+  y --help                             Show this help message
+  y config                             Show current configuration
+  y config anthropic_api_key <key>    Set API key
+  y -t act                             Generate code with thinking enabled
+  y -o ask                             Answer question using Opus model
+  y snip main.go 10 20 "fix this"     Modify lines 10-20 with prompt
+  y --think --sonnet plan              Create plan using Sonnet with thinking
+
+For more information, visit: https://github.com/yourusername/yact`)
 }

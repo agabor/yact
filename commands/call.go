@@ -26,7 +26,15 @@ func showProgress(done chan bool) {
 	}
 }
 
-func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string) error {
+func applyModelOverride(cfg *config.Config, modelOverride string) {
+	if modelOverride != "" {
+		cfg.ClaudeModel = modelOverride
+	}
+}
+
+func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+	applyModelOverride(cfg, modelOverride)
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -54,7 +62,9 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 	return nil
 }
 
-func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) error {
+func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+	applyModelOverride(cfg, modelOverride)
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -75,7 +85,9 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string) erro
 	return nil
 }
 
-func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string) error {
+func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+	applyModelOverride(cfg, modelOverride)
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
