@@ -1,3 +1,4 @@
+// CLI entry point that parses commands, manages flags, and delegates to command handlers
 package main
 
 import (
@@ -97,6 +98,9 @@ func main() {
 	case "config":
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
+	case "prompt":
+		requireArgCount("prompt", commandArgs, 1)
+		commandErr = commands.HandlePromptCommand(commandArgs)
 	case "act":
 		requireNoArgs("act", commandArgs)
 		actPrompt, err := config.LoadPrompt("act")
