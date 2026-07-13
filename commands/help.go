@@ -1,5 +1,6 @@
 // Displays command reference and usage information
 // Displays command reference and usage information
+// Displays command reference and usage information
 package commands
 
 import (
@@ -16,11 +17,11 @@ Commands:
   help                                 Show this help message
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
   config [key] [value]                 Manage configuration settings
-  act                                  Generate code modifications based on context
+  act [prompt]                         Generate code modifications based on context
   snip <file> <start> <end> <prompt>   Modify specific line range in a file
-  ask                                  Answer questions about code
-  bash                                 Generate bash commands for a task
-  plan                                 Create implementation plans
+  ask [prompt]                         Answer questions about code
+  bash [prompt]                        Generate bash commands for a task
+  plan [prompt]                        Create implementation plans
   context                              Discover relevant files for the current task
   index                                Create or update file index with descriptions
   new                                  Create a new empty task context
@@ -44,6 +45,7 @@ Examples:
   y -o ask                             Answer question using Opus model
   y snip main.go 10 20 "fix this"      Modify lines 10-20 with prompt
   y --think --sonnet plan              Create plan using Sonnet with thinking
+  y act "Is the implementation of Foo buggy?"  Set prompt and generate code
 
 For more information, visit: https://github.com/yourusername/yact`)
 }

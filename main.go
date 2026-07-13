@@ -1,6 +1,7 @@
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
+// CLI entry point that parses commands, manages flags, and delegates to command handlers
 package main
 
 import (
@@ -33,6 +34,13 @@ func requireNoArgs(command string, args []string) {
 		fmt.Fprintf(os.Stderr, "Error: %s command takes no arguments\n", command)
 		os.Exit(1)
 	}
+}
+
+func getOptionalPrompt(args []string) string {
+	if len(args) > 0 {
+		return args[0]
+	}
+	return ""
 }
 
 func getModelOverride(fable, opus, sonnet, haiku bool) string {
@@ -104,13 +112,14 @@ func main() {
 		requireArgCount("prompt", commandArgs, 1)
 		commandErr = commands.HandlePromptCommand(commandArgs)
 	case "act":
-		requireNoArgs("act", commandArgs)
+		requireArgCount("act", commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
 		actPrompt, err := config.LoadPrompt("act")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading act prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt, modelOverride)
+		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt, modelOverride, prompt)
 	case "snip":
 		requireArgCount("snip", commandArgs, 4)
 		inputFile := commandArgs[0]
@@ -132,29 +141,32 @@ func main() {
 		}
 		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, snippetPrompt)
 	case "ask":
-		requireNoArgs("ask", commandArgs)
+		requireArgCount("ask", commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
 		askPrompt, err := config.LoadPrompt("ask")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading ask prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt, modelOverride)
+		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt, modelOverride, prompt)
 	case "bash":
-		requireNoArgs("bash", commandArgs)
+		requireArgCount("bash", commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
 		bashPrompt, err := config.LoadPrompt("bash")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading bash prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleBashCommand(*thinkFlag, cfg, bashPrompt, modelOverride)
+		commandErr = commands.HandleBashCommand(*thinkFlag, cfg, bashPrompt, modelOverride, prompt)
 	case "plan":
-		requireNoArgs("plan", commandArgs)
+		requireArgCount("plan", commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
 		planPrompt, err := config.LoadPrompt("plan")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading plan prompt: %v\n", err)
 			os.Exit(1)
 		}
-		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt, modelOverride)
+		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt, modelOverride, prompt)
 	case "context":
 		requireNoArgs("context", commandArgs)
 		commandErr = commands.HandleContextCommand(cfg)

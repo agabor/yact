@@ -33,11 +33,17 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 	}
 }
 
-func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if err := logic.ClearBuffer(); err != nil {
 		return err
+	}
+
+	if prompt != "" {
+		if err := SetPrompt(prompt); err != nil {
+			return err
+		}
 	}
 
 	transaction, err := logic.LoadTransaction()
@@ -70,11 +76,17 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 	return nil
 }
 
-func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if err := logic.ClearBuffer(); err != nil {
 		return err
+	}
+
+	if prompt != "" {
+		if err := SetPrompt(prompt); err != nil {
+			return err
+		}
 	}
 
 	transaction, err := logic.LoadTransaction()
@@ -101,11 +113,17 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, mode
 	return nil
 }
 
-func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if err := logic.ClearBuffer(); err != nil {
 		return err
+	}
+
+	if prompt != "" {
+		if err := SetPrompt(prompt); err != nil {
+			return err
+		}
 	}
 
 	transaction, err := logic.LoadTransaction()
@@ -126,11 +144,17 @@ func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, model
 	return nil
 }
 
-func HandleBashCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+func HandleBashCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if err := logic.ClearBuffer(); err != nil {
 		return err
+	}
+
+	if prompt != "" {
+		if err := SetPrompt(prompt); err != nil {
+			return err
+		}
 	}
 
 	transaction, err := logic.LoadTransaction()
