@@ -49,7 +49,7 @@ aggressively compact its context, keeping API calls responsive, and cheap.
 
 ### Comparison
 |                          | Cline / Cursor / Copilot                                                                       | YACT                                                                                                                              |
-|--------------------------|------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+|--------------------------|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | Interface Type           | Chat                                                                                           | CLI                                                                                                                               |
 | Generation method        | Retrieval Augumented Generation (RAG)                                                          | Prompt Stuffing                                                                                                                   |
 | LLM interface complexity | Complex                                                                                        | Simple                                                                                                                            |
@@ -62,9 +62,10 @@ aggressively compact its context, keeping API calls responsive, and cheap.
 
 ## Modes
 
-YACT uses Ask / Plan / Act modes. The plan and act modes can be familiar for users of competing tools. The plan mode
-creates a step-by-step implementation plan for a given task, which can then be implemented using act mode. In ask mode
-you can ask questions about your code base without interfering with coding tasks.
+YACT uses Ask / Plan / Act / Bash modes. The plan and act modes can be familiar for users of competing tools. The plan
+mode creates a step-by-step implementation plan for a given task, which can then be implemented using act mode. In ask
+mode you can ask questions about your code base without interfering with coding tasks. In bash mode you can generate
+shell commands for a task.
 
 ## Installation
 
@@ -118,7 +119,7 @@ sections separated by a `==========` line:
 - Below the separator: your task prompt.
 
 You build up a task by adding files with `y read`, writing your prompt into `.yact/prompt.txt`, then running one of
-the mode commands (`ask`, `plan`, `act`). Each of these commands makes exactly one API call.
+the mode commands (`ask`, `plan`, `act`, `bash`). Each of these commands makes exactly one API call.
 
 ## Commands
 
@@ -141,12 +142,27 @@ y read "commands/*.go"
 
 Glob patterns are supported. Directories are skipped, and files already in the context are not added twice.
 
+### Set the Prompt
+
+Set the task prompt in `.yact/prompt.txt` directly from the CLI:
+
+```bash
+y prompt "implement the Foo feature"
+```
+
 ### Ask Questions
 
 Write your question into `.yact/prompt.txt`, then run:
 
 ```bash
 y ask
+```
+
+You can also pass the question inline as an optional argument, which replaces the prompt in `.yact/prompt.txt` before
+the API call:
+
+```bash
+y ask "is Foo buggy?"
 ```
 
 The response is printed to the terminal. Your task context is not modified.
@@ -157,6 +173,13 @@ Write your task into `.yact/prompt.txt`, then run:
 
 ```bash
 y plan
+```
+
+You can also pass the task inline as an optional argument, which replaces the prompt in `.yact/prompt.txt` before
+the API call:
+
+```bash
+y plan "add authentication"
 ```
 
 The generated plan is printed and also replaces the prompt in `.yact/prompt.txt`, so you can follow it up
@@ -170,11 +193,43 @@ Write your task (or generate a plan) into `.yact/prompt.txt`, then run:
 y act
 ```
 
+You can also pass the task inline as an optional argument, which replaces the prompt in `.yact/prompt.txt` before
+the API call:
+
+```bash
+y act "implement Foo"
+```
+
 The AI responds with complete source files, which YACT writes directly to your filesystem. Newly created files are
 automatically added to the task context. Use `--no-write` to print the response instead of writing files:
 
 ```bash
 y -n act
+```
+
+### Generate Bash Commands
+
+Write your task into `.yact/prompt.txt`, then run:
+
+```bash
+y bash
+```
+
+You can also pass the task inline as an optional argument, which replaces the prompt in `.yact/prompt.txt` before
+the API call:
+
+```bash
+y bash "find all TODO comments in Go files"
+```
+
+The response is printed to the terminal and logged to the buffer. Your task context is not modified.
+
+### Show the Buffer
+
+Output the content of `.yact/buffer.txt`, the log of the last command's output:
+
+```bash
+y buffer
 ```
 
 ### Edit a Line Range
@@ -266,6 +321,7 @@ Each mode uses a system prompt loaded from `~/.yact/systemprompts/`:
 - `act.txt` - Code generation
 - `plan.txt` - Planning
 - `ask.txt` - Questions
+- `bash.txt` - Bash command generation
 - `snip.txt` - Line range editing
 - `context.txt` - File discovery
 - `index.txt` - File descriptions
@@ -296,6 +352,7 @@ Global settings are stored in `~/.yact/`:
 Per-project state is stored in `.yact/` inside your project directory:
 - `prompt.txt` - The current task context and prompt
 - `index.csv` - File index with descriptions
+- `buffer.txt` - Log of command output for audit/history
 
 ## Troubleshooting
 
