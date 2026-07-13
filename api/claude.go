@@ -158,5 +158,11 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
 	}
 
-	return strings.TrimSpace(responseText.String()), nil
+	trimmedResponse := strings.TrimSpace(responseText.String())
+
+	if err := logic.PutBuffer(trimmedResponse); err != nil {
+		return "", fmt.Errorf("error writing buffer: %w", err)
+	}
+
+	return trimmedResponse, nil
 }

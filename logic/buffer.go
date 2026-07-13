@@ -1,4 +1,3 @@
-// Provides functions for managing the .yact/buffer.txt log file, including clearing, appending, and reading content
 package logic
 
 import (
@@ -13,22 +12,11 @@ func ensureBufferDir() error {
 	return os.MkdirAll(bufferDirPath, 0755)
 }
 
-func ClearBuffer() error {
+func PutBuffer(content string) error {
 	if err := ensureBufferDir(); err != nil {
 		return err
 	}
 	file, err := os.Create(filepath.Clean(bufferFilePath))
-	if err != nil {
-		return err
-	}
-	return file.Close()
-}
-
-func AppendToBuffer(content string) error {
-	if err := ensureBufferDir(); err != nil {
-		return err
-	}
-	file, err := os.OpenFile(filepath.Clean(bufferFilePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

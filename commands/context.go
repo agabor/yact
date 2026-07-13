@@ -115,16 +115,16 @@ func MatchKeywordFiles(indexedFiles []logic.FileEntry, keywords []string) []stri
 		return []string{}
 	}
 
-	keywordMap := make(map[string]bool)
-	for _, keyword := range keywords {
-		keywordMap[strings.ToLower(keyword)] = true
-	}
-
 	var matchedPaths []string
 	for _, entry := range indexedFiles {
-		description := strings.ToLower(entry.Description)
-		for keyword := range keywordMap {
-			if strings.Contains(description, keyword) {
+		fileContent, err := os.ReadFile(entry.Path)
+		if err != nil {
+			continue
+		}
+
+		contentText := string(fileContent)
+		for _, keyword := range keywords {
+			if strings.Contains(contentText, keyword) {
 				matchedPaths = append(matchedPaths, entry.Path)
 				break
 			}
