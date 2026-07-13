@@ -1,5 +1,6 @@
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
+// CLI entry point that parses commands, manages flags, and delegates to command handlers
 package main
 
 import (
@@ -162,6 +163,9 @@ func main() {
 		commandErr = commands.HandleIndexCommand(cfg)
 	case "new":
 		commandErr = commands.HandleNewCommand()
+	case "buffer":
+		requireNoArgs("buffer", commandArgs)
+		commandErr = commands.HandleBufferCommand()
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")

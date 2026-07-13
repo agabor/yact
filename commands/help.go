@@ -1,4 +1,5 @@
 // Displays command reference and usage information
+// Displays command reference and usage information
 package commands
 
 import (
@@ -23,6 +24,7 @@ Commands:
   context                              Discover relevant files for the current task
   index                                Create or update file index with descriptions
   new                                  Create a new empty task context
+  buffer                               Output the content of the buffer log
 
 Global Flags:
   -h, --help                           Show help message
