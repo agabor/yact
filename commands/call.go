@@ -1,3 +1,4 @@
+// Handles act, plan, ask, and bash commands for code generation, planning, question-answering, and shell command operations
 package commands
 
 import (
@@ -35,6 +36,10 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
 	applyModelOverride(cfg, modelOverride)
 
+	if err := logic.ClearBuffer(); err != nil {
+		return err
+	}
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -46,6 +51,9 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 	}
 
 	if noWrite {
+		if err := logic.AppendToBuffer(response); err != nil {
+			return err
+		}
 		fmt.Println("\n" + response)
 		return nil
 	}
@@ -65,6 +73,10 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
 	applyModelOverride(cfg, modelOverride)
 
+	if err := logic.ClearBuffer(); err != nil {
+		return err
+	}
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -81,6 +93,10 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, mode
 		return err
 	}
 
+	if err := logic.AppendToBuffer(response); err != nil {
+		return err
+	}
+
 	fmt.Println("\n" + response)
 	return nil
 }
@@ -88,12 +104,48 @@ func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, mode
 func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
 	applyModelOverride(cfg, modelOverride)
 
+	if err := logic.ClearBuffer(); err != nil {
+		return err
+	}
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
 	}
 
 	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
+	if err != nil {
+		return err
+	}
+
+	if err := logic.AppendToBuffer(response); err != nil {
+		return err
+	}
+
+	fmt.Println("\n" + response)
+	return nil
+}
+
+func HandleBashCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string) error {
+	applyModelOverride(cfg, modelOverride)
+
+	if err := logic.ClearBuffer(); err != nil {
+		return err
+	}
+
+	transaction, err := logic.LoadTransaction()
+	if err != nil {
+		return err
+	}
+
+	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
+	if err != nil {
+		return err
+	}
+
+	if err := logic.AppendToBuffer(response); err != nil {
+		return err
+	}
 
 	fmt.Println("\n" + response)
 	return nil
@@ -149,13 +201,22 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 
 	if len(text) > 0 && strings.TrimSpace(strings.Join(text, "")) != "" {
 		fmt.Println("Text outside of code blocks:")
-		for _, text := range text {
-			fmt.Println(text)
+		for _, textLine := range text {
+			fmt.Println(textLine)
 		}
 		fmt.Println("")
+
+		bufferContent := "Text outside of code blocks:\n" + strings.Join(text, "\n") + "\n"
+		if err := logic.AppendToBuffer(bufferContent); err != nil {
+			return transaction, err
+		}
 	}
 
 	if len(parseErrors) > 0 {
+		errorContent := "Errors processing code blocks:\n" + strings.Join(parseErrors, "\n") + "\n"
+		if err := logic.AppendToBuffer(errorContent); err != nil {
+			return transaction, err
+		}
 		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 

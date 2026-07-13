@@ -1,3 +1,4 @@
+// Displays command reference and usage information
 package commands
 
 import (
@@ -17,6 +18,7 @@ Commands:
   act                                  Generate code modifications based on context
   snip <file> <start> <end> <prompt>   Modify specific line range in a file
   ask                                  Answer questions about code
+  bash                                 Generate bash commands for a task
   plan                                 Create implementation plans
   context                              Discover relevant files for the current task
   index                                Create or update file index with descriptions

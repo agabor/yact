@@ -1,4 +1,5 @@
 // CLI entry point that parses commands, manages flags, and delegates to command handlers
+// CLI entry point that parses commands, manages flags, and delegates to command handlers
 package main
 
 import (
@@ -137,6 +138,14 @@ func main() {
 			os.Exit(1)
 		}
 		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt, modelOverride)
+	case "bash":
+		requireNoArgs("bash", commandArgs)
+		bashPrompt, err := config.LoadPrompt("bash")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading bash prompt: %v\n", err)
+			os.Exit(1)
+		}
+		commandErr = commands.HandleBashCommand(*thinkFlag, cfg, bashPrompt, modelOverride)
 	case "plan":
 		requireNoArgs("plan", commandArgs)
 		planPrompt, err := config.LoadPrompt("plan")
