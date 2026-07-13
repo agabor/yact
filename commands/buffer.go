@@ -1,4 +1,3 @@
-// Handles the buffer command that prints the content of .yact/buffer.txt to stdout
 package commands
 
 import (

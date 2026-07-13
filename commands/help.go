@@ -1,6 +1,3 @@
-// Displays command reference and usage information
-// Displays command reference and usage information
-// Displays command reference and usage information
 package commands
 
 import (

@@ -1,4 +1,3 @@
-// Handles setting the task prompt in .yact/prompt.txt while preserving the file context list
 package commands
 
 import (

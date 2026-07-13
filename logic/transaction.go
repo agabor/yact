@@ -1,4 +1,3 @@
-// Stores and retrieves conversation context and prompts from .yact directory
 package logic
 
 import (
