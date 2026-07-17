@@ -1,4 +1,3 @@
-// Displays command reference and usage information
 package commands
 
 import (
@@ -6,7 +5,7 @@ import (
 )
 
 func ShowHelp() {
-	fmt.Println(`yact - AI-powered code transformation tool
+	fmt.Println(`yact - Yet Another Coding Tool
 
 Usage:
   y [flags] <command> [arguments]
@@ -22,6 +21,8 @@ Commands:
   plan [prompt]                        Create implementation plans
   new                                  Create a new empty task context
   buffer                               Output the content of the buffer log
+  stash                                Stash the current prompt
+  stash pop                            Restore the most recently stashed prompt
 
 Global Flags:
   -h, --help                           Show help message
@@ -42,6 +43,8 @@ Examples:
   y snip main.go 10 20 "fix this"      Modify lines 10-20 with prompt
   y --think --sonnet plan              Create plan using Sonnet with thinking
   y act "Is the implementation of Foo buggy?"  Set prompt and generate code
+  y stash                              Stash the current prompt
+  y stash pop                          Restore the most recently stashed prompt
 
-For more information, visit: https://github.com/yourusername/yact`)
+For more information, visit: https://github.com/agabor/yact`)
 }

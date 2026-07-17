@@ -168,6 +168,9 @@ func main() {
 	case "buffer":
 		requireNoArgs("buffer", commandArgs)
 		commandErr = commands.HandleBufferCommand()
+	case "stash":
+		requireArgCount("stash", commandArgs, 0, 1)
+		commandErr = commands.HandleStashCommand(commandArgs)
 	default:
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		fmt.Println("Run 'y --help' for usage information.")
