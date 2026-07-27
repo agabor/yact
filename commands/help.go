@@ -1,3 +1,4 @@
+// Displays command reference and usage information
 package commands
 
 import (
@@ -19,8 +20,6 @@ Commands:
   ask [prompt]                         Answer questions about code
   bash [prompt]                        Generate bash commands for a task
   plan [prompt]                        Create implementation plans
-  context                              Discover relevant files for the current task
-  index                                Create or update file index with descriptions
   new                                  Create a new empty task context
   buffer                               Output the content of the buffer log
 

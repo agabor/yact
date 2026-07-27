@@ -153,15 +153,10 @@ func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config
 
 	fmt.Printf("Model: %s\n", client.GetModelName())
 
-	indexedFiles, err := logic.LoadIndex()
-	if err != nil {
-		return "", fmt.Errorf("error loading index: %w", err)
-	}
-
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(transaction, think, systemPrompt, indexedFiles)
+	response, err := client.Call(transaction, think, systemPrompt)
 
 	done <- true
 	close(done)

@@ -19,4 +19,4 @@ vendor/
 go.work
 
 .idea
-.yact/prompt.txt
+.yact

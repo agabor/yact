@@ -1,7 +1,3 @@
-// CLI entry point that parses commands, manages flags, and delegates to command handlers
-// CLI entry point that parses commands, manages flags, and delegates to command handlers
-// CLI entry point that parses commands, manages flags, and delegates to command handlers
-// CLI entry point that parses commands, manages flags, and delegates to command handlers
 package main
 
 import (
@@ -167,12 +163,6 @@ func main() {
 			os.Exit(1)
 		}
 		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt, modelOverride, prompt)
-	case "context":
-		requireNoArgs("context", commandArgs)
-		commandErr = commands.HandleContextCommand(cfg)
-	case "index":
-		requireNoArgs("index", commandArgs)
-		commandErr = commands.HandleIndexCommand(cfg)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "buffer":

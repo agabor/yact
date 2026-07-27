@@ -34,6 +34,7 @@ STRICT OUTPUT RULES:
    - Keep all original whitespace
    - Only include if code logic changed
    - Do NOT include if only whitespace changed
+   - To completly remove a file, return an empty code block, with onlyt the file path comment.
 
 4. WHAT TO INCLUDE:
    Include these files:

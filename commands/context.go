@@ -1,24 +1,17 @@
+// Discovers relevant project files for a task using keyword matching and AI-powered file selection
 package commands
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
-	"yact/api"
 	"yact/config"
 	"yact/logic"
 )
 
 func HandleContextCommand(cfg *config.Config) error {
-	fmt.Println("Loading project index...")
-	indexedFiles, err := logic.LoadIndex()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Loaded %d files from index\n", len(indexedFiles))
-
-	fmt.Println("Loading current task...")
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
@@ -33,14 +26,13 @@ func HandleContextCommand(cfg *config.Config) error {
 	fmt.Println("Discovering relevant files for task...")
 
 	keywords := extractKeywords(taskPrompt)
-	cleanPrompt := removeKeywordMarkers(taskPrompt)
 
 	fmt.Print("Matching keywords:\n")
 	for _, keyword := range keywords {
 		fmt.Printf("  - %s\n", keyword)
 	}
 
-	keywordMatches := MatchKeywordFiles(indexedFiles, keywords)
+	keywordMatches := MatchKeywordFiles(keywords)
 	if len(keywordMatches) > 0 {
 		fmt.Printf("Found %d file(s) by keyword matching\n", len(keywordMatches))
 		for _, path := range keywordMatches {
@@ -48,19 +40,7 @@ func HandleContextCommand(cfg *config.Config) error {
 		}
 	}
 
-	aiMatches, err := DiscoverRelevantFiles(indexedFiles, cleanPrompt, cfg)
-	if err != nil {
-		return err
-	}
-
-	relevantPaths := mergeAndDeduplicatePaths(append(keywordMatches, aiMatches...))
-
-	fmt.Printf("Discovered %d relevant file(s) total\n", len(relevantPaths))
-	for _, path := range relevantPaths {
-		fmt.Printf("  - %s\n", path)
-	}
-
-	transaction.Context = relevantPaths
+	transaction.Context = keywordMatches
 
 	if err := transaction.Save(); err != nil {
 		return err
@@ -70,108 +50,43 @@ func HandleContextCommand(cfg *config.Config) error {
 	return nil
 }
 
-func DiscoverRelevantFiles(fileListings []logic.FileEntry, taskPrompt string, cfg *config.Config) ([]string, error) {
-	if len(fileListings) == 0 {
-		return []string{}, nil
-	}
-
-	listingText := BuildFileListingText(fileListings)
-
-	context := []string{}
-	if _, err := os.Stat("devdocs.md"); err == nil {
-		context = append(context, "devdocs.md")
-	}
-
-	transaction := logic.Transaction{
-		Context: context,
-		Request: []string{listingText, taskPrompt},
-	}
-
-	var client api.Client
-	client = &api.ClaudeClient{}
-	client.Init(cfg)
-
-	discoveryPrompt, err := config.LoadPrompt("context")
-	if err != nil {
-		return nil, fmt.Errorf("error loading system prompt: %w", err)
-	}
-
-	indexedFiles, err := logic.LoadIndex()
-	if err != nil {
-		return nil, fmt.Errorf("error loading index: %w", err)
-	}
-
-	response, err := client.Call(transaction, false, discoveryPrompt, indexedFiles)
-	if err != nil {
-		return nil, fmt.Errorf("error discovering relevant files: %w", err)
-	}
-
-	filePaths := parseFilePaths(response)
-	return filePaths, nil
-}
-
-func MatchKeywordFiles(indexedFiles []logic.FileEntry, keywords []string) []string {
+func MatchKeywordFiles(keywords []string) []string {
 	if len(keywords) == 0 {
 		return []string{}
 	}
 
 	var matchedPaths []string
-	for _, entry := range indexedFiles {
-		fileContent, err := os.ReadFile(entry.Path)
+	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			continue
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		fileContent, err := os.ReadFile(path)
+		if err != nil {
+			return nil
 		}
 
 		contentText := string(fileContent)
 		for _, keyword := range keywords {
 			if strings.Contains(contentText, keyword) {
-				matchedPaths = append(matchedPaths, entry.Path)
+				matchedPaths = append(matchedPaths, path)
 				break
 			}
 		}
+
+		return nil
+	})
+	if err != nil {
+		return matchedPaths
 	}
 
 	return matchedPaths
-}
-
-func mergeAndDeduplicatePaths(paths []string) []string {
-	seen := make(map[string]bool)
-	var merged []string
-
-	for _, path := range paths {
-		if !seen[path] {
-			seen[path] = true
-			merged = append(merged, path)
-		}
-	}
-
-	return merged
-}
-
-func BuildFileListingText(entries []logic.FileEntry) string {
-	var builder strings.Builder
-	for _, entry := range entries {
-		builder.WriteString(entry.Path)
-		builder.WriteString("\n")
-		builder.WriteString(entry.Description)
-		builder.WriteString("\n")
-		builder.WriteString("\n")
-	}
-	return builder.String()
-}
-
-func parseFilePaths(response string) []string {
-	var filePaths []string
-	lines := strings.Split(response, "\n")
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			filePaths = append(filePaths, line)
-		}
-	}
-
-	return filePaths
 }
 
 func extractKeywords(prompt string) []string {
