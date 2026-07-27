@@ -55,15 +55,20 @@ func MatchKeywordFiles(keywords []string) []string {
 		return []string{}
 	}
 
+	extensions, err := config.LoadExtensions()
+	if err != nil {
+		extensions = config.DefaultExtensions()
+	}
+
 	var matchedPaths []string
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
 		if info.IsDir() {
 			return nil
 		}
-		if !strings.HasSuffix(path, ".go") {
+		if !hasMatchingExtension(path, extensions) {
 			return nil
 		}
 
@@ -87,6 +92,16 @@ func MatchKeywordFiles(keywords []string) []string {
 	}
 
 	return matchedPaths
+}
+
+func hasMatchingExtension(path string, extensions []string) bool {
+	for _, ext := range extensions {
+		suffix := "." + strings.TrimPrefix(ext, ".")
+		if strings.HasSuffix(path, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func extractKeywords(prompt string) []string {

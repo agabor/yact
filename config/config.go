@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -63,12 +64,23 @@ func GetProjectIndexPath() string {
 	return filepath.Join(GetProjectYactDir(), "index.csv")
 }
 
+func GetProjectExtensionsPath() string {
+	return filepath.Join(GetProjectYactDir(), "extensions.txt")
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
 		ClaudeModel:     ClaudeModel,
 		MaxTokens:       MaxTokens,
 		ThinkBudget:     ThinkBudget,
+	}
+}
+
+func DefaultExtensions() []string {
+	return []string{
+		"go", "cs", "js", "jsx", "ts", "tsx", "py", "java",
+		"rb", "php", "c", "cpp", "h", "hpp", "rs", "kt", "swift",
 	}
 }
 
@@ -130,4 +142,45 @@ func LoadPrompt(name string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+func LoadExtensions() ([]string, error) {
+	extensionsPath := GetProjectExtensionsPath()
+
+	data, err := os.ReadFile(extensionsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			defaultExtensions := DefaultExtensions()
+			if saveErr := SaveExtensions(defaultExtensions); saveErr != nil {
+				return defaultExtensions, saveErr
+			}
+			return defaultExtensions, nil
+		}
+		return nil, err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	var extensions []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			extensions = append(extensions, trimmed)
+		}
+	}
+
+	if len(extensions) == 0 {
+		return DefaultExtensions(), nil
+	}
+
+	return extensions, nil
+}
+
+func SaveExtensions(extensions []string) error {
+	yactDir := GetProjectYactDir()
+	if err := os.MkdirAll(yactDir, 0755); err != nil {
+		return err
+	}
+
+	content := strings.Join(extensions, "\n") + "\n"
+	return os.WriteFile(GetProjectExtensionsPath(), []byte(content), 0644)
 }
