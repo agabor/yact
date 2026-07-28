@@ -21,6 +21,10 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		key := args[0]
 		value := args[1]
 
+		if key == "ext" {
+			return addExtension(value)
+		}
+
 		switch key {
 		case "anthropic_api_key":
 			cfg.AnthropicAPIKey = value
@@ -53,6 +57,35 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 	fmt.Println("Usage:")
 	fmt.Println("  y config                    # Show current config")
 	fmt.Println("  y config <key> <value>      # Set config value")
+	fmt.Println("  y config ext <extension>    # Add file extension to index")
+	return nil
+}
+
+func addExtension(extension string) error {
+	extension = strings.TrimPrefix(strings.TrimSpace(extension), ".")
+	if extension == "" {
+		return fmt.Errorf("extension cannot be empty")
+	}
+
+	extensions, err := config.LoadExtensions()
+	if err != nil {
+		return fmt.Errorf("error loading extensions: %w", err)
+	}
+
+	for _, existing := range extensions {
+		if existing == extension {
+			fmt.Printf("Extension '%s' already exists\n", extension)
+			return nil
+		}
+	}
+
+	extensions = append(extensions, extension)
+
+	if err := config.SaveExtensions(extensions); err != nil {
+		return fmt.Errorf("error saving extensions: %w", err)
+	}
+
+	fmt.Printf("Added extension '%s'\n", extension)
 	return nil
 }
 

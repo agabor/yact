@@ -79,8 +79,10 @@ func DefaultConfig() *Config {
 
 func DefaultExtensions() []string {
 	return []string{
-		"go", "cs", "js", "jsx", "ts", "tsx", "py", "java",
-		"rb", "php", "c", "cpp", "h", "hpp", "rs", "kt", "swift", "htm", "html",
+		"go", "cs", "js", "jsx", "ts",
+		"tsx", "py", "java", "rb", "php",
+		"c", "cpp", "h", "hpp", "rs",
+		"kt", "swift", "htm", "html",
 	}
 }
 
