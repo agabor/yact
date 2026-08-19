@@ -55,8 +55,7 @@ func extractFilenameFromComment(line string) string {
 	return ""
 }
 
-func linesToCodeFile(lines []string) CodeFile {
-	filePath := ""
+func detectFilePath(lines []string) (string, int) {
 	lineIndex := 0
 
 	for lineIndex < len(lines) && strings.TrimSpace(lines[lineIndex]) == "" {
@@ -70,9 +69,23 @@ func linesToCodeFile(lines []string) CodeFile {
 	if lineIndex < len(lines) {
 		extractedPath := extractFilenameFromComment(lines[lineIndex])
 		if extractedPath != "" {
-			filePath = extractedPath
-			lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
+			return extractedPath, lineIndex
 		}
+	}
+
+	return "", -1
+}
+
+func isValidCodeFile(lines []string) bool {
+	path, _ := detectFilePath(lines)
+	return path != ""
+}
+
+func linesToCodeFile(lines []string) CodeFile {
+	filePath, lineIndex := detectFilePath(lines)
+
+	if filePath != "" {
+		lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
 	}
 
 	if filePath == "" {
@@ -130,35 +143,53 @@ func (cf *CodeFile) Write() error {
 	return nil
 }
 
-func ParseCodeFiles(response string) ([]CodeFile, []string) {
+func ParseCodeFiles(response string) []interface{} {
 	lines := strings.Split(response, "\n")
-	var codeFiles = make([]CodeFile, 0)
+	var result = make([]interface{}, 0)
 	var lineBuffer = make([]string, 0)
-	var text = make([]string, 0)
+	var textBuffer = make([]string, 0)
 	inBlock := false
+
+	flushText := func() {
+		if len(textBuffer) > 0 {
+			result = append(result, strings.Join(textBuffer, "\n"))
+			textBuffer = make([]string, 0)
+		}
+	}
+
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
 			if inBlock {
 				if len(lineBuffer) > 0 {
-					codeFiles = append(codeFiles, linesToCodeFile(lineBuffer))
+					if isValidCodeFile(lineBuffer) {
+						result = append(result, linesToCodeFile(lineBuffer))
+					} else {
+						result = append(result, joinLines(lineBuffer))
+					}
 				}
 				inBlock = false
 				lineBuffer = make([]string, 0)
 			} else {
+				flushText()
 				inBlock = true
 			}
 		} else if inBlock {
 			lineBuffer = append(lineBuffer, line)
 		} else {
-			text = append(text, line)
+			textBuffer = append(textBuffer, line)
 		}
 	}
 
+	flushText()
+
 	if inBlock && len(lineBuffer) > 0 {
-		codeFile := linesToCodeFile(lineBuffer)
-		codeFiles = append(codeFiles, codeFile)
+		if isValidCodeFile(lineBuffer) {
+			result = append(result, linesToCodeFile(lineBuffer))
+		} else {
+			result = append(result, joinLines(lineBuffer))
+		}
 		fmt.Println("Warning: Incomplete code block.")
 	}
 
-	return codeFiles, text
+	return result
 }

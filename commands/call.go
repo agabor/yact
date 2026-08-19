@@ -166,23 +166,30 @@ func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config
 
 func processCodeBlocks(transaction logic.Transaction, content string) (logic.Transaction, error) {
 	var parseErrors []string
-	codeblocks, text := logic.ParseCodeFiles(content)
+	elements := logic.ParseCodeFiles(content)
 
 	seenPaths := make(map[string]bool)
 	for _, filePath := range transaction.Context {
 		seenPaths[filePath] = true
 	}
 
-	for _, codeBlock := range codeblocks {
-		err := codeBlock.Write()
+	var text []string
 
-		if err != nil {
-			parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
-		} else {
-			if !seenPaths[codeBlock.Path] {
-				seenPaths[codeBlock.Path] = true
-				transaction.Context = append(transaction.Context, codeBlock.Path)
+	for _, element := range elements {
+		switch v := element.(type) {
+		case logic.CodeFile:
+			err := v.Write()
+
+			if err != nil {
+				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+			} else {
+				if !seenPaths[v.Path] {
+					seenPaths[v.Path] = true
+					transaction.Context = append(transaction.Context, v.Path)
+				}
 			}
+		case string:
+			text = append(text, v)
 		}
 	}
 

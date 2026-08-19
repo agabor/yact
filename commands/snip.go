@@ -31,14 +31,22 @@ func HandleSnipCommand(inputFile string, startLine int, endLine int, prompt stri
 		return err
 	}
 
-	codeblocks, _ := logic.ParseCodeFiles(response)
+	elements := logic.ParseCodeFiles(response)
 
-	if len(codeblocks) == 0 {
+	var firstCodeFile *logic.CodeFile
+	for _, element := range elements {
+		if codeFile, ok := element.(logic.CodeFile); ok {
+			firstCodeFile = &codeFile
+			break
+		}
+	}
+
+	if firstCodeFile == nil {
 		return fmt.Errorf("no code blocks found in Claude's response")
 	}
 
 	indent := getMinIndentation(snippet)
-	replacement := applyIndentation(codeblocks[0].Content, indent)
+	replacement := applyIndentation(firstCodeFile.Content, indent)
 
 	err = replaceLineRange(inputFile, startLine, endLine, replacement)
 	if err != nil {
