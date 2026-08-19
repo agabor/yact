@@ -14,11 +14,7 @@ Commands:
   help                                 Show this help message
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
   config [key] [value]                 Manage configuration settings
-  act [prompt]                         Generate code modifications based on context
-  snip <file> <start> <end> <prompt>   Modify specific line range in a file
-  ask [prompt]                         Answer questions about code
-  bash [prompt]                        Generate bash commands for a task
-  plan [prompt]                        Create implementation plans
+  <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
   new                                  Create a new empty task context
   buffer                               Output the content of the buffer log
   stash                                Stash the current prompt
@@ -38,11 +34,6 @@ Examples:
   y config                             Show current configuration
   y config anthropic_api_key <key>     Set API key
   y read main.go "commands/*.go"       Add files to the task context
-  y -t act                             Generate code with thinking enabled
-  y -o ask                             Answer question using Opus model
-  y snip main.go 10 20 "fix this"      Modify lines 10-20 with prompt
-  y --think --sonnet plan              Create plan using Sonnet with thinking
-  y act "Is the implementation of Foo buggy?"  Set prompt and generate code
   y stash                              Stash the current prompt
   y stash pop                          Restore the most recently stashed prompt
 

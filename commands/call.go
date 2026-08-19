@@ -56,7 +56,7 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 		return nil
 	}
 
-	transaction, err = processCodeBlocks(transaction, response)
+	transaction, err = processResponse(transaction, response)
 	if err != nil {
 		return err
 	}
@@ -65,81 +65,6 @@ func HandleActCommand(think bool, noWrite bool, cfg *config.Config, systemPrompt
 		return err
 	}
 
-	return nil
-}
-
-func HandlePlanCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
-	applyModelOverride(cfg, modelOverride)
-
-	if prompt != "" {
-		if err := SetPrompt(prompt); err != nil {
-			return err
-		}
-	}
-
-	transaction, err := logic.LoadTransaction()
-	if err != nil {
-		return err
-	}
-
-	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
-	if err != nil {
-		return err
-	}
-
-	transaction.Request = []string{response}
-
-	if err := transaction.Save(); err != nil {
-		return err
-	}
-
-	fmt.Println("\n" + response)
-	return nil
-}
-
-func HandleAskCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
-	applyModelOverride(cfg, modelOverride)
-
-	if prompt != "" {
-		if err := SetPrompt(prompt); err != nil {
-			return err
-		}
-	}
-
-	transaction, err := logic.LoadTransaction()
-	if err != nil {
-		return err
-	}
-
-	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("\n" + response)
-	return nil
-}
-
-func HandleBashCommand(think bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
-	applyModelOverride(cfg, modelOverride)
-
-	if prompt != "" {
-		if err := SetPrompt(prompt); err != nil {
-			return err
-		}
-	}
-
-	transaction, err := logic.LoadTransaction()
-	if err != nil {
-		return err
-	}
-
-	response, err := callClaudeAPI(transaction, think, cfg, systemPrompt)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("\n" + response)
 	return nil
 }
 
@@ -164,7 +89,7 @@ func callClaudeAPI(transaction logic.Transaction, think bool, cfg *config.Config
 	return response, err
 }
 
-func processCodeBlocks(transaction logic.Transaction, content string) (logic.Transaction, error) {
+func processResponse(transaction logic.Transaction, content string) (logic.Transaction, error) {
 	var parseErrors []string
 	elements := logic.ParseCodeFiles(content)
 
@@ -172,8 +97,6 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 	for _, filePath := range transaction.Context {
 		seenPaths[filePath] = true
 	}
-
-	var text []string
 
 	for _, element := range elements {
 		switch v := element.(type) {
@@ -189,22 +112,13 @@ func processCodeBlocks(transaction logic.Transaction, content string) (logic.Tra
 				}
 			}
 		case string:
-			text = append(text, v)
+			fmt.Println(v)
 		}
-	}
-
-	if len(text) > 0 && strings.TrimSpace(strings.Join(text, "")) != "" {
-		fmt.Println("Text outside of code blocks:")
-		for _, textLine := range text {
-			fmt.Println(textLine)
-		}
-		fmt.Println("")
 	}
 
 	if len(parseErrors) > 0 {
 		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 
-	fmt.Println("Done!")
 	return transaction, nil
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"yact/commands"
 	"yact/config"
@@ -107,62 +106,6 @@ func main() {
 	case "prompt":
 		requireArgCount("prompt", commandArgs, 1)
 		commandErr = commands.HandlePromptCommand(commandArgs)
-	case "act":
-		requireArgCount("act", commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
-		actPrompt, err := config.LoadPrompt("act")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading act prompt: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, actPrompt, modelOverride, prompt)
-	case "snip":
-		requireArgCount("snip", commandArgs, 4)
-		inputFile := commandArgs[0]
-		startLine, err := strconv.Atoi(commandArgs[1])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: invalid start line number: %v\n", err)
-			os.Exit(1)
-		}
-		endLine, err := strconv.Atoi(commandArgs[2])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: invalid end line number: %v\n", err)
-			os.Exit(1)
-		}
-		prompt := commandArgs[3]
-		snippetPrompt, err := config.LoadPrompt("snip")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading snip prompt: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandleSnipCommand(inputFile, startLine, endLine, prompt, *thinkFlag, cfg, snippetPrompt)
-	case "ask":
-		requireArgCount("ask", commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
-		askPrompt, err := config.LoadPrompt("ask")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading ask prompt: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandleAskCommand(*thinkFlag, cfg, askPrompt, modelOverride, prompt)
-	case "bash":
-		requireArgCount("bash", commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
-		bashPrompt, err := config.LoadPrompt("bash")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading bash prompt: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandleBashCommand(*thinkFlag, cfg, bashPrompt, modelOverride, prompt)
-	case "plan":
-		requireArgCount("plan", commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
-		planPrompt, err := config.LoadPrompt("plan")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading plan prompt: %v\n", err)
-			os.Exit(1)
-		}
-		commandErr = commands.HandlePlanCommand(*thinkFlag, cfg, planPrompt, modelOverride, prompt)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "buffer":
@@ -172,9 +115,15 @@ func main() {
 		requireArgCount("stash", commandArgs, 0, 1)
 		commandErr = commands.HandleStashCommand(commandArgs)
 	default:
+		requireArgCount(command, commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
+		systemPrompt, err := config.LoadPrompt(command)
 		fmt.Printf("Error: Unknown command '%s'\n", command)
-		fmt.Println("Run 'y --help' for usage information.")
-		os.Exit(1)
+		if err != nil {
+			fmt.Println("Run 'y --help' for usage information.")
+			os.Exit(1)
+		}
+		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, systemPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -86,11 +85,6 @@ func linesToCodeFile(lines []string) CodeFile {
 
 	if filePath != "" {
 		lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
-	}
-
-	if filePath == "" {
-		unknownFileCounter += 1
-		filePath = "unknown" + strconv.Itoa(unknownFileCounter)
 	}
 
 	if strings.HasPrefix(filePath, "/") {
