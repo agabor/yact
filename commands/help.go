@@ -2,9 +2,11 @@ package commands
 
 import (
 	"fmt"
+
+	"yact/config"
 )
 
-func ShowHelp() {
+func printHelpHeader() {
 	fmt.Println(`yact - Yet Another Coding Tool
 
 Usage:
@@ -15,12 +17,28 @@ Commands:
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
-  <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
   new                                  Create a new empty task context
   buffer                               Output the content of the buffer log
   stash                                Stash the current prompt
   stash pop                            Restore the most recently stashed prompt
+  <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
+}
 
+func printPromptCommands() {
+	promptNames, err := config.ListPromptNames()
+	if err != nil || len(promptNames) == 0 {
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("  Available Commands:")
+	for _, name := range promptNames {
+		fmt.Printf("  %s\n", name)
+	}
+}
+
+func printHelpFooter() {
+	fmt.Println(`
 Global Flags:
   -h, --help                           Show help message
   -t, --think                          Enable Claude's extended thinking mode
@@ -40,4 +58,10 @@ Examples:
   y stash pop                          Restore the most recently stashed prompt
 
 For more information, visit: https://github.com/agabor/yact`)
+}
+
+func ShowHelp() {
+	printHelpHeader()
+	printPromptCommands()
+	printHelpFooter()
 }

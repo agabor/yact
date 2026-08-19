@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -144,6 +145,36 @@ func LoadPrompt(name string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+func ListPromptNames() ([]string, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+
+	var names []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		fileName := entry.Name()
+		if strings.HasSuffix(fileName, ".txt") {
+			names = append(names, strings.TrimSuffix(fileName, ".txt"))
+		}
+	}
+
+	sort.Strings(names)
+
+	return names, nil
 }
 
 func LoadExtensions() ([]string, error) {
