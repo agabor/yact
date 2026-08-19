@@ -100,6 +100,9 @@ func main() {
 		return
 	case "read":
 		commandErr = commands.HandleReadCommand(commandArgs)
+	case "keyword":
+		requireArgCount("keyword", commandArgs, 1)
+		commandErr = commands.HandleKeywordCommand(commandArgs)
 	case "config":
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
