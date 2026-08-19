@@ -54,6 +54,17 @@ func getModelOverride(fable, opus, sonnet, haiku bool) string {
 	return ""
 }
 
+func resolvePrompt(useBuffer bool, args []string) (string, error) {
+	if useBuffer {
+		bufferPrompt, err := commands.GetBuffer()
+		if err != nil {
+			return "", err
+		}
+		return bufferPrompt, nil
+	}
+	return getOptionalPrompt(args), nil
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
@@ -62,6 +73,7 @@ func main() {
 	opusFlag := flag.BoolP("opus", "o", false, "Use Claude Opus model")
 	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
 	haikuFlag := flag.Bool("haiku", false, "Use Claude Haiku model")
+	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 
 	flag.Parse()
 
@@ -118,8 +130,16 @@ func main() {
 		requireArgCount("stash", commandArgs, 0, 1)
 		commandErr = commands.HandleStashCommand(commandArgs)
 	default:
-		requireArgCount(command, commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
+		if *bufferFlag {
+			requireArgCount(command, commandArgs, 0)
+		} else {
+			requireArgCount(command, commandArgs, 0, 1)
+		}
+		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
+		if promptErr != nil {
+			commandErr = promptErr
+			break
+		}
 		systemPrompt, err := config.LoadPrompt(command)
 		fmt.Printf("Error: Unknown command '%s'\n", command)
 		if err != nil {

@@ -47,6 +47,7 @@ Global Flags:
   -o, --opus                           Use Claude Opus model
   -s, --sonnet                         Use Claude Sonnet model
       --haiku                          Use Claude Haiku model
+  -b, --buffer                         Use the buffer content as the prompt
 
 Examples:
   y --help                             Show this help message
@@ -56,6 +57,7 @@ Examples:
   y keyword TODO                       Add files containing "TODO" to the task context
   y stash                              Stash the current prompt
   y stash pop                          Restore the most recently stashed prompt
+  y <command> -b                       Use the buffer content as the prompt for <command>
 
 For more information, visit: https://github.com/agabor/yact`)
 }
