@@ -141,8 +141,8 @@ func main() {
 			break
 		}
 		systemPrompt, err := config.LoadPrompt(command)
-		fmt.Printf("Error: Unknown command '%s'\n", command)
 		if err != nil {
+			fmt.Printf("Error: Unknown command '%s'\n", command)
 			fmt.Println("Run 'y --help' for usage information.")
 			os.Exit(1)
 		}

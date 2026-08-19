@@ -35,7 +35,7 @@ func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
 	case "fable":
 		return anthropic.ModelClaudeFable5
 	case "opus":
-		return anthropic.ModelClaudeOpus4_8
+		return anthropic.ModelClaudeOpus5
 	case "sonnet":
 		return anthropic.ModelClaudeSonnet5
 	default:
