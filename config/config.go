@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -168,6 +169,8 @@ func DownloadPrompt(name string) error {
 
 	url := promptDownloadBaseURL + name + ".txt"
 
+	fmt.Printf("Downloading system prompt for '%s'...\n", name)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -183,7 +186,13 @@ func DownloadPrompt(name string) error {
 		return err
 	}
 
-	return os.WriteFile(promptFile, data, 0644)
+	if err := os.WriteFile(promptFile, data, 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("System prompt for '%s' downloaded successfully.\n", name)
+
+	return nil
 }
 
 type promptDownloadError struct {
