@@ -66,6 +66,16 @@ func resolvePrompt(useBuffer bool, args []string) (string, error) {
 	return getOptionalPrompt(args), nil
 }
 
+func promptNotFoundMessage(command string, downloaded bool) {
+	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
+	if !downloaded {
+		fmt.Fprintf(os.Stderr, "Try downloading it with: y -d %s\n", command)
+	} else {
+		fmt.Fprintf(os.Stderr, "Download failed or no prompt exists for '%s'.\n", command)
+	}
+	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
@@ -135,7 +145,8 @@ func main() {
 		} else {
 			requireArgCount(command, commandArgs, 0, 1)
 		}
-		if *downloadFlag {
+		downloaded := *downloadFlag
+		if downloaded {
 			if err := config.DownloadPrompt(command); err != nil {
 				commandErr = err
 				break
@@ -148,8 +159,7 @@ func main() {
 		}
 		systemPrompt, err := config.LoadPrompt(command)
 		if err != nil {
-			fmt.Printf("Error: Unknown command '%s'\n", command)
-			fmt.Println("Run 'y --help' for usage information.")
+			promptNotFoundMessage(command, downloaded)
 			os.Exit(1)
 		}
 		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, cfg, systemPrompt, modelOverride, prompt)
