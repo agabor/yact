@@ -48,6 +48,7 @@ Global Flags:
   -s, --sonnet                         Use Claude Sonnet model
       --haiku                          Use Claude Haiku model
   -b, --buffer                         Use the buffer content as the prompt
+  -d, --download                       Download the system prompt for the command
 
 Examples:
   y --help                             Show this help message
@@ -58,6 +59,7 @@ Examples:
   y stash                              Stash the current prompt
   y stash pop                          Restore the most recently stashed prompt
   y <command> -b                       Use the buffer content as the prompt for <command>
+  y <command> -d                       Download the system prompt for <command> before running
 
 For more information, visit: https://github.com/agabor/yact`)
 }

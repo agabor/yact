@@ -74,6 +74,7 @@ func main() {
 	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
 	haikuFlag := flag.Bool("haiku", false, "Use Claude Haiku model")
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
+	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 
 	flag.Parse()
 
@@ -134,6 +135,12 @@ func main() {
 			requireArgCount(command, commandArgs, 0)
 		} else {
 			requireArgCount(command, commandArgs, 0, 1)
+		}
+		if *downloadFlag {
+			if err := config.DownloadPrompt(command); err != nil {
+				commandErr = err
+				break
+			}
 		}
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {

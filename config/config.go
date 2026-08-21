@@ -2,6 +2,8 @@ package config
 
 import (
 	"encoding/json"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +15,8 @@ const (
 	MaxTokens   = 16000
 	ThinkBudget = 8000
 )
+
+const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
 
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
@@ -145,6 +149,50 @@ func LoadPrompt(name string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+func DownloadPrompt(name string) error {
+	promptFile, err := getPromptFile(name)
+	if err != nil {
+		return err
+	}
+
+	dir, err := getPromptsDir()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	url := promptDownloadBaseURL + name + ".txt"
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return &promptDownloadError{name: name, statusCode: resp.StatusCode}
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(promptFile, data, 0644)
+}
+
+type promptDownloadError struct {
+	name       string
+	statusCode int
+}
+
+func (e *promptDownloadError) Error() string {
+	return "failed to download prompt '" + e.name + "': HTTP status " + http.StatusText(e.statusCode)
 }
 
 func ListPromptNames() ([]string, error) {
