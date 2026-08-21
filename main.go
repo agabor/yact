@@ -127,9 +127,6 @@ func main() {
 	case "buffer":
 		requireNoArgs("buffer", commandArgs)
 		commandErr = commands.HandleBufferCommand()
-	case "stash":
-		requireArgCount("stash", commandArgs, 0, 1)
-		commandErr = commands.HandleStashCommand(commandArgs)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)

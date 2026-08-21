@@ -19,8 +19,6 @@ Commands:
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   buffer                               Output the content of the buffer log
-  stash                                Stash the current prompt
-  stash pop                            Restore the most recently stashed prompt
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
 }
 
@@ -56,8 +54,6 @@ Examples:
   y config anthropic_api_key <key>     Set API key
   y read main.go "commands/*.go"       Add files to the task context
   y keyword TODO                       Add files containing "TODO" to the task context
-  y stash                              Stash the current prompt
-  y stash pop                          Restore the most recently stashed prompt
   y <command> -b                       Use the buffer content as the prompt for <command>
   y <command> -d                       Download the system prompt for <command> before running
 
