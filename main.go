@@ -6,6 +6,7 @@ import (
 
 	"yact/commands"
 	"yact/config"
+	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -56,7 +57,7 @@ func getModelOverride(fable, opus, sonnet, haiku bool) string {
 
 func resolvePrompt(useBuffer bool, args []string) (string, error) {
 	if useBuffer {
-		bufferPrompt, err := commands.GetBuffer()
+		bufferPrompt, err := logic.ReadBuffer()
 		if err != nil {
 			return "", err
 		}
@@ -124,9 +125,6 @@ func main() {
 		commandErr = commands.HandlePromptCommand(commandArgs)
 	case "new":
 		commandErr = commands.HandleNewCommand()
-	case "buffer":
-		requireNoArgs("buffer", commandArgs)
-		commandErr = commands.HandleBufferCommand()
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)

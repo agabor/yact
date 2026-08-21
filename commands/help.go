@@ -18,7 +18,6 @@ Commands:
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
-  buffer                               Output the content of the buffer log
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
 }
 
@@ -47,15 +46,6 @@ Global Flags:
       --haiku                          Use Claude Haiku model
   -b, --buffer                         Use the buffer content as the prompt
   -d, --download                       Download the system prompt for the command
-
-Examples:
-  y --help                             Show this help message
-  y config                             Show current configuration
-  y config anthropic_api_key <key>     Set API key
-  y read main.go "commands/*.go"       Add files to the task context
-  y keyword TODO                       Add files containing "TODO" to the task context
-  y <command> -b                       Use the buffer content as the prompt for <command>
-  y <command> -d                       Download the system prompt for <command> before running
 
 For more information, visit: https://github.com/agabor/yact`)
 }
