@@ -121,8 +121,12 @@ func main() {
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
 	case "prompt":
-		requireArgCount("prompt", commandArgs, 1)
-		commandErr = commands.HandlePromptCommand(commandArgs)
+		if *bufferFlag {
+			requireArgCount("prompt", commandArgs, 0)
+		} else {
+			requireArgCount("prompt", commandArgs, 1)
+		}
+		commandErr = commands.HandlePromptCommand(commandArgs, *bufferFlag)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	default:

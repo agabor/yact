@@ -15,6 +15,17 @@ func SetPrompt(prompt string) error {
 	return transaction.Save()
 }
 
-func HandlePromptCommand(args []string) error {
-	return SetPrompt(args[0])
+func resolvePromptText(useBuffer bool, args []string) (string, error) {
+	if useBuffer {
+		return logic.ReadBuffer()
+	}
+	return args[0], nil
+}
+
+func HandlePromptCommand(args []string, useBuffer bool) error {
+	prompt, err := resolvePromptText(useBuffer, args)
+	if err != nil {
+		return err
+	}
+	return SetPrompt(prompt)
 }
