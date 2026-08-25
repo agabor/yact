@@ -1,0 +1,58 @@
+package commands
+
+import (
+	"fmt"
+
+	"yact/config"
+)
+
+func printHelpHeader() {
+	fmt.Println(`yact - Yet Another Coding Tool
+
+Usage:
+  y [flags] <command> [arguments]
+
+Commands:
+  help                                 Show this help message
+  read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
+  keyword <keyword>                    Recursively add files containing the keyword to the task context
+  config [key] [value]                 Manage configuration settings
+  new                                  Create a new empty task context
+  <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
+}
+
+func printPromptCommands() {
+	promptNames, err := config.ListPromptNames()
+	if err != nil || len(promptNames) == 0 {
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("  Available Commands:")
+	for _, name := range promptNames {
+		fmt.Printf("  %s\n", name)
+	}
+}
+
+func printHelpFooter() {
+	fmt.Println(`
+Global Flags:
+  -h, --help                           Show help message
+  -t, --think                          Enable Claude's extended thinking mode
+  -n, --no-write                       Do not write files, print response instead
+  -f, --fable                          Use Claude Fable model
+  -o, --opus                           Use Claude Opus model
+  -s, --sonnet                         Use Claude Sonnet model
+      --haiku                          Use Claude Haiku model
+  -b, --buffer                         Use the buffer content as the prompt
+  -d, --download                       Download the system prompt for the command
+  -q, --quiet                          Hide progress indicator
+
+For more information, visit: https://github.com/agabor/yact`)
+}
+
+func ShowHelp() {
+	printHelpHeader()
+	printPromptCommands()
+	printHelpFooter()
+}

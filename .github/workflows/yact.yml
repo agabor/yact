@@ -1,0 +1,193 @@
+name: yact
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command'
+        required: true
+        type: choice
+        options:
+          - 'plan'
+          - 'act'
+          - 'ask'
+        default: 'plan'
+      model:
+        description: "model"
+        type: choice
+        options:
+          - 'haiku'
+          - 'sonnet'
+          - 'opus'
+        default: 'sonnet'
+      prompt:
+        description: "prompt"
+        type: string
+        required: true
+      buffer:
+        description: "use prompt from buffer"
+        type: boolean
+        default: false
+      clear:
+        description: "clear yact folder"
+        type: boolean
+        default: false
+      commit_message:
+        description: "commit message"
+        type: string
+        required: true
+      readme_md:
+        description: "README.md"
+        type: boolean
+        default: false
+      commands_new_go:
+        description: "commands/new.go"
+        type: boolean
+        default: false
+      commands_read_go:
+        description: "commands/read.go"
+        type: boolean
+        default: false
+      commands_prompt_go:
+        description: "commands/prompt.go"
+        type: boolean
+        default: false
+      commands_config_go:
+        description: "commands/config.go"
+        type: boolean
+        default: false
+      commands_call_go:
+        description: "commands/call.go"
+        type: boolean
+        default: false
+      commands_keyword_go:
+        description: "commands/keyword.go"
+        type: boolean
+        default: false
+      commands_help_go:
+        description: "commands/help.go"
+        type: boolean
+        default: false
+      config_config_go:
+        description: "config/config.go"
+        type: boolean
+        default: false
+      logic_buffer_go:
+        description: "logic/buffer.go"
+        type: boolean
+        default: false
+      logic_transaction_go:
+        description: "logic/transaction.go"
+        type: boolean
+        default: false
+      logic_codefile_go:
+        description: "logic/codefile.go"
+        type: boolean
+        default: false
+      api_client_go:
+        description: "api/client.go"
+        type: boolean
+        default: false
+      api_claude_go:
+        description: "api/claude.go"
+        type: boolean
+        default: false
+      main_go:
+        description: "main.go"
+        type: boolean
+        default: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download YACT
+        run: |
+          curl -L -o y "https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64"
+          chmod +x y
+
+      - name: configure Claude API key
+        run: ./y config anthropic_api_key "${{ secrets.CLAUDE_API_KEY }}"
+
+      - name: read README.md
+        if: ${{ github.event.inputs.readme_md == 'true' }}
+        run: ./y read ./README.md
+
+      - name: read commands/new.go
+        if: ${{ github.event.inputs.commands_new_go == 'true' }}
+        run: ./y read ./commands/new.go
+
+      - name: read commands/read.go
+        if: ${{ github.event.inputs.commands_read_go == 'true' }}
+        run: ./y read ./commands/read.go
+
+      - name: read commands/prompt.go
+        if: ${{ github.event.inputs.commands_prompt_go == 'true' }}
+        run: ./y read ./commands/prompt.go
+
+      - name: read commands/config.go
+        if: ${{ github.event.inputs.commands_config_go == 'true' }}
+        run: ./y read ./commands/config.go
+
+      - name: read commands/call.go
+        if: ${{ github.event.inputs.commands_call_go == 'true' }}
+        run: ./y read ./commands/call.go
+
+      - name: read commands/keyword.go
+        if: ${{ github.event.inputs.commands_keyword_go == 'true' }}
+        run: ./y read ./commands/keyword.go
+
+      - name: read commands/help.go
+        if: ${{ github.event.inputs.commands_help_go == 'true' }}
+        run: ./y read ./commands/help.go
+
+      - name: read config/config.go
+        if: ${{ github.event.inputs.config_config_go == 'true' }}
+        run: ./y read ./config/config.go
+
+      - name: read logic/buffer.go
+        if: ${{ github.event.inputs.logic_buffer_go == 'true' }}
+        run: ./y read ./logic/buffer.go
+
+      - name: read logic/transaction.go
+        if: ${{ github.event.inputs.logic_transaction_go == 'true' }}
+        run: ./y read ./logic/transaction.go
+
+      - name: read logic/codefile.go
+        if: ${{ github.event.inputs.logic_codefile_go == 'true' }}
+        run: ./y read ./logic/codefile.go
+
+      - name: read api/client.go
+        if: ${{ github.event.inputs.api_client_go == 'true' }}
+        run: ./y read ./api/client.go
+
+      - name: read api/claude.go
+        if: ${{ github.event.inputs.api_claude_go == 'true' }}
+        run: ./y read ./api/claude.go
+
+      - name: read main.go
+        if: ${{ github.event.inputs.main_go == 'true' }}
+        run: ./y read ./main.go
+
+      - name: run command
+        if: ${{ github.event.inputs.buffer == 'true' }}
+        run: ./y ${{ github.event.inputs.command }} -d -q --${{ github.event.inputs.model }} -b
+
+      - name: run commamd
+        if: ${{ github.event.inputs.buffer == 'false' }}
+        run: ./y ${{ github.event.inputs.command }} -d -q --${{ github.event.inputs.model }} "${{ github.event.inputs.prompt }}"
+
+      - name: Clean up
+        if: ${{ github.event.inputs.clear == 'true' }}
+        run: rm -rf .yact
+
+      - name: commit and push changes
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git add -A
+          git commit -m "plan: ${{ github.event.inputs.commit_message }}"
+          git push
