@@ -3,8 +3,11 @@
 Minimal, responsive, transparent LLM coding assistant.
 
 **Source code:** [github.com/agabor/yact](https://github.com/agabor/yact)
+
 **Author:** Gábor Angyal
+
 **License:** GNU GPL v3, see [LICENSE](https://github.com/agabor/yact/blob/main/LICENSE) in the repository
+
 
 > **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party
 > tool. It is not made, endorsed, or supported by Anthropic PBC. "Claude" and
