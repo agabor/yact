@@ -3,5 +3,9 @@
 ./api/client.go
 ./api/claude.go
 ./main.go
+./go.mod
+./go.sum
+./commands/config.go
+./config/config.go
 ==========
 Implement the -w flag to use the 'Qwen3 Coder 30B A3B' model from AWS Bedrock
