@@ -1,0 +1,7 @@
+./commands/call.go
+./commands/help.go
+./api/client.go
+./api/claude.go
+./main.go
+==========
+Implement the -w flag to use the 'Qwen3 Coder 30B A3B' model from AWS Bedrock
