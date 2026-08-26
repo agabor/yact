@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	ClaudeModel = "haiku"
-	MaxTokens   = 16000
-	ThinkBudget = 8000
+	ClaudeModel  = "haiku"
+	BedrockModel = "qwen.qwen3-coder-30b-a3b-v1:0"
+	AWSRegion    = "us-west-2"
+	MaxTokens    = 16000
+	ThinkBudget  = 8000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
@@ -22,6 +24,8 @@ const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/ref
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
 	ClaudeModel     string `json:"claude_model"`
+	BedrockModel    string `json:"bedrock_model"`
+	AWSRegion       string `json:"aws_region"`
 	MaxTokens       int    `json:"max_tokens"`
 	ThinkBudget     int    `json:"think_budget"`
 }
@@ -78,6 +82,8 @@ func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
 		ClaudeModel:     ClaudeModel,
+		BedrockModel:    BedrockModel,
+		AWSRegion:       AWSRegion,
 		MaxTokens:       MaxTokens,
 		ThinkBudget:     ThinkBudget,
 	}
@@ -110,6 +116,14 @@ func Load() (*Config, error) {
 
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return cfg, err
+	}
+
+	if cfg.BedrockModel == "" {
+		cfg.BedrockModel = BedrockModel
+	}
+
+	if cfg.AWSRegion == "" {
+		cfg.AWSRegion = AWSRegion
 	}
 
 	return cfg, nil
