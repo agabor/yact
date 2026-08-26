@@ -70,9 +70,7 @@ func (c *ClaudeClient) GetModelName() string {
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
-	inputCost := (float64(inputTokens) / 1_000_000) * float64(c.inputPrice)
-	outputCost := (float64(outputTokens) / 1_000_000) * float64(c.outputPrice)
-	return inputCost + outputCost
+	return FormatCost(inputTokens, outputTokens, float64(c.inputPrice), float64(c.outputPrice))
 }
 
 func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
@@ -86,18 +84,14 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 
 	messageParams := make([]anthropic.MessageParam, 0)
 
-	fileCount := 0
-	blocks := make([]anthropic.ContentBlockParamUnion, 0)
-	for _, filePath := range transaction.Context {
-		fileContent, err := Serialize(filePath)
-		if err != nil {
-			return "", err
-		}
-		blocks = append(blocks, anthropic.NewTextBlock(fileContent))
-		fileCount += 1
+	textBlocks, fileCount, err := BuildUserBlocks(transaction)
+	if err != nil {
+		return "", err
 	}
-	for _, prompt := range transaction.Request {
-		blocks = append(blocks, anthropic.NewTextBlock(prompt))
+
+	blocks := make([]anthropic.ContentBlockParamUnion, 0, len(textBlocks))
+	for _, text := range textBlocks {
+		blocks = append(blocks, anthropic.NewTextBlock(text))
 	}
 	messageParams = append(messageParams, anthropic.MessageParam{
 		Role:    anthropic.MessageParamRoleUser,

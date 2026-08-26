@@ -12,6 +12,8 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		fmt.Println("Current configuration:")
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
+		printConfigValue("bedrock_model", cfg.BedrockModel, false)
+		printConfigValue("aws_region", cfg.AWSRegion, false)
 		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
 		printConfigValue("think_budget", fmt.Sprintf("%d", cfg.ThinkBudget), false)
 		return nil
@@ -30,6 +32,10 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.AnthropicAPIKey = value
 		case "claude_model":
 			cfg.ClaudeModel = value
+		case "bedrock_model":
+			cfg.BedrockModel = value
+		case "aws_region":
+			cfg.AWSRegion = value
 		case "max_tokens":
 			if err := setIntValue(&cfg.MaxTokens, value); err != nil {
 				return err

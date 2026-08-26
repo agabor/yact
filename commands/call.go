@@ -46,7 +46,7 @@ func HandleActCommand(think bool, noWrite bool, quiet bool, cfg *config.Config, 
 		return err
 	}
 
-	response, err := callClaudeAPI(transaction, think, quiet, cfg, systemPrompt)
+	response, err := callLLM(transaction, think, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -68,17 +68,28 @@ func HandleActCommand(think bool, noWrite bool, quiet bool, cfg *config.Config, 
 	return nil
 }
 
-func callClaudeAPI(transaction logic.Transaction, think bool, quiet bool, cfg *config.Config, systemPrompt string) (string, error) {
-
+func newClient(cfg *config.Config) api.Client {
 	var client api.Client
-	client = &api.ClaudeClient{}
+
+	if strings.ToLower(cfg.ClaudeModel) == "qwen" {
+		client = &api.BedrockClient{}
+	} else {
+		client = &api.ClaudeClient{}
+	}
+
 	client.Init(cfg)
+
+	return client
+}
+
+func callLLM(transaction logic.Transaction, think bool, quiet bool, cfg *config.Config, systemPrompt string) (string, error) {
+	client := newClient(cfg)
 
 	if quiet {
 		return client.Call(transaction, think, systemPrompt)
 	}
 
-	fmt.Printf("Sending request to Claude...\n")
+	fmt.Printf("Sending request...\n")
 	fmt.Printf("Model: %s\n", client.GetModelName())
 
 	done := make(chan bool)
