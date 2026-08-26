@@ -108,6 +108,10 @@ on:
         description: "api/claude.go"
         type: boolean
         default: false
+      api_bedrock_go:
+        description: "api/bedrock.go"
+        type: boolean
+        default: false
       main_go:
         description: "main.go"
         type: boolean
@@ -191,6 +195,10 @@ jobs:
       - name: read api/claude.go
         if: ${{ github.event.inputs.api_claude_go == 'true' }}
         run: ./y read ./api/claude.go
+
+      - name: read api/bedrock.go
+        if: ${{ github.event.inputs.api_bedrock_go == 'true' }}
+        run: ./y read ./api/bedrock.go
 
       - name: read main.go
         if: ${{ github.event.inputs.main_go == 'true' }}
