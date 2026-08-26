@@ -23,9 +23,17 @@ on:
       prompt:
         description: "prompt"
         type: string
-        required: true
+        required: false
       buffer:
         description: "use prompt from buffer"
+        type: boolean
+        default: false
+      existing_prompt:
+        description: "use existing prompt"
+        type: boolean
+        default: false
+      no_write:
+        description: "do not write files, print response instead"
         type: boolean
         default: false
       clear:
@@ -38,6 +46,14 @@ on:
         required: true
       readme_md:
         description: "README.md"
+        type: boolean
+        default: false
+      go_mod:
+        description: "go.mod"
+        type: boolean
+        default: false
+      go_sum:
+        description: "go.sum"
         type: boolean
         default: false
       commands_new_go:
@@ -116,6 +132,14 @@ jobs:
         if: ${{ github.event.inputs.readme_md == 'true' }}
         run: ./y read ./README.md
 
+      - name: read go.mod
+        if: ${{ github.event.inputs.go_mod == 'true' }}
+        run: ./y read ./go.mod
+
+      - name: read go.sum
+        if: ${{ github.event.inputs.go_sum == 'true' }}
+        run: ./y read ./go.sum
+
       - name: read commands/new.go
         if: ${{ github.event.inputs.commands_new_go == 'true' }}
         run: ./y read ./commands/new.go
@@ -173,12 +197,27 @@ jobs:
         run: ./y read ./main.go
 
       - name: run command
-        if: ${{ github.event.inputs.buffer == 'true' }}
-        run: ./y ${{ github.event.inputs.command }} -d -q --${{ github.event.inputs.model }} -b
+        env:
+          YACT_COMMAND: ${{ github.event.inputs.command }}
+          YACT_MODEL: ${{ github.event.inputs.model }}
+          YACT_PROMPT: ${{ github.event.inputs.prompt }}
+          YACT_BUFFER: ${{ github.event.inputs.buffer }}
+          YACT_EXISTING_PROMPT: ${{ github.event.inputs.existing_prompt }}
+          YACT_NO_WRITE: ${{ github.event.inputs.no_write }}
+        run: |
+          args=("$YACT_COMMAND" "-d" "-q" "--$YACT_MODEL")
 
-      - name: run commamd
-        if: ${{ github.event.inputs.buffer == 'false' }}
-        run: ./y ${{ github.event.inputs.command }} -d -q --${{ github.event.inputs.model }} "${{ github.event.inputs.prompt }}"
+          if [ "$YACT_NO_WRITE" = "true" ]; then
+            args+=("-n")
+          fi
+
+          if [ "$YACT_BUFFER" = "true" ]; then
+            args+=("-b")
+          elif [ "$YACT_EXISTING_PROMPT" != "true" ]; then
+            args+=("$YACT_PROMPT")
+          fi
+
+          ./y "${args[@]}"
 
       - name: Clean up
         if: ${{ github.event.inputs.clear == 'true' }}
