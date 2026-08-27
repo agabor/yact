@@ -1,0 +1,38 @@
+Goal: Authenticate AWS Bedrock calls with a Bedrock API key (bearer token) stored in the yact config file, falling back to the default AWS credential chain when no key is set.
+
+Steps:
+
+1. Update dependencies (go.mod / go.sum)
+   - Bedrock bearer-token auth requires a recent SDK. Run:
+     - `go get github.com/aws/aws-sdk-go-v2/service/bedrockruntime@latest`
+     - `go get github.com/aws/aws-sdk-go-v2/config@latest`
+     - `go get github.com/aws/smithy-go@latest`
+     - `go mod tidy`
+   - Result: `github.com/aws/smithy-go` becomes a direct dependency (used for `auth/bearer`).
+
+2. Add API key to config (config/config.go)
+   - Add field to `Config` struct:
+     - `AWSAPIKey string \`json:"aws_api_key"\``
+   - `DefaultConfig()`: initialize `AWSAPIKey: ""`.
+   - No env/file migration needed; empty value means "use default AWS credential chain".
+
+3. Use the API key in the Bedrock client (api/bedrock.go)
+   - Add field `apiKey string` to `BedrockClient`.
+   - `func (c *BedrockClient) Init(cfg *config.Config)`: set `c.apiKey = cfg.AWSAPIKey` (keep existing assignments).
+   - Add helper:
+     - `func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.Client, error)`
+       - Load AWS config: `awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))`; on error wrap as today.
+       - If `c.apiKey == ""`: return `bedrockruntime.NewFromConfig(awsCfg), nil`.
+       - If `c.apiKey != ""`: return client built with option func:
+         - `bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) { o.BearerAuthTokenProvider = smithybearer.StaticTokenProvider{Token: smithybearer.Token{Value: c.apiKey}}; o.AuthSchemePreference = append([]string{"httpBearerAuth"}, o.AuthSchemePreference...) })`
+         - Import `smithybearer "github.com/aws/smithy-go/auth/bearer"`.
+   - `Call(...)`: replace inline `LoadDefaultConfig` + `NewFromConfig` with `client, err := c.newRuntimeClient(ctx)`; return error if non-nil.
+   - Update error message when neither API key nor credentials work: mention `y config aws_api_key YOUR_KEY`.
+
+4. Expose the key via the config command (commands/config.go)
+   - In `HandleConfigCommand`, in the no-args branch add:
+     - `printConfigValue("aws_api_key", cfg.AWSAPIKey, true)` (masked).
+   - In the set branch `switch key`, add case:
+     - `case "aws_api_key": cfg.AWSAPIKey = value`
+   - Extend the masked-output condition after `cfg.Save()`:
+     - mask when `key == "anthropic_api_key" || key == "aws_api_key"`.
