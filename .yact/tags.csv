@@ -6,10 +6,13 @@ commands/config.go,config
 commands/help.go,cli
 commands/keyword.go,prompt,read
 commands/new.go,prompt
-commands/read.go,prompt,read
-commands/tag.go,read
+commands/read.go,prompt,read,tag
+commands/tag.go,read,tag
 config/config.go,config
+go.mod,base
+go.sum,base
 logic/buffer.go,prompt
 logic/codefile.go,prompt
+logic/tags.go,tag
 logic/transaction.go,prompt
-main.go,cli
+main.go,cli,base
