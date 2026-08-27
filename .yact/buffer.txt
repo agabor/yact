@@ -1,0 +1,20 @@
+Goal: Add a global `-c/--code-only` switch that makes yact reject any LLM response containing free text or unterminated/incomplete code blocks, exiting with an error before any file is written, while still keeping the buffer write that already happens inside the API clients.
+
+Missing context: the file defining `logic.ParseCodeFiles`, `logic.CodeFile` and `logic.BlockDelimiter` (likely logic/parse.go or logic/codefile.go) is not included. It is needed to confirm the exact element types returned by `ParseCodeFiles` and the delimiter semantics used for detecting incomplete blocks.
+
+Steps:
+
+1. Add validation and flag handling in the act command (commands/call.go):
+   - Change signature to HandleActCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error.
+   - After callLLM returns successfully and before the noWrite branch and before processResponse, if codeOnly is true call validateCodeOnlyResponse and return its error unchanged (no file writes, no printing of the response body).
+   - Add validateCodeOnlyResponse(content string) error: parses the content with logic.ParseCodeFiles, ensures at least one logic.CodeFile element exists, ensures every non-CodeFile element (free text string) is empty after strings.TrimSpace, and ensures the block structure is complete via hasIncompleteBlock; returns a descriptive error listing the first offending free-text snippet (truncated) or reporting the unterminated block.
+   - Add hasIncompleteBlock(content string) bool: counts lines equal to logic.BlockDelimiter (after TrimSpace) in the response and returns true when the count is zero or odd, indicating an unclosed code block.
+   - Keep processResponse and all other functions unchanged.
+
+2. Register the new flag and pass it through (main.go):
+   - Add codeOnlyFlag := flag.BoolP("code-only", "c", false, "Only accept code blocks in the response").
+   - Pass *codeOnlyFlag to commands.HandleActCommand in the default command branch, in the new parameter position after quiet.
+   - No change to error handling: the returned validation error is printed to stderr and causes os.Exit(1), giving the required non-zero exit code.
+
+3. Document the flag in the help output (commands/help.go):
+   - In printHelpFooter, add a line under Global Flags describing `-c, --code-only` as "Fail if the response contains free text or incomplete code blocks", placed next to the `-n, --no-write` entry.
