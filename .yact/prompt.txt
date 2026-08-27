@@ -1,0 +1,10 @@
+api/bedrock.go
+api/claude.go
+api/client.go
+commands/call.go
+commands/config.go
+config/config.go
+commands/help.go
+main.go
+==========
+Implement the -c/--code-only switch. When this set yact dhould only accept code blocks as response.  Should it contain free text or incomplete code blocks , it should retirn with an error code, without wrizing files. It should still write buffer.txt
