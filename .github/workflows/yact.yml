@@ -58,6 +58,10 @@ on:
         description: "README.md"
         type: boolean
         default: false
+      read_codebase:
+        description: "read whole codebase"
+        type: boolean
+        default: false
       tag_base:
         description: "tag: base"
         type: boolean
@@ -107,6 +111,10 @@ jobs:
       - name: read README.md
         if: ${{ github.event.inputs.readme_md == 'true' }}
         run: ./y read ./README.md
+
+      - name: read whole codebase
+        if: ${{ github.event.inputs.read_codebase == 'true' }}
+        run: ./y read **/*
 
       - name: read tag base
         if: ${{ github.event.inputs.tag_base == 'true' }}
