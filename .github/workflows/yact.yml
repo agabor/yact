@@ -56,64 +56,24 @@ on:
         description: "go.sum"
         type: boolean
         default: false
-      commands_new_go:
-        description: "commands/new.go"
+      tag_api:
+        description: "tag: api"
         type: boolean
         default: false
-      commands_read_go:
-        description: "commands/read.go"
+      tag_config:
+        description: "tag: config"
         type: boolean
         default: false
-      commands_prompt_go:
-        description: "commands/prompt.go"
+      tag_cli:
+        description: "tag: cli"
         type: boolean
         default: false
-      commands_config_go:
-        description: "commands/config.go"
+      tag_prompt:
+        description: "tag: prompt"
         type: boolean
         default: false
-      commands_call_go:
-        description: "commands/call.go"
-        type: boolean
-        default: false
-      commands_keyword_go:
-        description: "commands/keyword.go"
-        type: boolean
-        default: false
-      commands_help_go:
-        description: "commands/help.go"
-        type: boolean
-        default: false
-      config_config_go:
-        description: "config/config.go"
-        type: boolean
-        default: false
-      logic_buffer_go:
-        description: "logic/buffer.go"
-        type: boolean
-        default: false
-      logic_transaction_go:
-        description: "logic/transaction.go"
-        type: boolean
-        default: false
-      logic_codefile_go:
-        description: "logic/codefile.go"
-        type: boolean
-        default: false
-      api_client_go:
-        description: "api/client.go"
-        type: boolean
-        default: false
-      api_claude_go:
-        description: "api/claude.go"
-        type: boolean
-        default: false
-      api_bedrock_go:
-        description: "api/bedrock.go"
-        type: boolean
-        default: false
-      main_go:
-        description: "main.go"
+      tag_read:
+        description: "tag: read"
         type: boolean
         default: false
 
@@ -144,65 +104,25 @@ jobs:
         if: ${{ github.event.inputs.go_sum == 'true' }}
         run: ./y read ./go.sum
 
-      - name: read commands/new.go
-        if: ${{ github.event.inputs.commands_new_go == 'true' }}
-        run: ./y read ./commands/new.go
+      - name: read tag api
+        if: ${{ github.event.inputs.tag_api == 'true' }}
+        run: ./y read api
 
-      - name: read commands/read.go
-        if: ${{ github.event.inputs.commands_read_go == 'true' }}
-        run: ./y read ./commands/read.go
+      - name: read tag config
+        if: ${{ github.event.inputs.tag_config == 'true' }}
+        run: ./y read config
 
-      - name: read commands/prompt.go
-        if: ${{ github.event.inputs.commands_prompt_go == 'true' }}
-        run: ./y read ./commands/prompt.go
+      - name: read tag cli
+        if: ${{ github.event.inputs.tag_cli == 'true' }}
+        run: ./y read cli
 
-      - name: read commands/config.go
-        if: ${{ github.event.inputs.commands_config_go == 'true' }}
-        run: ./y read ./commands/config.go
+      - name: read tag prompt
+        if: ${{ github.event.inputs.tag_prompt == 'true' }}
+        run: ./y read prompt
 
-      - name: read commands/call.go
-        if: ${{ github.event.inputs.commands_call_go == 'true' }}
-        run: ./y read ./commands/call.go
-
-      - name: read commands/keyword.go
-        if: ${{ github.event.inputs.commands_keyword_go == 'true' }}
-        run: ./y read ./commands/keyword.go
-
-      - name: read commands/help.go
-        if: ${{ github.event.inputs.commands_help_go == 'true' }}
-        run: ./y read ./commands/help.go
-
-      - name: read config/config.go
-        if: ${{ github.event.inputs.config_config_go == 'true' }}
-        run: ./y read ./config/config.go
-
-      - name: read logic/buffer.go
-        if: ${{ github.event.inputs.logic_buffer_go == 'true' }}
-        run: ./y read ./logic/buffer.go
-
-      - name: read logic/transaction.go
-        if: ${{ github.event.inputs.logic_transaction_go == 'true' }}
-        run: ./y read ./logic/transaction.go
-
-      - name: read logic/codefile.go
-        if: ${{ github.event.inputs.logic_codefile_go == 'true' }}
-        run: ./y read ./logic/codefile.go
-
-      - name: read api/client.go
-        if: ${{ github.event.inputs.api_client_go == 'true' }}
-        run: ./y read ./api/client.go
-
-      - name: read api/claude.go
-        if: ${{ github.event.inputs.api_claude_go == 'true' }}
-        run: ./y read ./api/claude.go
-
-      - name: read api/bedrock.go
-        if: ${{ github.event.inputs.api_bedrock_go == 'true' }}
-        run: ./y read ./api/bedrock.go
-
-      - name: read main.go
-        if: ${{ github.event.inputs.main_go == 'true' }}
-        run: ./y read ./main.go
+      - name: read tag read
+        if: ${{ github.event.inputs.tag_read == 'true' }}
+        run: ./y read read
 
       - name: run command
         env:
