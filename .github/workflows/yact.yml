@@ -23,18 +23,19 @@ on:
           - 'qmax'
           - 'qcoder'
         default: 'sonnet'
+      prompt_source:
+        description: "prompt source"
+        required: true
+        type: choice
+        options:
+          - 'enter'
+          - 'buffer'
+          - 'existing'
+        default: 'enter'
       prompt:
         description: "prompt"
         type: string
         required: false
-      buffer:
-        description: "use prompt from buffer"
-        type: boolean
-        default: false
-      existing_prompt:
-        description: "use existing prompt"
-        type: boolean
-        default: false
       no_write:
         description: "do not write files, print response instead"
         type: boolean
@@ -123,9 +124,8 @@ jobs:
         env:
           YACT_COMMAND: ${{ github.event.inputs.command }}
           YACT_MODEL: ${{ github.event.inputs.model }}
+          YACT_PROMPT_SOURCE: ${{ github.event.inputs.prompt_source }}
           YACT_PROMPT: ${{ github.event.inputs.prompt }}
-          YACT_BUFFER: ${{ github.event.inputs.buffer }}
-          YACT_EXISTING_PROMPT: ${{ github.event.inputs.existing_prompt }}
           YACT_NO_WRITE: ${{ github.event.inputs.no_write }}
         run: |
           args=("$YACT_COMMAND" "-d" "-q" "--$YACT_MODEL")
@@ -134,9 +134,11 @@ jobs:
             args+=("-n")
           fi
 
-          if [ "$YACT_BUFFER" = "true" ]; then
+          if [ "$YACT_PROMPT_SOURCE" = "buffer" ]; then
             args+=("-b")
-          elif [ "$YACT_EXISTING_PROMPT" != "true" ]; then
+          elif [ "$YACT_PROMPT_SOURCE" = "existing" ]; then
+            args+=("--existing-prompt")
+          elif [ -n "$YACT_PROMPT" ]; then
             args+=("$YACT_PROMPT")
           fi
 
