@@ -1,38 +1,634 @@
-Goal: Authenticate AWS Bedrock calls with a Bedrock API key (bearer token) stored in the yact config file, falling back to the default AWS credential chain when no key is set.
+````
+//go.mod
+module yact
 
-Steps:
+go 1.25.0
 
-1. Update dependencies (go.mod / go.sum)
-   - Bedrock bearer-token auth requires a recent SDK. Run:
-     - `go get github.com/aws/aws-sdk-go-v2/service/bedrockruntime@latest`
-     - `go get github.com/aws/aws-sdk-go-v2/config@latest`
-     - `go get github.com/aws/smithy-go@latest`
-     - `go mod tidy`
-   - Result: `github.com/aws/smithy-go` becomes a direct dependency (used for `auth/bearer`).
+require (
+	github.com/anthropics/anthropic-sdk-go v1.63.1
+	github.com/aws/aws-sdk-go-v2 v1.32.6
+	github.com/aws/aws-sdk-go-v2/config v1.28.6
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.22.0
+	github.com/aws/smithy-go v1.22.1
+	github.com/spf13/pflag v1.0.10
+)
 
-2. Add API key to config (config/config.go)
-   - Add field to `Config` struct:
-     - `AWSAPIKey string \`json:"aws_api_key"\``
-   - `DefaultConfig()`: initialize `AWSAPIKey: ""`.
-   - No env/file migration needed; empty value means "use default AWS credential chain".
+require (
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.7 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.47 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.25 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.25 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.24.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/buger/jsonparser v1.6.1 // indirect
+	github.com/invopop/jsonschema v0.14.0 // indirect
+	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
+	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
+	github.com/tidwall/gjson v1.19.0 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+)
+````
 
-3. Use the API key in the Bedrock client (api/bedrock.go)
-   - Add field `apiKey string` to `BedrockClient`.
-   - `func (c *BedrockClient) Init(cfg *config.Config)`: set `c.apiKey = cfg.AWSAPIKey` (keep existing assignments).
-   - Add helper:
-     - `func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.Client, error)`
-       - Load AWS config: `awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))`; on error wrap as today.
-       - If `c.apiKey == ""`: return `bedrockruntime.NewFromConfig(awsCfg), nil`.
-       - If `c.apiKey != ""`: return client built with option func:
-         - `bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) { o.BearerAuthTokenProvider = smithybearer.StaticTokenProvider{Token: smithybearer.Token{Value: c.apiKey}}; o.AuthSchemePreference = append([]string{"httpBearerAuth"}, o.AuthSchemePreference...) })`
-         - Import `smithybearer "github.com/aws/smithy-go/auth/bearer"`.
-   - `Call(...)`: replace inline `LoadDefaultConfig` + `NewFromConfig` with `client, err := c.newRuntimeClient(ctx)`; return error if non-nil.
-   - Update error message when neither API key nor credentials work: mention `y config aws_api_key YOUR_KEY`.
+````
+//config/config.go
+package config
 
-4. Expose the key via the config command (commands/config.go)
-   - In `HandleConfigCommand`, in the no-args branch add:
-     - `printConfigValue("aws_api_key", cfg.AWSAPIKey, true)` (masked).
-   - In the set branch `switch key`, add case:
-     - `case "aws_api_key": cfg.AWSAPIKey = value`
-   - Extend the masked-output condition after `cfg.Save()`:
-     - mask when `key == "anthropic_api_key" || key == "aws_api_key"`.
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+const (
+	ClaudeModel  = "haiku"
+	BedrockModel = "qwen.qwen3-coder-30b-a3b-v1:0"
+	AWSRegion    = "us-west-2"
+	MaxTokens    = 16000
+	ThinkBudget  = 8000
+)
+
+const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
+
+type Config struct {
+	AnthropicAPIKey string `json:"anthropic_api_key"`
+	ClaudeModel     string `json:"claude_model"`
+	BedrockModel    string `json:"bedrock_model"`
+	AWSRegion       string `json:"aws_region"`
+	AWSAPIKey       string `json:"aws_api_key"`
+	MaxTokens       int    `json:"max_tokens"`
+	ThinkBudget     int    `json:"think_budget"`
+}
+
+func getConfigDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".yact"), nil
+}
+
+func getConfigFile() (string, error) {
+	dir, err := getConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "config"), nil
+}
+
+func getPromptsDir() (string, error) {
+	dir, err := getConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "systemprompts"), nil
+}
+
+func getPromptFile(name string) (string, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, name+".txt"), nil
+}
+
+func GetProjectYactDir() string {
+	return ".yact"
+}
+
+func GetProjectPromptPath() string {
+	return filepath.Join(GetProjectYactDir(), "prompt.txt")
+}
+
+func GetProjectIndexPath() string {
+	return filepath.Join(GetProjectYactDir(), "index.csv")
+}
+
+func GetProjectExtensionsPath() string {
+	return filepath.Join(GetProjectYactDir(), "extensions.txt")
+}
+
+func GetProjectTagsPath() string {
+	return filepath.Join(GetProjectYactDir(), "tags.csv")
+}
+
+func DefaultConfig() *Config {
+	return &Config{
+		AnthropicAPIKey: "",
+		ClaudeModel:     ClaudeModel,
+		BedrockModel:    BedrockModel,
+		AWSRegion:       AWSRegion,
+		AWSAPIKey:       "",
+		MaxTokens:       MaxTokens,
+		ThinkBudget:     ThinkBudget,
+	}
+}
+
+func DefaultExtensions() []string {
+	return []string{
+		"go", "cs", "js", "jsx", "ts",
+		"tsx", "py", "java", "rb", "php",
+		"c", "cpp", "h", "hpp", "rs",
+		"kt", "swift", "htm", "html",
+	}
+}
+
+func Load() (*Config, error) {
+	cfg := DefaultConfig()
+
+	configFile, err := getConfigFile()
+	if err != nil {
+		return cfg, err
+	}
+
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return cfg, nil
+		}
+		return cfg, err
+	}
+
+	if err := json.Unmarshal(data, cfg); err != nil {
+		return cfg, err
+	}
+
+	if cfg.BedrockModel == "" {
+		cfg.BedrockModel = BedrockModel
+	}
+
+	if cfg.AWSRegion == "" {
+		cfg.AWSRegion = AWSRegion
+	}
+
+	return cfg, nil
+}
+
+func (c *Config) Save() error {
+	configFile, err := getConfigFile()
+	if err != nil {
+		return err
+	}
+
+	dir, err := getConfigDir()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(configFile, data, 0644)
+}
+
+func LoadPrompt(name string) (string, error) {
+	promptFile, err := getPromptFile(name)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(promptFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+func DownloadPrompt(name string) error {
+	promptFile, err := getPromptFile(name)
+	if err != nil {
+		return err
+	}
+
+	dir, err := getPromptsDir()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	url := promptDownloadBaseURL + name + ".txt"
+
+	fmt.Printf("Downloading system prompt for '%s'...\n", name)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return &promptDownloadError{name: name, statusCode: resp.StatusCode}
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(promptFile, data, 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("System prompt for '%s' downloaded successfully.\n", name)
+
+	return nil
+}
+
+type promptDownloadError struct {
+	name       string
+	statusCode int
+}
+
+func (e *promptDownloadError) Error() string {
+	return "failed to download prompt '" + e.name + "': HTTP status " + http.StatusText(e.statusCode)
+}
+
+func ListPromptNames() ([]string, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+
+	var names []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		fileName := entry.Name()
+		if strings.HasSuffix(fileName, ".txt") {
+			names = append(names, strings.TrimSuffix(fileName, ".txt"))
+		}
+	}
+
+	sort.Strings(names)
+
+	return names, nil
+}
+
+func LoadExtensions() ([]string, error) {
+	extensionsPath := GetProjectExtensionsPath()
+
+	data, err := os.ReadFile(extensionsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			defaultExtensions := DefaultExtensions()
+			if saveErr := SaveExtensions(defaultExtensions); saveErr != nil {
+				return defaultExtensions, saveErr
+			}
+			return defaultExtensions, nil
+		}
+		return nil, err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	var extensions []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			extensions = append(extensions, trimmed)
+		}
+	}
+
+	if len(extensions) == 0 {
+		return DefaultExtensions(), nil
+	}
+
+	return extensions, nil
+}
+
+func SaveExtensions(extensions []string) error {
+	yactDir := GetProjectYactDir()
+	if err := os.MkdirAll(yactDir, 0755); err != nil {
+		return err
+	}
+
+	content := strings.Join(extensions, "\n") + "\n"
+	return os.WriteFile(GetProjectExtensionsPath(), []byte(content), 0644)
+}
+````
+
+````
+//api/bedrock.go
+package api
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+	"yact/config"
+	"yact/logic"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	smithybearer "github.com/aws/smithy-go/auth/bearer"
+)
+
+type BedrockClient struct {
+	region          string
+	model           string
+	apiKey          string
+	maxOutputTokens int
+	inputPrice      float64
+	outputPrice     float64
+}
+
+func (c *BedrockClient) Init(cfg *config.Config) {
+	c.region = cfg.AWSRegion
+	c.model = cfg.BedrockModel
+	c.apiKey = cfg.AWSAPIKey
+	c.maxOutputTokens = cfg.MaxTokens
+	c.inputPrice = 0.22
+	c.outputPrice = 0.95
+}
+
+func (c *BedrockClient) GetModelName() string {
+	return c.model
+}
+
+func (c *BedrockClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
+	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
+}
+
+func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.Client, error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS configuration for region '%s'. Make sure AWS credentials and region are configured, or set an API key with: y config aws_api_key YOUR_KEY: %w", c.region, err)
+	}
+
+	if c.apiKey == "" {
+		return bedrockruntime.NewFromConfig(awsCfg), nil
+	}
+
+	return bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) {
+		o.BearerAuthTokenProvider = smithybearer.StaticTokenProvider{
+			Token: smithybearer.Token{Value: c.apiKey},
+		}
+		o.AuthSchemePreference = append([]string{"httpBearerAuth"}, o.AuthSchemePreference...)
+	}), nil
+}
+
+func (c *BedrockClient) buildMessages(transaction logic.Transaction) ([]types.Message, int, error) {
+	blocks, fileCount, err := BuildUserBlocks(transaction)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	contentBlocks := make([]types.ContentBlock, 0, len(blocks))
+	for _, block := range blocks {
+		contentBlocks = append(contentBlocks, &types.ContentBlockMemberText{Value: block})
+	}
+
+	messages := []types.Message{
+		{
+			Role:    types.ConversationRoleUser,
+			Content: contentBlocks,
+		},
+	}
+
+	return messages, fileCount, nil
+}
+
+func (c *BedrockClient) extractText(output types.ConverseOutput) string {
+	messageOutput, ok := output.(*types.ConverseOutputMemberMessage)
+	if !ok {
+		return ""
+	}
+
+	var responseText strings.Builder
+	for _, block := range messageOutput.Value.Content {
+		if textBlock, ok := block.(*types.ContentBlockMemberText); ok {
+			responseText.WriteString(textBlock.Value)
+		}
+	}
+
+	return responseText.String()
+}
+
+func (c *BedrockClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
+	ctx := context.Background()
+
+	client, err := c.newRuntimeClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	messages, fileCount, err := c.buildMessages(transaction)
+	if err != nil {
+		return "", err
+	}
+
+	input := &bedrockruntime.ConverseInput{
+		ModelId:  aws.String(c.model),
+		Messages: messages,
+		InferenceConfig: &types.InferenceConfiguration{
+			MaxTokens: aws.Int32(int32(c.maxOutputTokens)),
+		},
+	}
+
+	if systemPrompt != "" {
+		input.System = []types.SystemContentBlock{
+			&types.SystemContentBlockMemberText{Value: systemPrompt},
+		}
+	}
+
+	if think {
+		fmt.Println("Note: extended thinking mode is not supported for this model, ignoring.")
+	}
+
+	fmt.Printf("Calling Bedrock with %d messages (%d files)\n", len(messages), fileCount)
+
+	startTime := time.Now()
+
+	resp, err := client.Converse(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("error calling AWS Bedrock: %w", err)
+	}
+
+	duration := time.Since(startTime)
+	fmt.Printf("Bedrock API call took %.2f seconds\n", duration.Seconds())
+
+	var inputTokens int64
+	var outputTokens int64
+	if resp.Usage != nil {
+		if resp.Usage.InputTokens != nil {
+			inputTokens = int64(*resp.Usage.InputTokens)
+		}
+		if resp.Usage.OutputTokens != nil {
+			outputTokens = int64(*resp.Usage.OutputTokens)
+		}
+	}
+
+	fmt.Printf("Token usage - Input: %d, Output: %d\n", inputTokens, outputTokens)
+
+	cost := c.calculateCost(inputTokens, outputTokens)
+	fmt.Printf("Cost: $%.6f\n", cost)
+
+	if resp.StopReason == types.StopReasonMaxTokens {
+		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
+	}
+
+	trimmedResponse := strings.TrimSpace(c.extractText(resp.Output))
+
+	if err := logic.PutBuffer(trimmedResponse); err != nil {
+		return "", fmt.Errorf("error writing buffer: %w", err)
+	}
+
+	return trimmedResponse, nil
+}
+````
+
+````
+//commands/config.go
+package commands
+
+import (
+	"fmt"
+	"strings"
+
+	"yact/config"
+)
+
+func HandleConfigCommand(args []string, cfg *config.Config) error {
+	if len(args) == 0 {
+		fmt.Println("Current configuration:")
+		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
+		printConfigValue("claude_model", cfg.ClaudeModel, false)
+		printConfigValue("bedrock_model", cfg.BedrockModel, false)
+		printConfigValue("aws_region", cfg.AWSRegion, false)
+		printConfigValue("aws_api_key", cfg.AWSAPIKey, true)
+		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
+		printConfigValue("think_budget", fmt.Sprintf("%d", cfg.ThinkBudget), false)
+		return nil
+	}
+
+	if len(args) == 2 {
+		key := args[0]
+		value := args[1]
+
+		if key == "ext" {
+			return addExtension(value)
+		}
+
+		switch key {
+		case "anthropic_api_key":
+			cfg.AnthropicAPIKey = value
+		case "claude_model":
+			cfg.ClaudeModel = value
+		case "bedrock_model":
+			cfg.BedrockModel = value
+		case "aws_region":
+			cfg.AWSRegion = value
+		case "aws_api_key":
+			cfg.AWSAPIKey = value
+		case "max_tokens":
+			if err := setIntValue(&cfg.MaxTokens, value); err != nil {
+				return err
+			}
+		case "think_budget":
+			if err := setIntValue(&cfg.ThinkBudget, value); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown config key '%s'", key)
+		}
+
+		if err := cfg.Save(); err != nil {
+			return fmt.Errorf("error saving config: %w", err)
+		}
+
+		if key == "anthropic_api_key" || key == "aws_api_key" {
+			fmt.Printf("Set %s to %s\n", key, strings.Repeat("*", len(value)))
+		} else {
+			fmt.Printf("Set %s to %s\n", key, value)
+		}
+		return nil
+	}
+
+	fmt.Println("Usage:")
+	fmt.Println("  y config                    # Show current config")
+	fmt.Println("  y config <key> <value>      # Set config value")
+	fmt.Println("  y config ext <extension>    # Add file extension to index")
+	return nil
+}
+
+func addExtension(extension string) error {
+	extension = strings.TrimPrefix(strings.TrimSpace(extension), ".")
+	if extension == "" {
+		return fmt.Errorf("extension cannot be empty")
+	}
+
+	extensions, err := config.LoadExtensions()
+	if err != nil {
+		return fmt.Errorf("error loading extensions: %w", err)
+	}
+
+	for _, existing := range extensions {
+		if existing == extension {
+			fmt.Printf("Extension '%s' already exists\n", extension)
+			return nil
+		}
+	}
+
+	extensions = append(extensions, extension)
+
+	if err := config.SaveExtensions(extensions); err != nil {
+		return fmt.Errorf("error saving extensions: %w", err)
+	}
+
+	fmt.Printf("Added extension '%s'\n", extension)
+	return nil
+}
+
+func printConfigValue(key, value string, isSensitive bool) {
+	if isSensitive && value != "" {
+		fmt.Printf("  %s: %s\n", key, strings.Repeat("*", len(value)))
+	} else {
+		fmt.Printf("  %s: %s\n", key, value)
+	}
+}
+
+func setIntValue(target *int, value string) error {
+	var intVal int
+	_, err := fmt.Sscanf(value, "%d", &intVal)
+	if err != nil {
+		return fmt.Errorf("invalid integer value '%s'", value)
+	}
+	*target = intVal
+	return nil
+}
+````

@@ -26,6 +26,7 @@ type Config struct {
 	ClaudeModel     string `json:"claude_model"`
 	BedrockModel    string `json:"bedrock_model"`
 	AWSRegion       string `json:"aws_region"`
+	AWSAPIKey       string `json:"aws_api_key"`
 	MaxTokens       int    `json:"max_tokens"`
 	ThinkBudget     int    `json:"think_budget"`
 }
@@ -88,6 +89,7 @@ func DefaultConfig() *Config {
 		ClaudeModel:     ClaudeModel,
 		BedrockModel:    BedrockModel,
 		AWSRegion:       AWSRegion,
+		AWSAPIKey:       "",
 		MaxTokens:       MaxTokens,
 		ThinkBudget:     ThinkBudget,
 	}

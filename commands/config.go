@@ -14,6 +14,7 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
 		printConfigValue("bedrock_model", cfg.BedrockModel, false)
 		printConfigValue("aws_region", cfg.AWSRegion, false)
+		printConfigValue("aws_api_key", cfg.AWSAPIKey, true)
 		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
 		printConfigValue("think_budget", fmt.Sprintf("%d", cfg.ThinkBudget), false)
 		return nil
@@ -36,6 +37,8 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.BedrockModel = value
 		case "aws_region":
 			cfg.AWSRegion = value
+		case "aws_api_key":
+			cfg.AWSAPIKey = value
 		case "max_tokens":
 			if err := setIntValue(&cfg.MaxTokens, value); err != nil {
 				return err
@@ -52,7 +55,7 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			return fmt.Errorf("error saving config: %w", err)
 		}
 
-		if key == "anthropic_api_key" {
+		if key == "anthropic_api_key" || key == "aws_api_key" {
 			fmt.Printf("Set %s to %s\n", key, strings.Repeat("*", len(value)))
 		} else {
 			fmt.Printf("Set %s to %s\n", key, value)
