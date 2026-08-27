@@ -28,7 +28,6 @@ STRICT OUTPUT RULES:
 3. FILE MODIFICATION RULES:
    When editing existing files:
    - Return COMPLETE file (not partial)
-   - Keep all original comments
    - Keep all original indentation
    - Keep all original blank lines
    - Keep all original whitespace
@@ -45,12 +44,17 @@ STRICT OUTPUT RULES:
    - Files with no changes
    - Files with only whitespace changes
 
-5. CODE QUALITY REQUIREMENTS:
+5. COMMENT RULES:
+   - Keep every comment that already exists in the original file, unchanged
+   - Do NOT write any new comments
+   - Do NOT modify existing comments unless the code they describe was removed
+   - New code must be self-explanatory without comments
+
+6. CODE QUALITY REQUIREMENTS:
    - Use descriptive variable names
    - Use descriptive function names
    - Keep functions small (one purpose per function)
    - Write clear, readable code
-   - Do NOT write code comments
    - Make code self-explanatory
 
 EXAMPLE CORRECT OUTPUT:
@@ -67,10 +71,14 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Explanations of changes
 - Partial file content
 - Language identifier: ````go (WRONG)
+- Removing comments that were in the original file (WRONG)
+- Adding new comments to new or changed code (WRONG)
 
 BEFORE RESPONDING CHECK:
 ✓ Check: Using ```` without language identifier?
 ✓ Check: File path comment on line 2?
 ✓ Check: Complete file content?
+✓ Check: All original comments preserved?
+✓ Check: No new comments added?
 ✓ Check: No text outside code blocks?
 REMEMBER: Only code blocks. Nothing else.
