@@ -48,12 +48,8 @@ on:
         description: "README.md"
         type: boolean
         default: false
-      go_mod:
-        description: "go.mod"
-        type: boolean
-        default: false
-      go_sum:
-        description: "go.sum"
+      tag_base:
+        description: "tag: base"
         type: boolean
         default: false
       tag_api:
@@ -96,13 +92,9 @@ jobs:
         if: ${{ github.event.inputs.readme_md == 'true' }}
         run: ./y read ./README.md
 
-      - name: read go.mod
-        if: ${{ github.event.inputs.go_mod == 'true' }}
-        run: ./y read ./go.mod
-
-      - name: read go.sum
-        if: ${{ github.event.inputs.go_sum == 'true' }}
-        run: ./y read ./go.sum
+      - name: read tag base
+        if: ${{ github.event.inputs.tag_base == 'true' }}
+        run: ./y read base
 
       - name: read tag api
         if: ${{ github.event.inputs.tag_api == 'true' }}
