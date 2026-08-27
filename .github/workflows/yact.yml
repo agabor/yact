@@ -100,7 +100,9 @@ jobs:
           chmod +x y
 
       - name: configure Claude API key
-        run: ./y config anthropic_api_key "${{ secrets.CLAUDE_API_KEY }}"
+        run: |
+          ./y config anthropic_api_key "${{ secrets.CLAUDE_API_KEY }}"
+          ./y config aws_api_key "${{ secrets.BEDROCK_API_KEY }}"
 
       - name: read README.md
         if: ${{ github.event.inputs.readme_md == 'true' }}
