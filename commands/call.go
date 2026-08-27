@@ -71,7 +71,8 @@ func HandleActCommand(think bool, noWrite bool, quiet bool, cfg *config.Config, 
 func newClient(cfg *config.Config) api.Client {
 	var client api.Client
 
-	if strings.ToLower(cfg.ClaudeModel) == "qwen" {
+	modelType := strings.ToLower(cfg.ClaudeModel)
+	if modelType == "qwen" || modelType == "coder" {
 		client = &api.BedrockClient{}
 	} else {
 		client = &api.ClaudeClient{}

@@ -46,7 +46,7 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
-func getModelOverride(fable, opus, sonnet, haiku, qwen bool) string {
+func getModelOverride(fable, opus, sonnet, haiku, qwen, coder bool) string {
 	if fable {
 		return "fable"
 	}
@@ -58,6 +58,9 @@ func getModelOverride(fable, opus, sonnet, haiku, qwen bool) string {
 	}
 	if haiku {
 		return "haiku"
+	}
+	if coder {
+		return "coder"
 	}
 	if qwen {
 		return "qwen"
@@ -94,7 +97,8 @@ func main() {
 	opusFlag := flag.BoolP("opus", "o", false, "Use Claude Opus model")
 	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
 	haikuFlag := flag.Bool("haiku", false, "Use Claude Haiku model")
-	qwenFlag := flag.BoolP("qwen", "w", false, "Use Qwen3 Coder 30B A3B model on AWS Bedrock")
+	qwenFlag := flag.BoolP("qwen", "w", false, "Use Qwen3 235B A22B Instruct 2507 model on AWS Bedrock")
+	coderFlag := flag.BoolP("coder", "e", false, "Use Qwen3 Coder 30B A3B model (AWS Bedrock)")
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	quietFlag := flag.BoolP("quiet", "q", false, "Hide progress indicator")
@@ -126,7 +130,7 @@ func main() {
 		commandArgs = args[1:]
 	}
 
-	modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag)
+	modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
 
 	var commandErr error
 
