@@ -16,6 +16,11 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
+const (
+	defaultBedrockMaxModelID   = "qwen.qwen3-235b-a22b-2507-v1:0"
+	defaultBedrockCoderModelID = "qwen.qwen3-coder-30b-a3b-v1:0"
+)
+
 type BedrockClient struct {
 	region          string
 	model           string
@@ -33,15 +38,40 @@ func (c *BedrockClient) Init(cfg *config.Config) {
 	c.inputPrice, c.outputPrice = c.selectPrices(cfg)
 }
 
-func (c *BedrockClient) selectModel(cfg *config.Config) string {
-	if strings.ToLower(cfg.ClaudeModel) == "qcoder" {
-		return cfg.BedrockCoderModel
+func isCoderModelSelected(modelName string) bool {
+	return strings.EqualFold(strings.TrimSpace(modelName), "qcoder")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
 	}
-	return cfg.BedrockModel
+	return ""
+}
+
+func resolveCoderModelID(cfg *config.Config) string {
+	return firstNonEmpty(cfg.BedrockCoderModel, defaultBedrockCoderModelID)
+}
+
+func resolveMaxModelID(cfg *config.Config) string {
+	configured := firstNonEmpty(cfg.BedrockModel, defaultBedrockMaxModelID)
+	if strings.EqualFold(configured, resolveCoderModelID(cfg)) {
+		return defaultBedrockMaxModelID
+	}
+	return configured
+}
+
+func (c *BedrockClient) selectModel(cfg *config.Config) string {
+	if isCoderModelSelected(cfg.ClaudeModel) {
+		return resolveCoderModelID(cfg)
+	}
+	return resolveMaxModelID(cfg)
 }
 
 func (c *BedrockClient) selectPrices(cfg *config.Config) (float64, float64) {
-	if strings.ToLower(cfg.ClaudeModel) == "qcoder" {
+	if isCoderModelSelected(cfg.ClaudeModel) {
 		return 0.22, 0.95
 	}
 	return 0.22, 0.88
