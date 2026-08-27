@@ -19,6 +19,9 @@ on:
           - 'haiku'
           - 'sonnet'
           - 'opus'
+          - 'fable'
+          - 'qmax'
+          - 'qcoder'
         default: 'sonnet'
       prompt:
         description: "prompt"

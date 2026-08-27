@@ -34,14 +34,14 @@ func (c *BedrockClient) Init(cfg *config.Config) {
 }
 
 func (c *BedrockClient) selectModel(cfg *config.Config) string {
-	if strings.ToLower(cfg.ClaudeModel) == "coder" {
+	if strings.ToLower(cfg.ClaudeModel) == "qcoder" {
 		return cfg.BedrockCoderModel
 	}
 	return cfg.BedrockModel
 }
 
 func (c *BedrockClient) selectPrices(cfg *config.Config) (float64, float64) {
-	if strings.ToLower(cfg.ClaudeModel) == "coder" {
+	if strings.ToLower(cfg.ClaudeModel) == "qcoder" {
 		return 0.22, 0.95
 	}
 	return 0.22, 0.88
