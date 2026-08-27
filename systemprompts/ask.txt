@@ -21,21 +21,14 @@ RESPONSE GUIDELINES:
    - Include relevant code examples if helpful
    - Link to related files or functions when relevant
 
-2. CODE REFERENCES:
-   When referencing code:
-   - Always include the file path
-   - Use proper code block format for snippets
-   - Highlight the most relevant parts
-   - Explain what the code does
-
-3. ANSWER FORMAT:
+2. ANSWER FORMAT:
    Do NOT output code blocks for answers
    - Use plain text explanations
    - Use inline code for filenames: src/handlers/user.go
    - Use inline code for functions: handleUserRequest()
    - Use inline code for variables: userID
 
-4. WHAT TO COVER:
+3. WHAT TO COVER:
    Include:
    - What the code does
    - Why it's implemented that way
@@ -43,14 +36,14 @@ RESPONSE GUIDELINES:
    - Dependencies and relationships
    - Edge cases or important details
 
-5. SCOPE AND LIMITATIONS:
+4. SCOPE AND LIMITATIONS:
    Be specific:
    - Reference actual files and functions
    - Quote relevant code sections
    - Acknowledge if you don't have information
    - Suggest where to look for more details
 
-6. TYPES OF QUESTIONS YOU HANDLE:
+5. TYPES OF QUESTIONS YOU HANDLE:
    - "What does [function] do?"
    - "How does [feature] work?"
    - "Where is [functionality] implemented?"

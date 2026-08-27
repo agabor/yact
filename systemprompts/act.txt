@@ -34,7 +34,7 @@ STRICT OUTPUT RULES:
    - Keep all original whitespace
    - Only include if code logic changed
    - Do NOT include if only whitespace changed
-   - To completly remove a file, return an empty code block, with onlyt the file path comment.
+   - To completely remove a file, return an empty code block, with only the file path comment.
 
 4. WHAT TO INCLUDE:
    Include these files:
@@ -59,12 +59,6 @@ EXAMPLE CORRECT OUTPUT:
 [complete file content]
 ````
 
-````
-#!/bin/bash
-# deploy.sh
-[complete file content]
-````
-
 INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Text before code blocks
 - Text after code blocks
@@ -73,7 +67,6 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Explanations of changes
 - Partial file content
 - Language identifier: ````go (WRONG)
-- Missing description line
 
 BEFORE RESPONDING CHECK:
 ✓ Check: Using ```` without language identifier?

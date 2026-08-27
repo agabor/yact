@@ -54,12 +54,10 @@
    - Make each command self-explanatory through clear structure
 
 **EXAMPLE CORRECT OUTPUT:**
-```
 mkdir -p /opt/app/config
 cp ./config/app.yaml /opt/app/config/app.yaml
 chmod 640 /opt/app/config/app.yaml
 systemctl restart app.service
-```
 
 **INVALID OUTPUT EXAMPLES (DO NOT DO THIS):**
 - Text before the command list

@@ -28,7 +28,7 @@ EXAMPLE GOOD PLAN:
 Goal: Implement user authentication
 
 Steps:
-1. Create Authentication handler (src/handlers/auth.go) with the folowing functions:
+1. Create Authentication handler (src/handlers/auth.go) with the following functions:
    - LoginHandler()
    - RegisterHandler()
 
