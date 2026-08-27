@@ -72,7 +72,7 @@ func newClient(cfg *config.Config) api.Client {
 	var client api.Client
 
 	modelType := strings.ToLower(cfg.ClaudeModel)
-	if modelType == "qwen" || modelType == "coder" {
+	if modelType == "qmax" || modelType == "qcoder" {
 		client = &api.BedrockClient{}
 	} else {
 		client = &api.ClaudeClient{}
