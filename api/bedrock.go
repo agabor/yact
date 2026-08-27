@@ -12,11 +12,13 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	smithybearer "github.com/aws/smithy-go/auth/bearer"
 )
 
 type BedrockClient struct {
 	region          string
 	model           string
+	apiKey          string
 	maxOutputTokens int
 	inputPrice      float64
 	outputPrice     float64
@@ -25,6 +27,7 @@ type BedrockClient struct {
 func (c *BedrockClient) Init(cfg *config.Config) {
 	c.region = cfg.AWSRegion
 	c.model = cfg.BedrockModel
+	c.apiKey = cfg.AWSAPIKey
 	c.maxOutputTokens = cfg.MaxTokens
 	c.inputPrice = 0.22
 	c.outputPrice = 0.95
@@ -36,6 +39,24 @@ func (c *BedrockClient) GetModelName() string {
 
 func (c *BedrockClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
 	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
+}
+
+func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.Client, error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS configuration for region '%s'. Make sure AWS credentials and region are configured, or set an API key with: y config aws_api_key YOUR_KEY: %w", c.region, err)
+	}
+
+	if c.apiKey == "" {
+		return bedrockruntime.NewFromConfig(awsCfg), nil
+	}
+
+	return bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) {
+		o.BearerAuthTokenProvider = smithybearer.StaticTokenProvider{
+			Token: smithybearer.Token{Value: c.apiKey},
+		}
+		o.AuthSchemePreference = append([]string{"httpBearerAuth"}, o.AuthSchemePreference...)
+	}), nil
 }
 
 func (c *BedrockClient) buildMessages(transaction logic.Transaction) ([]types.Message, int, error) {
@@ -78,12 +99,10 @@ func (c *BedrockClient) extractText(output types.ConverseOutput) string {
 func (c *BedrockClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
 	ctx := context.Background()
 
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))
+	client, err := c.newRuntimeClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("unable to load AWS configuration for region '%s'. Make sure AWS credentials and region are configured: %w", c.region, err)
+		return "", err
 	}
-
-	client := bedrockruntime.NewFromConfig(awsCfg)
 
 	messages, fileCount, err := c.buildMessages(transaction)
 	if err != nil {
