@@ -27,11 +27,24 @@ type BedrockClient struct {
 
 func (c *BedrockClient) Init(cfg *config.Config) {
 	c.region = cfg.AWSRegion
-	c.model = cfg.BedrockModel
+	c.model = c.selectModel(cfg)
 	c.apiKey = cfg.AWSAPIKey
 	c.maxOutputTokens = cfg.MaxTokens
-	c.inputPrice = 0.22
-	c.outputPrice = 0.95
+	c.inputPrice, c.outputPrice = c.selectPrices(cfg)
+}
+
+func (c *BedrockClient) selectModel(cfg *config.Config) string {
+	if strings.ToLower(cfg.ClaudeModel) == "coder" {
+		return cfg.BedrockCoderModel
+	}
+	return cfg.BedrockModel
+}
+
+func (c *BedrockClient) selectPrices(cfg *config.Config) (float64, float64) {
+	if strings.ToLower(cfg.ClaudeModel) == "coder" {
+		return 0.22, 0.95
+	}
+	return 0.22, 0.88
 }
 
 func (c *BedrockClient) GetModelName() string {
