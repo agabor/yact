@@ -12,7 +12,8 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
-	smithybearer "github.com/aws/smithy-go/auth/bearer"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 type BedrockClient struct {
@@ -41,8 +42,33 @@ func (c *BedrockClient) calculateCost(inputTokens int64, outputTokens int64) flo
 	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
 }
 
+func bearerAuthMiddleware(token string) func(*middleware.Stack) error {
+	setAuthorizationHeader := middleware.FinalizeMiddlewareFunc(
+		"YactBearerAuth",
+		func(ctx context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+			request, ok := in.Request.(*smithyhttp.Request)
+			if !ok {
+				return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("unexpected request type %T", in.Request)
+			}
+			request.Header.Set("Authorization", "Bearer "+token)
+			return next.HandleFinalize(ctx, in)
+		},
+	)
+
+	return func(stack *middleware.Stack) error {
+		stack.Finalize.Remove("Signing")
+		return stack.Finalize.Add(setAuthorizationHeader, middleware.After)
+	}
+}
+
 func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.Client, error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.region))
+	loadOptions := []func(*awsconfig.LoadOptions) error{awsconfig.WithRegion(c.region)}
+
+	if c.apiKey != "" {
+		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(aws.AnonymousCredentials{}))
+	}
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load AWS configuration for region '%s'. Make sure AWS credentials and region are configured, or set an API key with: y config aws_api_key YOUR_KEY: %w", c.region, err)
 	}
@@ -52,10 +78,7 @@ func (c *BedrockClient) newRuntimeClient(ctx context.Context) (*bedrockruntime.C
 	}
 
 	return bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) {
-		o.BearerAuthTokenProvider = smithybearer.StaticTokenProvider{
-			Token: smithybearer.Token{Value: c.apiKey},
-		}
-		o.AuthSchemePreference = append([]string{"httpBearerAuth"}, o.AuthSchemePreference...)
+		o.APIOptions = append(o.APIOptions, bearerAuthMiddleware(c.apiKey))
 	}), nil
 }
 
