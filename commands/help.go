@@ -14,8 +14,9 @@ Usage:
 
 Commands:
   help                                 Show this help message
-  read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
+  read <file> [<file2> ...]            Add files to the task context (supports glob patterns and tags)
   keyword <keyword>                    Recursively add files containing the keyword to the task context
+  tag <tagname> <file> [<file2> ...]   Tag files (supports glob patterns) for later use with the read command
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
