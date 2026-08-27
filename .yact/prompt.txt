@@ -1,0 +1,11 @@
+go.mod
+go.sum
+main.go
+api/bedrock.go
+api/claude.go
+api/client.go
+commands/call.go
+commands/config.go
+config/config.go
+==========
+Use AWS api key directly to authenticate with bedrock. Store it in the config file.
