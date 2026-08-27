@@ -40,10 +40,16 @@ on:
         description: "do not write files, print response instead"
         type: boolean
         default: false
-      clear:
-        description: "clear yact folder"
-        type: boolean
-        default: false
+      cleanup:
+        description: "cleanup yact folder"
+        required: true
+        type: choice
+        options:
+          - 'before'
+          - 'after'
+          - 'both'
+          - 'never'
+        default: 'never'
       commit_message:
         description: "commit message"
         type: string
@@ -83,6 +89,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Cleanup yact folder (before)
+        if: ${{ github.event.inputs.cleanup == 'before' || github.event.inputs.cleanup == 'both' }}
+        run: rm -f .yact/prompt.txt .yact/buffer.txt
 
       - name: Download YACT
         run: |
@@ -144,9 +154,9 @@ jobs:
 
           ./y "${args[@]}"
 
-      - name: Clean up
-        if: ${{ github.event.inputs.clear == 'true' }}
-        run: rm -rf .yact
+      - name: Cleanup yact folder (after)
+        if: ${{ github.event.inputs.cleanup == 'after' || github.event.inputs.cleanup == 'both' }}
+        run: rm -f .yact/prompt.txt .yact/buffer.txt
 
       - name: commit and push changes
         run: |
