@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"yact/config"
 	"yact/logic"
 )
 
@@ -14,6 +16,20 @@ func HandleReadCommand(args []string) error {
 	}
 
 	for _, pattern := range args {
+		tagFiles, err := config.GetFilesByTag(pattern)
+		if err != nil {
+			return err
+		}
+
+		if len(tagFiles) > 0 {
+			for _, filePath := range tagFiles {
+				if err := readFile(filePath); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return fmt.Errorf("error matching pattern %s: %w", pattern, err)
@@ -25,39 +41,42 @@ func HandleReadCommand(args []string) error {
 		}
 
 		for _, filePath := range matches {
-			info, err := os.Stat(filePath)
-			if err != nil {
-				fmt.Printf("Error accessing %s: %v\n", filePath, err)
-				continue
-			}
-
-			if info.IsDir() {
-				fmt.Printf("Skipping directory: %s\n", filePath)
-				continue
-			}
-
-			transaction, err := logic.LoadTransaction()
-			if err != nil {
+			if err := readFile(filePath); err != nil {
 				return err
-			}
-
-			if hasFileWithPath(transaction, filePath) {
-				fmt.Printf("Skipping: %s\n", filePath)
-				continue
-			} else {
-				fmt.Printf("Reading: %s\n", filePath)
-			}
-
-			transaction.Context = append(transaction.Context, filePath)
-
-			err2 := transaction.Save()
-			if err2 != nil {
-				return err2
 			}
 		}
 	}
 
 	return nil
+}
+
+func readFile(filePath string) error {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		fmt.Printf("Error accessing %s: %v\n", filePath, err)
+		return nil
+	}
+
+	if info.IsDir() {
+		fmt.Printf("Skipping directory: %s\n", filePath)
+		return nil
+	}
+
+	transaction, err := logic.LoadTransaction()
+	if err != nil {
+		return err
+	}
+
+	if hasFileWithPath(transaction, filePath) {
+		fmt.Printf("Skipping: %s\n", filePath)
+		return nil
+	}
+
+	fmt.Printf("Reading: %s\n", filePath)
+
+	transaction.Context = append(transaction.Context, filePath)
+
+	return transaction.Save()
 }
 
 func hasFileWithPath(transaction logic.Transaction, path string) bool {

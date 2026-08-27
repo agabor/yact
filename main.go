@@ -25,6 +25,13 @@ func requireArgCount(command string, args []string, validCounts ...int) {
 	os.Exit(1)
 }
 
+func requireMinArgs(command string, args []string, min int) {
+	if len(args) < min {
+		fmt.Fprintf(os.Stderr, "Error: %s command requires at least %d argument(s)\n", command, min)
+		os.Exit(1)
+	}
+}
+
 func requireNoArgs(command string, args []string) {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Error: %s command takes no arguments\n", command)
@@ -132,6 +139,9 @@ func main() {
 	case "keyword":
 		requireArgCount("keyword", commandArgs, 1)
 		commandErr = commands.HandleKeywordCommand(commandArgs)
+	case "tag":
+		requireMinArgs("tag", commandArgs, 2)
+		commandErr = commands.HandleTagCommand(commandArgs)
 	case "config":
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
