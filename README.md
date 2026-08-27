@@ -9,10 +9,11 @@ Minimal, responsive, transparent LLM coding assistant.
 **License:** GNU GPL v3, see [LICENSE](https://github.com/agabor/yact/blob/main/LICENSE) in the repository
 
 
-> **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party
-> tool. It is not made, endorsed, or supported by Anthropic PBC. "Claude" and
-> "Anthropic" are trademarks of Anthropic PBC and are used here only to describe which
-> API this tool calls. For Anthropic's own products and documentation, go to
+> **Not affiliated with Anthropic or Amazon.** YACT is an independent, open-source,
+> third-party tool. It is not made, endorsed, or supported by Anthropic PBC or Amazon Web
+> Services. "Claude" and "Anthropic" are trademarks of Anthropic PBC, "AWS" and "Bedrock"
+> are trademarks of Amazon.com, Inc.; they are used here only to describe which APIs this
+> tool calls. For Anthropic's own products and documentation, go to
 > [anthropic.com](https://www.anthropic.com) and
 > [docs.claude.com](https://docs.claude.com).
 
@@ -58,6 +59,11 @@ Current Claude models allow a large output budget per response, but YACT's own d
 the current per-model limits. Keeping source files to a few hundred lines is recommended
 regardless.
 
+### Deleting files
+
+If a response contains a code block that has only a file path comment and no content, YACT
+deletes that file from disk and removes it from the task context.
+
 ### Trade-offs to be aware of
 
 YACT is a Swiss army knife for LLM assisted coding rather than a complete automated coding
@@ -67,7 +73,8 @@ suite. It is deliberately narrower than a full agent:
   you need to know your codebase.
 - No MCP support, no tool calling, no multi-turn agent loop.
 - File sizes are bounded by the model's output token limit, as described above.
-- Anthropic models only. There is currently no support for other providers or local models.
+- Two providers only: Anthropic's API and AWS Bedrock. There is currently no support for
+  other providers or local models.
 
 ## Installation
 
@@ -87,6 +94,9 @@ Then move `y` somewhere on your `PATH` — `~/.local/bin` needs no elevated priv
 mkdir -p ~/.local/bin
 mv y ~/.local/bin/
 ```
+
+There is also an `install.sh` script that builds the binary and installs it to
+`/usr/local/bin` using `sudo`.
 
 ### Prebuilt binaries
 
@@ -183,8 +193,8 @@ y read main.go
 y read "commands/*.go"
 ```
 
-Glob patterns are supported. Directories are skipped, and files already in the context are
-not added twice.
+Glob patterns are supported, and a tag name can be used in place of a path (see `y tag`
+below). Directories are skipped, and files already in the context are not added twice.
 
 ### Add files by keyword
 
@@ -196,6 +206,18 @@ y keyword Transaction
 
 Hidden directories are skipped, and only files with indexed extensions are considered (see
 `y config ext` below). Files already in the context are not added twice.
+
+### Tag files
+
+Group files under a name so you can add them all at once later:
+
+```
+y tag api "api/*.go"
+y read api
+```
+
+Tags are stored in `.yact/tags.csv`. The `read` command first checks whether its argument
+matches a tag name, and falls back to glob matching if it does not.
 
 ### Set the prompt
 
@@ -253,8 +275,11 @@ y -n act
 -o, --opus        Use the Claude Opus model
 -s, --sonnet      Use the Claude Sonnet model
     --haiku       Use the Claude Haiku model
+-w, --qmax        Use the Qwen3 235B A22B Instruct 2507 model on AWS Bedrock
+-e, --qcoder      Use the Qwen3 Coder 30B A3B model on AWS Bedrock
 -b, --buffer      Use the buffer content as the prompt
 -d, --download    Download the system prompt for the command
+-q, --quiet       Hide progress indicator
 ```
 
 Flags come before the command:
@@ -266,8 +291,9 @@ y -o ask
 ```
 
 Model flags override the configured model for a single invocation. With `--think`, the
-model's reasoning is printed before the response. Model availability depends on your own
-Anthropic account.
+model's reasoning is printed before the response; extended thinking is not supported by the
+Bedrock models and is ignored there. Model availability depends on your own Anthropic or
+AWS account.
 
 ## Configuration
 
@@ -287,15 +313,35 @@ y config think_budget 16000
 
 Available configuration keys:
 
-- `anthropic_api_key` — your own Anthropic API key, stored locally (required)
-- `claude_model` — which Claude model to use: `fable`, `opus`, `sonnet` or `haiku`
-  (default: `haiku`)
+- `anthropic_api_key` — your own Anthropic API key, stored locally (required for Claude
+  models)
+- `claude_model` — which model to use: `fable`, `opus`, `sonnet`, `haiku`, `qmax` or
+  `qcoder` (default: `haiku`)
+- `bedrock_model` — Bedrock model id used by `qmax`
+  (default: `qwen.qwen3-235b-a22b-2507-v1:0`)
+- `bedrock_coder_model` — Bedrock model id used by `qcoder`
+  (default: `qwen.qwen3-coder-30b-a3b-v1:0`)
+- `aws_region` — AWS region for Bedrock calls (default: `us-west-2`)
+- `aws_api_key` — Bedrock API key, stored locally; when empty, the default AWS credential
+  chain is used instead
 - `max_tokens` — maximum output tokens per API call (default: 16000)
 - `think_budget` — token budget for extended thinking mode (default: 8000)
 
 Note that `max_tokens` caps the size of what the model can write back. Since YACT generates
 complete source files, this value bounds the size of the files it can edit. Raise it if
 responses are being truncated; the ceiling is the model's own output limit.
+
+### AWS Bedrock
+
+Selecting `qmax` or `qcoder`, either through configuration or the `-w` / `-e` flags, routes
+the call to AWS Bedrock instead of Anthropic. Authentication works in one of two ways:
+
+- Set `aws_api_key` and YACT sends it as a bearer token, bypassing SigV4 signing.
+- Leave `aws_api_key` empty and YACT uses the standard AWS credential chain (environment
+  variables, shared config, instance roles).
+
+The region comes from `aws_region`, and the model id from `bedrock_model` or
+`bedrock_coder_model` depending on which flag you used.
 
 ### File extensions
 
@@ -310,20 +356,21 @@ y config ext vue
 
 Every API call prints the model used, call duration, input and output token counts, and an
 estimated cost in dollars. The estimate is calculated locally from published rates and is
-informational only — your actual billing is whatever Anthropic charges your account. A
-warning is shown if the response hit the output token limit and may be incomplete.
+informational only — your actual billing is whatever Anthropic or AWS charges your account.
+A warning is shown if the response hit the output token limit and may be incomplete.
 
 ## Storage
 
 Global settings live in `~/.yact/`:
 
-- `config` — API key and model settings (JSON)
+- `config` — API keys and model settings (JSON)
 - `systemprompts/` — system prompt text files
 
 Per-project state lives in `.yact/` inside your project directory:
 
 - `prompt.txt` — the current task context and prompt
 - `buffer.txt` — log of the last LLM response
+- `tags.csv` — file tags created with `y tag`
 - `extensions.txt` — file extensions scanned by the keyword command
 
 Add `.yact/` to your `.gitignore` so task context and response logs are not committed.
@@ -342,13 +389,19 @@ y -h
 
 - Set your key: `y config anthropic_api_key <your-own-anthropic-key>`
 
+**"unable to load AWS configuration"**
+
+- Configure AWS credentials and region, or set a Bedrock key:
+  `y config aws_api_key <your-own-key>`
+- Check that `aws_region` matches a region where the model is available
+
 **"No files found matching pattern"**
 
 - Check that the glob pattern matches existing files
 - Quote glob patterns so your shell does not expand them first
 - Use exact paths if glob patterns don't work
 
-**"Error loading ... prompt"**
+**"no system prompt found for command"**
 
 - Download the missing system prompt: `y -d <command>`
 - Or create the file manually in `~/.yact/systemprompts/`
@@ -359,31 +412,32 @@ y -h
 
 **API errors**
 
-- Verify your API key is valid in the Anthropic console
+- Verify your API key is valid in the Anthropic or AWS console
 - Check your internet connection
-- Ensure your Anthropic API account has available credits
+- Ensure your account has available credits
 
 ## Security and privacy
 
 YACT is a local command-line program. It has no server component and no website that
 accepts input.
 
-- **Your API key stays on your machine.** It is stored in `~/.yact/config` as plain JSON,
-  with file permissions restricted to your user account. YACT sends it only to
-  `https://api.anthropic.com`, as the `x-api-key` header that Anthropic's API requires.
-  It is never transmitted anywhere else.
-- **You get your own key from Anthropic.** YACT never issues, requests, brokers, or
-  collects API keys. Create one in your own account at
-  [console.anthropic.com](https://console.anthropic.com).
+- **Your API keys stay on your machine.** They are stored in `~/.yact/config` as plain
+  JSON. YACT sends the Anthropic key only to `https://api.anthropic.com`, as the
+  `x-api-key` header that Anthropic's API requires, and the AWS key only to the Bedrock
+  endpoint for your configured region. They are never transmitted anywhere else.
+- **You get your own keys.** YACT never issues, requests, brokers, or collects API keys.
+  Create an Anthropic key in your own account at
+  [console.anthropic.com](https://console.anthropic.com), and manage AWS credentials in
+  your own AWS account.
 - **No telemetry.** YACT does not phone home, collect analytics, or report usage. The only
   outbound network connections it makes are the API calls you explicitly trigger, and
   system-prompt downloads when you pass `-d`.
 - **No background activity.** YACT runs when you invoke it and exits. It installs no
   service, daemon, or scheduled task, and modifies nothing outside `~/.yact/` and the
   `.yact/` directory of the project you are working in.
-- **You choose what is sent.** Only the files you add with `y read` or `y keyword`, plus
-  the prompt you write, are included in a request. YACT never scans or uploads your
-  codebase on its own initiative.
+- **You choose what is sent.** Only the files you add with `y read`, `y tag` or
+  `y keyword`, plus the prompt you write, are included in a request. YACT never scans or
+  uploads your codebase on its own initiative.
 - **Auditable.** The complete source is public. Every release is built from a tagged
   commit in the repository, and every response is logged verbatim to `.yact/buffer.txt`.
 
