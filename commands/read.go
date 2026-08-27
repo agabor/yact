@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"yact/config"
 	"yact/logic"
 )
 
@@ -16,7 +15,7 @@ func HandleReadCommand(args []string) error {
 	}
 
 	for _, pattern := range args {
-		tagFiles, err := config.GetFilesByTag(pattern)
+		tagFiles, err := logic.GetFilesByTag(pattern)
 		if err != nil {
 			return err
 		}

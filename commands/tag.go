@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"yact/config"
+	"yact/logic"
 )
 
 func HandleTagCommand(args []string) error {
@@ -17,7 +17,7 @@ func HandleTagCommand(args []string) error {
 	tagName := args[0]
 	filePatterns := args[1:]
 
-	tags, err := config.LoadTags()
+	tags, err := logic.LoadTags()
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func HandleTagCommand(args []string) error {
 		}
 	}
 
-	return config.SaveTags(tags)
+	return logic.SaveTags(tags)
 }
 
 func addTagToFile(tags map[string][]string, filePath, tagName string) bool {
