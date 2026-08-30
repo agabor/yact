@@ -159,6 +159,18 @@ func main() {
 		commandErr = commands.HandlePromptCommand(commandArgs, *bufferFlag)
 	case "new":
 		commandErr = commands.HandleNewCommand()
+	case "query":
+		if *bufferFlag {
+			requireArgCount("query", commandArgs, 0)
+		} else {
+			requireArgCount("query", commandArgs, 0, 1)
+		}
+		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
+		if promptErr != nil {
+			commandErr = promptErr
+			break
+		}
+		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
