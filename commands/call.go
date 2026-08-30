@@ -49,10 +49,10 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
-	if prompt != "" {
+	if prompt != "" && !noSavePrompt {
 		if err := SetPrompt(prompt); err != nil {
 			return err
 		}
@@ -63,7 +63,12 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *con
 		return err
 	}
 
-	response, err := callLLM(transaction, think, quiet, cfg, systemPrompt)
+	transactionForLLM := transaction
+	if noContext {
+		transactionForLLM.Context = []string{}
+	}
+
+	response, err := callLLM(transactionForLLM, think, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}

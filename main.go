@@ -103,6 +103,8 @@ func main() {
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	quietFlag := flag.BoolP("quiet", "q", false, "Hide progress indicator")
 	codeOnlyFlag := flag.BoolP("code-only", "c", false, "Only accept code blocks in the response")
+	noContextFlag := flag.BoolP("no-context", "x", false, "Do not send the selected files to the LLM")
+	noSavePromptFlag := flag.BoolP("no-save-prompt", "p", false, "Do not update prompt.txt with the prompt given as a CLI argument")
 
 	flag.Parse()
 
@@ -170,7 +172,7 @@ func main() {
 			commandErr = promptErr
 			break
 		}
-		commandErr = commands.HandleCommand(*thinkFlag, true, *quietFlag, *codeOnlyFlag, cfg, "", modelOverride, prompt)
+		commandErr = commands.HandleCommand(*thinkFlag, true, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
@@ -194,7 +196,7 @@ func main() {
 			promptNotFoundMessage(command, downloaded)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, systemPrompt, modelOverride, prompt)
+		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, systemPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {
