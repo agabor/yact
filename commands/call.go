@@ -49,7 +49,7 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleActCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if prompt != "" {

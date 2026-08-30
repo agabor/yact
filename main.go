@@ -182,7 +182,7 @@ func main() {
 			promptNotFoundMessage(command, downloaded)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, systemPrompt, modelOverride, prompt)
+		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, systemPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {
