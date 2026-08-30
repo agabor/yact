@@ -12,7 +12,7 @@ config/config.go,config
 go.mod,base
 go.sum,base
 logic/buffer.go,prompt
-logic/codefile.go,prompt
+logic/codefile.go,prompt,io
 logic/tags.go,tag
-logic/transaction.go,prompt
+logic/transaction.go,prompt,io
 main.go,cli,base

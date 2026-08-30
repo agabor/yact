@@ -102,6 +102,7 @@ func main() {
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	quietFlag := flag.BoolP("quiet", "q", false, "Hide progress indicator")
+	codeOnlyFlag := flag.BoolP("code-only", "c", false, "Only accept code blocks in the response")
 
 	flag.Parse()
 
@@ -181,7 +182,7 @@ func main() {
 			promptNotFoundMessage(command, downloaded)
 			os.Exit(1)
 		}
-		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, *quietFlag, cfg, systemPrompt, modelOverride, prompt)
+		commandErr = commands.HandleActCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, systemPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {

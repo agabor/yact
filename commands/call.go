@@ -32,7 +32,24 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 	}
 }
 
-func HandleActCommand(think bool, noWrite bool, quiet bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func validateCodeOnlyResponse(content string) error {
+	elements, incomplete := logic.ParseCodeFilesDetailed(content)
+	if incomplete {
+		return fmt.Errorf("response contains an incomplete code block")
+	}
+
+	for _, element := range elements {
+		if text, ok := element.(string); ok {
+			if strings.TrimSpace(text) != "" {
+				return fmt.Errorf("response contains free text outside code blocks")
+			}
+		}
+	}
+
+	return nil
+}
+
+func HandleActCommand(think bool, noWrite bool, quiet bool, codeOnly bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if prompt != "" {
@@ -49,6 +66,12 @@ func HandleActCommand(think bool, noWrite bool, quiet bool, cfg *config.Config, 
 	response, err := callLLM(transaction, think, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
+	}
+
+	if codeOnly {
+		if err := validateCodeOnlyResponse(response); err != nil {
+			return err
+		}
 	}
 
 	if noWrite {
