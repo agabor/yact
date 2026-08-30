@@ -170,7 +170,7 @@ func main() {
 			commandErr = promptErr
 			break
 		}
-		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, cfg, "", modelOverride, prompt)
+		commandErr = commands.HandleCommand(*thinkFlag, true, *quietFlag, *codeOnlyFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
