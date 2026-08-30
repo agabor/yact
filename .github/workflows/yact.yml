@@ -154,6 +154,10 @@ jobs:
             args+=("-n")
           fi
 
+          if [ "$YACT_COMMAND" = "act" ]; then
+            args+=("-c")
+          fi
+
           if [ "$YACT_PROMPT_SOURCE" = "buffer" ]; then
             args+=("-b")
           elif [ "$YACT_PROMPT_SOURCE" = "existing" ]; then
