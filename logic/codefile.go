@@ -23,10 +23,30 @@ type codeFileJSON struct {
 	Content string `json:"content"`
 }
 
+type ParsedElement struct {
+	IsCodeFile bool
+	CodeFile   CodeFile
+	Text       string
+}
+
 func NewCodeFile(path, content string) CodeFile {
 	return CodeFile{
 		Path:    strings.TrimPrefix(strings.TrimSpace(path), "./"),
 		Content: content,
+	}
+}
+
+func NewCodeFileElement(cf CodeFile) ParsedElement {
+	return ParsedElement{
+		IsCodeFile: true,
+		CodeFile:   cf,
+	}
+}
+
+func NewTextElement(text string) ParsedElement {
+	return ParsedElement{
+		IsCodeFile: false,
+		Text:       text,
 	}
 }
 
@@ -159,26 +179,28 @@ func (cf *CodeFile) Delete() error {
 	return nil
 }
 
-func processCodeBlock(lineBuffer []string) interface{} {
+func processCodeBlock(lineBuffer []string) *ParsedElement {
 	if len(lineBuffer) == 0 {
 		return nil
 	}
 	if isValidCodeFile(lineBuffer) {
-		return linesToCodeFile(lineBuffer)
+		element := NewCodeFileElement(linesToCodeFile(lineBuffer))
+		return &element
 	}
-	return joinLines(lineBuffer)
+	element := NewTextElement(joinLines(lineBuffer))
+	return &element
 }
 
-func ParseCodeFilesDetailed(response string) ([]interface{}, bool) {
+func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 	lines := strings.Split(response, "\n")
-	var result = make([]interface{}, 0)
+	var result = make([]ParsedElement, 0)
 	var lineBuffer = make([]string, 0)
 	var textBuffer = make([]string, 0)
 	inBlock := false
 
 	flushText := func() {
 		if len(textBuffer) > 0 {
-			result = append(result, strings.Join(textBuffer, "\n"))
+			result = append(result, NewTextElement(strings.Join(textBuffer, "\n")))
 			textBuffer = make([]string, 0)
 		}
 	}
@@ -187,7 +209,7 @@ func ParseCodeFilesDetailed(response string) ([]interface{}, bool) {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
 			if inBlock {
 				if block := processCodeBlock(lineBuffer); block != nil {
-					result = append(result, block)
+					result = append(result, *block)
 				}
 				inBlock = false
 				lineBuffer = make([]string, 0)
@@ -207,7 +229,7 @@ func ParseCodeFilesDetailed(response string) ([]interface{}, bool) {
 	incomplete := false
 	if inBlock {
 		if block := processCodeBlock(lineBuffer); block != nil {
-			result = append(result, block)
+			result = append(result, *block)
 			incomplete = true
 		}
 	}
@@ -215,7 +237,7 @@ func ParseCodeFilesDetailed(response string) ([]interface{}, bool) {
 	return result, incomplete
 }
 
-func ParseCodeFiles(response string) []interface{} {
+func ParseCodeFiles(response string) []ParsedElement {
 	result, incomplete := ParseCodeFilesDetailed(response)
 	if incomplete {
 		fmt.Println("Warning: Incomplete code block.")

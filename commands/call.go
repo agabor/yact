@@ -39,8 +39,8 @@ func validateCodeOnlyResponse(content string) error {
 	}
 
 	for _, element := range elements {
-		if text, ok := element.(string); ok {
-			if strings.TrimSpace(text) != "" {
+		if !element.IsCodeFile {
+			if strings.TrimSpace(element.Text) != "" {
 				return fmt.Errorf("response contains free text outside code blocks")
 			}
 		}
@@ -147,8 +147,8 @@ func processResponse(transaction logic.Transaction, content string) (logic.Trans
 	}
 
 	for _, element := range elements {
-		switch v := element.(type) {
-		case logic.CodeFile:
+		if element.IsCodeFile {
+			v := element.CodeFile
 			if v.IsEmpty() {
 				err := v.Delete()
 				if err != nil {
@@ -169,9 +169,9 @@ func processResponse(transaction logic.Transaction, content string) (logic.Trans
 					}
 				}
 			}
-		case string:
-			if strings.TrimSpace(v) != "" {
-				fmt.Println(v)
+		} else {
+			if strings.TrimSpace(element.Text) != "" {
+				fmt.Println(element.Text)
 			}
 		}
 	}
