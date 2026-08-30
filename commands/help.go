@@ -19,6 +19,7 @@ Commands:
   tag <tagname> <file> [<file2> ...]   Tag files (supports glob patterns) for later use with the read command
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
+  query [prompt]                       Call the LLM without a system prompt
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
 }
 
