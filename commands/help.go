@@ -52,6 +52,8 @@ Global Flags:
   -d, --download                       Download the system prompt for the command
   -q, --quiet                          Hide progress indicator
   -c, --code-only                      Fail if the response contains free text or incomplete code blocks
+  -x, --no-context                     Do not send the selected files to the LLM
+  -p, --no-save-prompt                 Do not update prompt.txt with the prompt given as a CLI argument
 
 For more information, visit: https://github.com/agabor/yact`)
 }
