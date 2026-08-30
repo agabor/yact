@@ -169,7 +169,7 @@ func processCodeBlock(lineBuffer []string) interface{} {
 	return joinLines(lineBuffer)
 }
 
-func ParseCodeFiles(response string) []interface{} {
+func ParseCodeFilesDetailed(response string) ([]interface{}, bool) {
 	lines := strings.Split(response, "\n")
 	var result = make([]interface{}, 0)
 	var lineBuffer = make([]string, 0)
@@ -204,12 +204,21 @@ func ParseCodeFiles(response string) []interface{} {
 
 	flushText()
 
+	incomplete := false
 	if inBlock {
 		if block := processCodeBlock(lineBuffer); block != nil {
 			result = append(result, block)
-			fmt.Println("Warning: Incomplete code block.")
+			incomplete = true
 		}
 	}
 
+	return result, incomplete
+}
+
+func ParseCodeFiles(response string) []interface{} {
+	result, incomplete := ParseCodeFilesDetailed(response)
+	if incomplete {
+		fmt.Println("Warning: Incomplete code block.")
+	}
 	return result
 }

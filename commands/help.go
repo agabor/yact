@@ -50,6 +50,7 @@ Global Flags:
   -b, --buffer                         Use the buffer content as the prompt
   -d, --download                       Download the system prompt for the command
   -q, --quiet                          Hide progress indicator
+  -c, --code-only                      Fail if the response contains free text or incomplete code blocks
 
 For more information, visit: https://github.com/agabor/yact`)
 }
