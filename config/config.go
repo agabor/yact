@@ -179,6 +179,47 @@ func LoadPrompt(name string) (string, error) {
 	return string(data), nil
 }
 
+func parseFlags(content string) []string {
+	if !strings.HasPrefix(content, "flags: ") {
+		return []string{}
+	}
+	
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 {
+		return []string{}
+	}
+	
+	firstLine := lines[0]
+	if !strings.HasPrefix(firstLine, "flags: ") {
+		return []string{}
+	}
+	
+	flagsStr := strings.TrimPrefix(firstLine, "flags: ")
+	flagsStr = strings.TrimSpace(flagsStr)
+	
+	var flags []string
+	for _, ch := range flagsStr {
+		flags = append(flags, string(ch))
+	}
+	return flags
+}
+
+func LoadPromptWithFlags(name string) (string, []string, error) {
+	promptFile, err := getPromptFile(name)
+	if err != nil {
+		return "", nil, err
+	}
+
+	data, err := os.ReadFile(promptFile)
+	if err != nil {
+		return "", nil, err
+	}
+
+	content := string(data)
+	flags := parseFlags(content)
+	return content, flags, nil
+}
+
 func DownloadPrompt(name string) error {
 	promptFile, err := getPromptFile(name)
 	if err != nil {

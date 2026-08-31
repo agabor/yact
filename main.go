@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"yact/commands"
 	"yact/config"
@@ -89,6 +90,41 @@ func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
+func applyDefaultFlags(flags []string, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag *bool) {
+	for _, f := range flags {
+		switch f {
+		case "t":
+			*thinkFlag = true
+		case "n":
+			*noWriteFlag = true
+		case "f":
+			*fableFlag = true
+		case "o":
+			*opusFlag = true
+		case "s":
+			*sonnetFlag = true
+		case "a":
+			*haikuFlag = true
+		case "w":
+			*qwenFlag = true
+		case "e":
+			*coderFlag = true
+		case "b":
+			*bufferFlag = true
+		case "d":
+			*downloadFlag = true
+		case "q":
+			*quietFlag = true
+		case "c":
+			*codeOnlyFlag = true
+		case "x":
+			*noContextFlag = true
+		case "p":
+			*noSavePromptFlag = true
+		}
+	}
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
@@ -133,8 +169,6 @@ func main() {
 		commandArgs = args[1:]
 	}
 
-	modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
-
 	var commandErr error
 
 	switch command {
@@ -172,6 +206,7 @@ func main() {
 			commandErr = promptErr
 			break
 		}
+		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
 		commandErr = commands.HandleCommand(*thinkFlag, true, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
@@ -186,17 +221,31 @@ func main() {
 				break
 			}
 		}
+		
+		systemPrompt, defaultFlags, err := config.LoadPromptWithFlags(command)
+		if err != nil {
+			promptNotFoundMessage(command, downloaded)
+			os.Exit(1)
+		}
+		
+		applyDefaultFlags(defaultFlags, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag)
+		
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {
 			commandErr = promptErr
 			break
 		}
-		systemPrompt, err := config.LoadPrompt(command)
-		if err != nil {
-			promptNotFoundMessage(command, downloaded)
-			os.Exit(1)
+		
+		cleanedPrompt := systemPrompt
+		if strings.HasPrefix(cleanedPrompt, "flags: ") {
+			lines := strings.Split(cleanedPrompt, "\n")
+			if len(lines) > 1 {
+				cleanedPrompt = strings.Join(lines[1:], "\n")
+			}
 		}
-		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, systemPrompt, modelOverride, prompt)
+		
+		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
+		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, cleanedPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {

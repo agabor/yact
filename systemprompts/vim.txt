@@ -1,3 +1,4 @@
+flags: anx
 VIM QUICK HELP ASSISTANT
 
 ====================

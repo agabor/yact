@@ -1,3 +1,4 @@
+flags: ac
 CODE GENERATION ASSISTANT
 
 ====================
