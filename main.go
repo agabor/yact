@@ -96,7 +96,7 @@ func main() {
 	fableFlag := flag.BoolP("fable", "f", false, "Use Claude Fable model")
 	opusFlag := flag.BoolP("opus", "o", false, "Use Claude Opus model")
 	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
-	haikuFlag := flag.Bool("haiku", false, "Use Claude Haiku model")
+	haikuFlag := flag.BoolP("haiku", "a", false, "Use Claude Haiku model")
 	qwenFlag := flag.BoolP("qmax", "w", false, "Use Qwen3 235B A22B Instruct 2507 model on AWS Bedrock")
 	coderFlag := flag.BoolP("qcoder", "e", false, "Use Qwen3 Coder 30B A3B model (AWS Bedrock)")
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
