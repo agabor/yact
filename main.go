@@ -125,6 +125,55 @@ func applyDefaultFlags(flags []string, helpFlag, thinkFlag, noWriteFlag, fableFl
 	}
 }
 
+func buildFlagString(thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag bool) string {
+	var flags []string
+
+	if thinkFlag {
+		flags = append(flags, "--think")
+	}
+	if noWriteFlag {
+		flags = append(flags, "--no-write")
+	}
+	if fableFlag {
+		flags = append(flags, "--fable")
+	}
+	if opusFlag {
+		flags = append(flags, "--opus")
+	}
+	if sonnetFlag {
+		flags = append(flags, "--sonnet")
+	}
+	if haikuFlag {
+		flags = append(flags, "--haiku")
+	}
+	if qwenFlag {
+		flags = append(flags, "--qmax")
+	}
+	if coderFlag {
+		flags = append(flags, "--qcoder")
+	}
+	if bufferFlag {
+		flags = append(flags, "--buffer")
+	}
+	if downloadFlag {
+		flags = append(flags, "--download")
+	}
+	if quietFlag {
+		flags = append(flags, "--quiet")
+	}
+	if codeOnlyFlag {
+		flags = append(flags, "--code-only")
+	}
+	if noContextFlag {
+		flags = append(flags, "--no-context")
+	}
+	if noSavePromptFlag {
+		flags = append(flags, "--no-save-prompt")
+	}
+
+	return strings.Join(flags, " ")
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	thinkFlag := flag.BoolP("think", "t", false, "Enable Claude's extended thinking mode")
@@ -207,6 +256,10 @@ func main() {
 			break
 		}
 		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
+		flagString := buildFlagString(*thinkFlag, *noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *bufferFlag, *downloadFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag)
+		if flagString != "" {
+			fmt.Printf("Executing: y %s query\n", flagString)
+		}
 		commandErr = commands.HandleCommand(*thinkFlag, true, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
@@ -245,6 +298,10 @@ func main() {
 		}
 		
 		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag)
+		flagString := buildFlagString(*thinkFlag, *noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *bufferFlag, *downloadFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag)
+		if flagString != "" {
+			fmt.Printf("Executing: y %s %s\n", flagString, command)
+		}
 		commandErr = commands.HandleCommand(*thinkFlag, *noWriteFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, cleanedPrompt, modelOverride, prompt)
 	}
 
