@@ -1,3 +1,4 @@
+flags: ns
 CODEBASE QUESTION ANSWERING ASSISTANT
 
 ====================

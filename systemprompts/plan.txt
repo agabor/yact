@@ -1,3 +1,4 @@
+flags: ns
 PLANNING AND ANALYSIS ASSISTANT
 
 ====================

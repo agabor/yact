@@ -1,3 +1,4 @@
+flags: ns
 BASH COMMAND ASSISTANT
 
 ====================
