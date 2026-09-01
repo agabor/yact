@@ -18,6 +18,7 @@ const (
 	AWSRegion    = "us-west-2"
 	MaxTokens    = 16000
 	ThinkBudget  = 8000
+	MaxInputLines = 1000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
@@ -31,6 +32,7 @@ type Config struct {
 	AWSAPIKey         string `json:"aws_api_key"`
 	MaxTokens         int    `json:"max_tokens"`
 	ThinkBudget       int    `json:"think_budget"`
+	MaxInputLines     int    `json:"max_input_lines"`
 }
 
 func getConfigDir() (string, error) {
@@ -95,6 +97,7 @@ func DefaultConfig() *Config {
 		AWSAPIKey:         "",
 		MaxTokens:         MaxTokens,
 		ThinkBudget:       ThinkBudget,
+		MaxInputLines:     MaxInputLines,
 	}
 }
 
@@ -137,6 +140,10 @@ func Load() (*Config, error) {
 
 	if cfg.AWSRegion == "" {
 		cfg.AWSRegion = AWSRegion
+	}
+
+	if cfg.MaxInputLines == 0 {
+		cfg.MaxInputLines = MaxInputLines
 	}
 
 	return cfg, nil
