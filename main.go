@@ -90,7 +90,17 @@ func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
-func applyDefaultFlags(flags []string, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag *bool) {
+func hasUserSetModelFlag() bool {
+	modelFlagNames := []string{"fable", "opus", "sonnet", "haiku", "qmax", "qcoder"}
+	for _, name := range modelFlagNames {
+		if f := flag.Lookup(name); f != nil && f.Changed {
+			return true
+		}
+	}
+	return false
+}
+
+func applyDefaultFlags(flags []string, skipModelFlags bool, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag *bool) {
 	for _, f := range flags {
 		switch f {
 		case "t":
@@ -98,17 +108,29 @@ func applyDefaultFlags(flags []string, helpFlag, thinkFlag, noWriteFlag, fableFl
 		case "n":
 			*noWriteFlag = true
 		case "f":
-			*fableFlag = true
+			if !skipModelFlags {
+				*fableFlag = true
+			}
 		case "o":
-			*opusFlag = true
+			if !skipModelFlags {
+				*opusFlag = true
+			}
 		case "s":
-			*sonnetFlag = true
+			if !skipModelFlags {
+				*sonnetFlag = true
+			}
 		case "a":
-			*haikuFlag = true
+			if !skipModelFlags {
+				*haikuFlag = true
+			}
 		case "w":
-			*qwenFlag = true
+			if !skipModelFlags {
+				*qwenFlag = true
+			}
 		case "e":
-			*coderFlag = true
+			if !skipModelFlags {
+				*coderFlag = true
+			}
 		case "b":
 			*bufferFlag = true
 		case "d":
@@ -281,7 +303,8 @@ func main() {
 			os.Exit(1)
 		}
 		
-		applyDefaultFlags(defaultFlags, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag)
+		skipModelFlags := hasUserSetModelFlag()
+		applyDefaultFlags(defaultFlags, skipModelFlags, helpFlag, thinkFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag)
 		
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {
