@@ -19,7 +19,7 @@ import (
 const (
 	defaultBedrockMaxModelID   = "qwen.qwen3-235b-a22b-2507-v1:0"
 	defaultBedrockCoderModelID = "qwen.qwen3-coder-30b-a3b-v1:0"
-	defaultBedrockNextModelID  = "qwen.qwen3-coder-30b-a3b-next-v1:0"
+	defaultBedrockNextModelID  = "qwen.qwen3-coder-next"
 )
 
 type BedrockClient struct {
