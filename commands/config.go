@@ -14,6 +14,8 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
 		printConfigValue("bedrock_model", cfg.BedrockModel, false)
 		printConfigValue("bedrock_coder_model", cfg.BedrockCoderModel, false)
+		printConfigValue("bedrock_next_model", cfg.BedrockNextModel, false)
+		printConfigValue("bedrock_llama_model", cfg.BedrockLlamaModel, false)
 		printConfigValue("aws_region", cfg.AWSRegion, false)
 		printConfigValue("aws_api_key", cfg.AWSAPIKey, true)
 		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
@@ -39,6 +41,10 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.BedrockModel = value
 		case "bedrock_coder_model":
 			cfg.BedrockCoderModel = value
+		case "bedrock_next_model":
+			cfg.BedrockNextModel = value
+		case "bedrock_llama_model":
+			cfg.BedrockLlamaModel = value
 		case "aws_region":
 			cfg.AWSRegion = value
 		case "aws_api_key":
