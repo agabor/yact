@@ -20,6 +20,7 @@ const (
 	defaultBedrockMaxModelID   = "qwen.qwen3-235b-a22b-2507-v1:0"
 	defaultBedrockCoderModelID = "qwen.qwen3-coder-30b-a3b-v1:0"
 	defaultBedrockNextModelID  = "qwen.qwen3-coder-next"
+	defaultBedrockLlamaModelID = "meta.llama4-maverick-17b-instruct-v1:0"
 )
 
 type BedrockClient struct {
@@ -47,6 +48,10 @@ func isNextModelSelected(modelName string) bool {
 	return strings.EqualFold(strings.TrimSpace(modelName), "qnext")
 }
 
+func isLlamaModelSelected(modelName string) bool {
+	return strings.EqualFold(strings.TrimSpace(modelName), "llama")
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if strings.TrimSpace(value) != "" {
@@ -64,9 +69,13 @@ func resolveNextModelID(cfg *config.Config) string {
 	return firstNonEmpty(cfg.BedrockNextModel, defaultBedrockNextModelID)
 }
 
+func resolveLlamaModelID(cfg *config.Config) string {
+	return firstNonEmpty(cfg.BedrockLlamaModel, defaultBedrockLlamaModelID)
+}
+
 func resolveMaxModelID(cfg *config.Config) string {
 	configured := firstNonEmpty(cfg.BedrockModel, defaultBedrockMaxModelID)
-	if strings.EqualFold(configured, resolveCoderModelID(cfg)) || strings.EqualFold(configured, resolveNextModelID(cfg)) {
+	if strings.EqualFold(configured, resolveCoderModelID(cfg)) || strings.EqualFold(configured, resolveNextModelID(cfg)) || strings.EqualFold(configured, resolveLlamaModelID(cfg)) {
 		return defaultBedrockMaxModelID
 	}
 	return configured
@@ -79,6 +88,9 @@ func (c *BedrockClient) selectModel(cfg *config.Config) string {
 	if isNextModelSelected(cfg.ClaudeModel) {
 		return resolveNextModelID(cfg)
 	}
+	if isLlamaModelSelected(cfg.ClaudeModel) {
+		return resolveLlamaModelID(cfg)
+	}
 	return resolveMaxModelID(cfg)
 }
 
@@ -88,6 +100,9 @@ func (c *BedrockClient) selectPrices(cfg *config.Config) (float64, float64) {
 	}
 	if isNextModelSelected(cfg.ClaudeModel) {
 		return 0.22, 0.95
+	}
+	if isLlamaModelSelected(cfg.ClaudeModel) {
+		return 0.24, 0.97
 	}
 	return 0.22, 0.88
 }

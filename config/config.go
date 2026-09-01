@@ -16,6 +16,7 @@ const (
 	BedrockModel = "qwen.qwen3-235b-a22b-2507-v1:0"
 	BedrockCoderModel = "qwen.qwen3-coder-30b-a3b-v1:0"
 	BedrockNextModel = "qwen.qwen3-coder-30b-a3b-next-v1:0"
+	BedrockLlamaModel = "meta.llama4-maverick-17b-instruct-v1:0"
 	AWSRegion    = "us-west-2"
 	MaxTokens    = 16000
 	ThinkBudget  = 8000
@@ -30,6 +31,7 @@ type Config struct {
 	BedrockModel      string `json:"bedrock_model"`
 	BedrockCoderModel string `json:"bedrock_coder_model"`
 	BedrockNextModel  string `json:"bedrock_next_model"`
+	BedrockLlamaModel string `json:"bedrock_llama_model"`
 	AWSRegion         string `json:"aws_region"`
 	AWSAPIKey         string `json:"aws_api_key"`
 	MaxTokens         int    `json:"max_tokens"`
@@ -96,6 +98,7 @@ func DefaultConfig() *Config {
 		BedrockModel:      BedrockModel,
 		BedrockCoderModel: BedrockCoderModel,
 		BedrockNextModel:  BedrockNextModel,
+		BedrockLlamaModel: BedrockLlamaModel,
 		AWSRegion:         AWSRegion,
 		AWSAPIKey:         "",
 		MaxTokens:         MaxTokens,
@@ -143,6 +146,10 @@ func Load() (*Config, error) {
 
 	if cfg.BedrockNextModel == "" {
 		cfg.BedrockNextModel = BedrockNextModel
+	}
+
+	if cfg.BedrockLlamaModel == "" {
+		cfg.BedrockLlamaModel = BedrockLlamaModel
 	}
 
 	if cfg.AWSRegion == "" {
