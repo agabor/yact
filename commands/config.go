@@ -18,6 +18,7 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		printConfigValue("aws_api_key", cfg.AWSAPIKey, true)
 		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
 		printConfigValue("think_budget", fmt.Sprintf("%d", cfg.ThinkBudget), false)
+		printConfigValue("max_input_lines", fmt.Sprintf("%d", cfg.MaxInputLines), false)
 		return nil
 	}
 
@@ -48,6 +49,10 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			}
 		case "think_budget":
 			if err := setIntValue(&cfg.ThinkBudget, value); err != nil {
+				return err
+			}
+		case "max_input_lines":
+			if err := setIntValue(&cfg.MaxInputLines, value); err != nil {
 				return err
 			}
 		default:

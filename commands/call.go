@@ -68,6 +68,24 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 		transactionForLLM.Context = []string{}
 	}
 
+	totalLength := 0
+
+	if prompt != "" {
+		totalLength += len(strings.Fields(prompt))
+	}
+
+	for _, contextPath := range transactionForLLM.Context {
+		codeFile, err := logic.ReadAsFile(contextPath)
+		if err != nil {
+			return err
+		}
+		totalLength += len(strings.Fields(codeFile.Content))
+	}
+
+	if totalLength > cfg.MaxInputLines {
+		return fmt.Errorf("input exceeds maximum number allowed lines (%d), got %d. Increase max_input_lines to override.", cfg.MaxInputLines, totalLength)
+	}
+
 	response, err := callLLM(transactionForLLM, think, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
