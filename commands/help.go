@@ -47,7 +47,8 @@ Global Flags:
   -s, --sonnet                         Use Claude Sonnet model
   -a, --haiku                          Use Claude Haiku model
   -w, --qmax                           Use Qwen3 235B A22B Instruct 2507 model on AWS Bedrock
-  -e, --qcoder                          Use Qwen3 Coder 30B A3B model (AWS Bedrock)
+  -e, --qcoder                         Use Qwen3 Coder 30B A3B model (AWS Bedrock)
+  -z, --qnext                          Use Qwen3 Coder Next model (AWS Bedrock)
   -b, --buffer                         Use the buffer content as the prompt
   -d, --download                       Download the system prompt for the command
   -q, --quiet                          Hide progress indicator

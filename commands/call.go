@@ -71,7 +71,7 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 	totalLength := 0
 
 	if prompt != "" {
-		totalLength += len(strings.Fields(prompt))
+		totalLength += len(strings.Split(prompt, "\n"))
 	}
 
 	for _, contextPath := range transactionForLLM.Context {
@@ -79,7 +79,7 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 		if err != nil {
 			return err
 		}
-		totalLength += len(strings.Fields(codeFile.Content))
+		totalLength += len(strings.Split(codeFile.Content, "\n"))
 	}
 
 	if totalLength > cfg.MaxInputLines {
@@ -118,7 +118,7 @@ func newClient(cfg *config.Config) api.Client {
 	var client api.Client
 
 	modelType := strings.ToLower(cfg.ClaudeModel)
-	if modelType == "qmax" || modelType == "qcoder" {
+	if modelType == "qmax" || modelType == "qcoder" || modelType == "qnext" {
 		client = &api.BedrockClient{}
 	} else {
 		client = &api.ClaudeClient{}
