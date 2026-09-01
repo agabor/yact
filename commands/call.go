@@ -86,6 +86,8 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 		return fmt.Errorf("input exceeds maximum number allowed lines (%d), got %d. Increase max_input_lines to override.", cfg.MaxInputLines, totalLength)
 	}
 
+	fmt.Printf("Input lines: %d\n", totalLength)
+
 	response, err := callLLM(transactionForLLM, think, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
@@ -104,10 +106,12 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 
 	transaction, err = processResponse(transaction, response)
 	if err != nil {
+		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
 
 	if err = transaction.Save(); err != nil {
+		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
 
