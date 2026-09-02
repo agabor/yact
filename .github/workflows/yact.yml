@@ -12,17 +12,6 @@ on:
           - 'act'
           - 'ask'
         default: 'plan'
-      model:
-        description: "model"
-        type: choice
-        options:
-          - 'haiku'
-          - 'sonnet'
-          - 'opus'
-          - 'fable'
-          - 'qmax'
-          - 'qcoder'
-        default: 'sonnet'
       prompt_source:
         description: "prompt source"
         required: true
@@ -143,12 +132,11 @@ jobs:
       - name: run command
         env:
           YACT_COMMAND: ${{ github.event.inputs.command }}
-          YACT_MODEL: ${{ github.event.inputs.model }}
           YACT_PROMPT_SOURCE: ${{ github.event.inputs.prompt_source }}
           YACT_PROMPT: ${{ github.event.inputs.prompt }}
           YACT_NO_WRITE: ${{ github.event.inputs.no_write }}
         run: |
-          args=("$YACT_COMMAND" "-d" "-q" "--$YACT_MODEL")
+          args=("$YACT_COMMAND" "-d" "--no-progress")
 
           if [ "$YACT_NO_WRITE" = "true" ]; then
             args+=("-n")
