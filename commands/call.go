@@ -49,7 +49,7 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func HandleCommand(noWrite bool, quiet bool, codeOnly bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if prompt != "" && !noSavePrompt {
@@ -88,7 +88,7 @@ func HandleCommand(think bool, noWrite bool, quiet bool, codeOnly bool, noContex
 
 	fmt.Printf("Input lines: %d\n", totalLength)
 
-	response, err := callLLM(transactionForLLM, think, quiet, cfg, systemPrompt)
+	response, err := callLLM(transactionForLLM, quiet, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -133,11 +133,11 @@ func newClient(cfg *config.Config) api.Client {
 	return client
 }
 
-func callLLM(transaction logic.Transaction, think bool, quiet bool, cfg *config.Config, systemPrompt string) (string, error) {
+func callLLM(transaction logic.Transaction, quiet bool, cfg *config.Config, systemPrompt string) (string, error) {
 	client := newClient(cfg)
 
 	if quiet {
-		return client.Call(transaction, think, systemPrompt)
+		return client.Call(transaction, cfg, systemPrompt)
 	}
 
 	fmt.Printf("Sending request...\n")
@@ -146,7 +146,7 @@ func callLLM(transaction logic.Transaction, think bool, quiet bool, cfg *config.
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(transaction, think, systemPrompt)
+	response, err := client.Call(transaction, cfg, systemPrompt)
 
 	done <- true
 	close(done)

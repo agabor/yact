@@ -73,7 +73,7 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return FormatCost(inputTokens, outputTokens, float64(c.inputPrice), float64(c.outputPrice))
 }
 
-func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
+func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
 	if c.apiKey == "" {
 		return "", fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
 	}
@@ -103,7 +103,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, think bool, systemPro
 		Messages:  messageParams,
 	}
 
-	if think {
+	if c.thinkBudget > 0 {
 		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(c.thinkBudget))
 	}
 

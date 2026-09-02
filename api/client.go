@@ -10,7 +10,7 @@ import (
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error)
+	Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error)
 }
 
 func Serialize(path string) (string, error) {
