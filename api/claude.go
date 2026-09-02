@@ -103,7 +103,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 		Messages:  messageParams,
 	}
 
-	if c.thinkBudget > 0 {
+	if c.thinkBudget > 0 && c.model == anthropic.ModelClaudeHaiku4_5 {
 		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(c.thinkBudget))
 	}
 
