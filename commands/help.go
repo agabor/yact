@@ -40,7 +40,6 @@ func printHelpFooter() {
 	fmt.Println(`
 Global Flags:
   -h, --help                           Show help message
-  -t, --think                          Enable Claude's extended thinking mode
   -n, --no-write                       Do not write files, print response instead
   -f, --fable                          Use Claude Fable model
   -o, --opus                           Use Claude Opus model

@@ -192,7 +192,7 @@ func (c *BedrockClient) extractText(output types.ConverseOutput) string {
 	return responseText.String()
 }
 
-func (c *BedrockClient) Call(transaction logic.Transaction, think bool, systemPrompt string) (string, error) {
+func (c *BedrockClient) Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
 	ctx := context.Background()
 
 	client, err := c.newRuntimeClient(ctx)
@@ -217,10 +217,6 @@ func (c *BedrockClient) Call(transaction logic.Transaction, think bool, systemPr
 		input.System = []types.SystemContentBlock{
 			&types.SystemContentBlockMemberText{Value: systemPrompt},
 		}
-	}
-
-	if think {
-		fmt.Println("Note: extended thinking mode is not supported for this model, ignoring.")
 	}
 
 	fmt.Printf("Calling Bedrock with %d messages (%d files)\n", len(messages), fileCount)
