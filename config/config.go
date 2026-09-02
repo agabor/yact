@@ -14,7 +14,6 @@ import (
 const (
 	ClaudeModel  = "haiku"
 	BedrockModel = "qwen.qwen3-235b-a22b-2507-v1:0"
-	BedrockCoderModel = "qwen.qwen3-coder-30b-a3b-v1:0"
 	BedrockNextModel = "qwen.qwen3-coder-30b-a3b-next-v1:0"
 	AWSRegion    = "us-west-2"
 	MaxTokens    = 16000
@@ -28,7 +27,6 @@ type Config struct {
 	AnthropicAPIKey   string `json:"anthropic_api_key"`
 	ClaudeModel       string `json:"claude_model"`
 	BedrockModel      string `json:"bedrock_model"`
-	BedrockCoderModel string `json:"bedrock_coder_model"`
 	BedrockNextModel  string `json:"bedrock_next_model"`
 	AWSRegion         string `json:"aws_region"`
 	AWSAPIKey         string `json:"aws_api_key"`
@@ -94,7 +92,6 @@ func DefaultConfig() *Config {
 		AnthropicAPIKey:   "",
 		ClaudeModel:       ClaudeModel,
 		BedrockModel:      BedrockModel,
-		BedrockCoderModel: BedrockCoderModel,
 		BedrockNextModel:  BedrockNextModel,
 		AWSRegion:         AWSRegion,
 		AWSAPIKey:         "",
@@ -135,10 +132,6 @@ func Load() (*Config, error) {
 
 	if cfg.BedrockModel == "" {
 		cfg.BedrockModel = BedrockModel
-	}
-
-	if cfg.BedrockCoderModel == "" {
-		cfg.BedrockCoderModel = BedrockCoderModel
 	}
 
 	if cfg.BedrockNextModel == "" {

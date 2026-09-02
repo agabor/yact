@@ -1,4 +1,4 @@
-flags: ac
+flags: av
 CODE GENERATION ASSISTANT
 
 ====================

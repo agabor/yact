@@ -13,7 +13,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
 		printConfigValue("bedrock_model", cfg.BedrockModel, false)
-		printConfigValue("bedrock_coder_model", cfg.BedrockCoderModel, false)
 		printConfigValue("bedrock_next_model", cfg.BedrockNextModel, false)
 		printConfigValue("aws_region", cfg.AWSRegion, false)
 		printConfigValue("aws_api_key", cfg.AWSAPIKey, true)
@@ -38,8 +37,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.ClaudeModel = value
 		case "bedrock_model":
 			cfg.BedrockModel = value
-		case "bedrock_coder_model":
-			cfg.BedrockCoderModel = value
 		case "bedrock_next_model":
 			cfg.BedrockNextModel = value
 		case "aws_region":
