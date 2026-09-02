@@ -1,4 +1,4 @@
-flags: ns
+flags: c1n
 BASH COMMAND ASSISTANT
 
 ====================

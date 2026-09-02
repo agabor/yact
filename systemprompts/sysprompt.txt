@@ -1,3 +1,4 @@
+flags: c3v
 SYSTEM PROMPT AUTHORING ASSISTANT
 
 ====================

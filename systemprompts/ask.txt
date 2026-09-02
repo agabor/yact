@@ -1,4 +1,4 @@
-flags: ns
+flags: c2n
 CODEBASE QUESTION ANSWERING ASSISTANT
 
 ====================
