@@ -103,7 +103,7 @@ func hasUserSetModelFlag() bool {
 	return false
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, helpFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag *bool) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool) {
 	for _, f := range flags {
 		switch f {
 		case "n":
@@ -140,10 +140,8 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, helpFlag, noWriteFla
 			*bufferFlag = true
 		case "d":
 			*downloadFlag = true
-		case "q":
-			*quietFlag = true
-		case "c":
-			*codeOnlyFlag = true
+		case "v":
+			*validateCodeFlag = true
 		case "x":
 			*noContextFlag = true
 		case "p":
@@ -152,7 +150,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, helpFlag, noWriteFla
 	}
 }
 
-func buildFlagString(noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag bool) string {
+func buildFlagString(noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag, noContextFlag, noSavePromptFlag bool) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -185,11 +183,11 @@ func buildFlagString(noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qw
 	if downloadFlag {
 		flags = append(flags, "--download")
 	}
-	if quietFlag {
-		flags = append(flags, "--quiet")
+	if noProgressFlag {
+		flags = append(flags, "--no-progress")
 	}
-	if codeOnlyFlag {
-		flags = append(flags, "--code-only")
+	if validateCodeFlag {
+		flags = append(flags, "--validate-code")
 	}
 	if noContextFlag {
 		flags = append(flags, "--no-context")
@@ -213,8 +211,8 @@ func main() {
 	nextFlag := flag.BoolP("qnext", "z", false, "Use Qwen3 Coder Next model (AWS Bedrock)")
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
-	quietFlag := flag.BoolP("quiet", "q", false, "Hide progress indicator")
-	codeOnlyFlag := flag.BoolP("code-only", "c", false, "Only accept code blocks in the response")
+	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
+	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
 	noContextFlag := flag.BoolP("no-context", "x", false, "Do not send the selected files to the LLM")
 	noSavePromptFlag := flag.BoolP("no-save-prompt", "p", false, "Do not update prompt.txt with the prompt given as a CLI argument")
 
@@ -283,11 +281,11 @@ func main() {
 			break
 		}
 		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag)
-		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag, *bufferFlag, *downloadFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag)
+		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
@@ -309,7 +307,7 @@ func main() {
 		}
 
 		skipModelFlags := hasUserSetModelFlag()
-		applyDefaultFlags(defaultFlags, skipModelFlags, helpFlag, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, quietFlag, codeOnlyFlag, noContextFlag, noSavePromptFlag)
+		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, coderFlag, nextFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag)
 
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {
@@ -326,11 +324,11 @@ func main() {
 		}
 
 		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag)
-		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag, *bufferFlag, *downloadFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag)
+		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *coderFlag, *nextFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(*noWriteFlag, *quietFlag, *codeOnlyFlag, *noContextFlag, *noSavePromptFlag, cfg, cleanedPrompt, modelOverride, prompt)
+		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, cfg, cleanedPrompt, modelOverride, prompt)
 	}
 
 	if commandErr != nil {

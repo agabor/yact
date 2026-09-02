@@ -49,7 +49,7 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleCommand(noWrite bool, quiet bool, codeOnly bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 
 	if prompt != "" && !noSavePrompt {
@@ -88,12 +88,12 @@ func HandleCommand(noWrite bool, quiet bool, codeOnly bool, noContext bool, noSa
 
 	fmt.Printf("Input lines: %d\n", totalLength)
 
-	response, err := callLLM(transactionForLLM, quiet, cfg, systemPrompt)
+	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
 
-	if codeOnly {
+	if validateCode {
 		if err := validateCodeOnlyResponse(response); err != nil {
 			return err
 		}
@@ -133,10 +133,10 @@ func newClient(cfg *config.Config) api.Client {
 	return client
 }
 
-func callLLM(transaction logic.Transaction, quiet bool, cfg *config.Config, systemPrompt string) (string, error) {
+func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config, systemPrompt string) (string, error) {
 	client := newClient(cfg)
 
-	if quiet {
+	if noProgress {
 		return client.Call(transaction, cfg, systemPrompt)
 	}
 
