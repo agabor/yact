@@ -18,8 +18,7 @@ import (
 
 const (
 	defaultBedrockMaxModelID   = "qwen.qwen3-235b-a22b-2507-v1:0"
-	defaultBedrockCoderModelID = "qwen.qwen3-coder-30b-a3b-v1:0"
-	defaultBedrockNextModelID  = "qwen.qwen3-coder-next"
+	defaultBedrockNextModelID  = "qwen.qwen3-coder-30b-a3b-next-v1:0"
 )
 
 type BedrockClient struct {
@@ -39,10 +38,6 @@ func (c *BedrockClient) Init(cfg *config.Config) {
 	c.inputPrice, c.outputPrice = c.selectPrices(cfg)
 }
 
-func isCoderModelSelected(modelName string) bool {
-	return strings.EqualFold(strings.TrimSpace(modelName), "qcoder")
-}
-
 func isNextModelSelected(modelName string) bool {
 	return strings.EqualFold(strings.TrimSpace(modelName), "qnext")
 }
@@ -56,26 +51,19 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-func resolveCoderModelID(cfg *config.Config) string {
-	return firstNonEmpty(cfg.BedrockCoderModel, defaultBedrockCoderModelID)
-}
-
 func resolveNextModelID(cfg *config.Config) string {
 	return firstNonEmpty(cfg.BedrockNextModel, defaultBedrockNextModelID)
 }
 
 func resolveMaxModelID(cfg *config.Config) string {
 	configured := firstNonEmpty(cfg.BedrockModel, defaultBedrockMaxModelID)
-	if strings.EqualFold(configured, resolveCoderModelID(cfg)) || strings.EqualFold(configured, resolveNextModelID(cfg)) {
+	if strings.EqualFold(configured, resolveNextModelID(cfg)) {
 		return defaultBedrockMaxModelID
 	}
 	return configured
 }
 
 func (c *BedrockClient) selectModel(cfg *config.Config) string {
-	if isCoderModelSelected(cfg.ClaudeModel) {
-		return resolveCoderModelID(cfg)
-	}
 	if isNextModelSelected(cfg.ClaudeModel) {
 		return resolveNextModelID(cfg)
 	}
@@ -83,9 +71,6 @@ func (c *BedrockClient) selectModel(cfg *config.Config) string {
 }
 
 func (c *BedrockClient) selectPrices(cfg *config.Config) (float64, float64) {
-	if isCoderModelSelected(cfg.ClaudeModel) {
-		return 0.22, 0.95
-	}
 	if isNextModelSelected(cfg.ClaudeModel) {
 		return 0.22, 0.95
 	}
