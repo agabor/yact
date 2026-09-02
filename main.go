@@ -47,24 +47,26 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
-func getModelOverride(fable, opus, sonnet, haiku, qmax, qnext bool) string {
-	if fable {
-		return "fable"
+func getModelOverride(claudeLevel, qwenLevel int) string {
+	if claudeLevel > 0 {
+		switch claudeLevel {
+		case 1:
+			return "haiku"
+		case 2:
+			return "sonnet"
+		case 3:
+			return "opus"
+		case 4:
+			return "fable"
+		}
 	}
-	if opus {
-		return "opus"
-	}
-	if sonnet {
-		return "sonnet"
-	}
-	if haiku {
-		return "haiku"
-	}
-	if qmax {
-		return "qmax"
-	}
-	if qnext {
-		return "qnext"
+	if qwenLevel > 0 {
+		switch qwenLevel {
+		case 1:
+			return "qnext"
+		case 2:
+			return "qmax"
+		}
 	}
 	return ""
 }
@@ -90,44 +92,22 @@ func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
-func hasUserSetModelFlag() bool {
-	modelFlagNames := []string{"fable", "opus", "sonnet", "haiku", "qmax", "qnext"}
-	for _, name := range modelFlagNames {
-		if f := flag.Lookup(name); f != nil && f.Changed {
-			return true
-		}
-	}
-	return false
+func hasUserSetModelFlag(claudeLevel, qwenLevel int) bool {
+	return claudeLevel > 0 || qwenLevel > 0
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, nextFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool, claudeLevel, qwenLevel *int) {
 	for _, f := range flags {
 		switch f {
 		case "n":
 			*noWriteFlag = true
-		case "f":
+		case "c":
 			if !skipModelFlags {
-				*fableFlag = true
+				*claudeLevel = 2
 			}
-		case "o":
+		case "q":
 			if !skipModelFlags {
-				*opusFlag = true
-			}
-		case "s":
-			if !skipModelFlags {
-				*sonnetFlag = true
-			}
-		case "a":
-			if !skipModelFlags {
-				*haikuFlag = true
-			}
-		case "w":
-			if !skipModelFlags {
-				*qwenFlag = true
-			}
-		case "z":
-			if !skipModelFlags {
-				*nextFlag = true
+				*qwenLevel = 2
 			}
 		case "b":
 			*bufferFlag = true
@@ -143,29 +123,17 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, fableFl
 	}
 }
 
-func buildFlagString(noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, nextFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag, noContextFlag, noSavePromptFlag bool) string {
+func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag, noContextFlag, noSavePromptFlag bool, claudeLevel, qwenLevel int) string {
 	var flags []string
 
 	if noWriteFlag {
 		flags = append(flags, "--no-write")
 	}
-	if fableFlag {
-		flags = append(flags, "--fable")
+	if claudeLevel > 0 {
+		flags = append(flags, fmt.Sprintf("--claude %d", claudeLevel))
 	}
-	if opusFlag {
-		flags = append(flags, "--opus")
-	}
-	if sonnetFlag {
-		flags = append(flags, "--sonnet")
-	}
-	if haikuFlag {
-		flags = append(flags, "--haiku")
-	}
-	if qwenFlag {
-		flags = append(flags, "--qmax")
-	}
-	if nextFlag {
-		flags = append(flags, "--qnext")
+	if qwenLevel > 0 {
+		flags = append(flags, fmt.Sprintf("--qwen %d", qwenLevel))
 	}
 	if bufferFlag {
 		flags = append(flags, "--buffer")
@@ -192,12 +160,8 @@ func buildFlagString(noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qw
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
-	fableFlag := flag.BoolP("fable", "f", false, "Use Claude Fable model")
-	opusFlag := flag.BoolP("opus", "o", false, "Use Claude Opus model")
-	sonnetFlag := flag.BoolP("sonnet", "s", false, "Use Claude Sonnet model")
-	haikuFlag := flag.BoolP("haiku", "a", false, "Use Claude Haiku model")
-	qwenFlag := flag.BoolP("qmax", "w", false, "Use Qwen3 235B A22B Instruct 2507 model on AWS Bedrock")
-	nextFlag := flag.BoolP("qnext", "z", false, "Use Qwen3 Coder Next model (AWS Bedrock)")
+	claudeLevel := flag.IntP("claude", "c", 0, "Claude model level (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)")
+	qwenLevel := flag.IntP("qwen", "q", 0, "Qwen model level (1: Coder, 2: Max)")
 	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
@@ -269,8 +233,8 @@ func main() {
 			commandErr = promptErr
 			break
 		}
-		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *nextFlag)
-		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *nextFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag)
+		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
+		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, *claudeLevel, *qwenLevel)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
@@ -295,8 +259,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		skipModelFlags := hasUserSetModelFlag()
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, fableFlag, opusFlag, sonnetFlag, haikuFlag, qwenFlag, nextFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag)
+		skipModelFlags := hasUserSetModelFlag(*claudeLevel, *qwenLevel)
+		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag, claudeLevel, qwenLevel)
 
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {
@@ -312,8 +276,8 @@ func main() {
 			}
 		}
 
-		modelOverride := getModelOverride(*fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *nextFlag)
-		flagString := buildFlagString(*noWriteFlag, *fableFlag, *opusFlag, *sonnetFlag, *haikuFlag, *qwenFlag, *nextFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag)
+		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
+		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, *claudeLevel, *qwenLevel)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}

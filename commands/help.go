@@ -41,12 +41,8 @@ func printHelpFooter() {
 Global Flags:
   -h, --help                           Show help message
   -n, --no-write                       Do not write files, print response instead
-  -f, --fable                          Use Claude Fable model
-  -o, --opus                           Use Claude Opus model
-  -s, --sonnet                         Use Claude Sonnet model
-  -a, --haiku                          Use Claude Haiku model
-  -w, --qmax                           Use Qwen3 235B A22B Instruct 2507 model on AWS Bedrock
-  -z, --qnext                          Use Qwen3 Coder Next model (AWS Bedrock)
+  -c, --claude <level>                 Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
+  -q, --qwen <level>                   Use Qwen model (1: Coder, 2: Max)
   -b, --buffer                         Use the buffer content as the prompt
   -d, --download                       Download the system prompt for the command
   --no-progress                        Hide progress indicator

@@ -1,4 +1,4 @@
-flags: anx
+flags: c1nx
 VIM QUICK HELP ASSISTANT
 
 ====================
