@@ -100,7 +100,9 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 	for _, f := range flags {
 		switch f {
 		case "n":
-			*noWriteFlag = true
+			if *validateCodeFlag == false {
+				*noWriteFlag = true
+			}
 		case "c":
 			if !skipModelFlags {
 				*claudeLevel = 2
@@ -114,7 +116,9 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 		case "d":
 			*downloadFlag = true
 		case "v":
-			*validateCodeFlag = true
+			if *noWriteFlag == false {
+				*validateCodeFlag = true
+			}
 		case "x":
 			*noContextFlag = true
 		case "p":
