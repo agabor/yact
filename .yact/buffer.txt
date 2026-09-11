@@ -1,3 +1,5 @@
+````
+// main.go
 package main
 
 import (
@@ -96,12 +98,13 @@ func hasUserSetModelFlag(claudeLevel, qwenLevel int) bool {
 	return claudeLevel > 0 || qwenLevel > 0
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool, claudeLevel, qwenLevel *int) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, skipNoWrite bool, skipValidateCode bool, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool, claudeLevel, qwenLevel *int) {
 	for _, f := range flags {
 		switch f {
 		case "n":
-			if *validateCodeFlag == false {
+			if !skipNoWrite {
 				*noWriteFlag = true
+				*validateCodeFlag = false
 			}
 		case "c":
 			if !skipModelFlags {
@@ -116,8 +119,9 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 		case "d":
 			*downloadFlag = true
 		case "v":
-			if *noWriteFlag == false {
+			if !skipValidateCode {
 				*validateCodeFlag = true
+				*noWriteFlag = false
 			}
 		case "x":
 			*noContextFlag = true
@@ -174,6 +178,9 @@ func main() {
 	noSavePromptFlag := flag.BoolP("no-save-prompt", "p", false, "Do not update prompt.txt with the prompt given as a CLI argument")
 
 	flag.Parse()
+
+	noWriteExplicit := flag.CommandLine.Changed("no-write")
+	validateCodeExplicit := flag.CommandLine.Changed("validate-code")
 
 	args := flag.Args()
 
@@ -264,7 +271,7 @@ func main() {
 		}
 
 		skipModelFlags := hasUserSetModelFlag(*claudeLevel, *qwenLevel)
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag, claudeLevel, qwenLevel)
+		applyDefaultFlags(defaultFlags, skipModelFlags, validateCodeExplicit, noWriteExplicit, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag, claudeLevel, qwenLevel)
 
 		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
 		if promptErr != nil {
@@ -293,3 +300,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+````
