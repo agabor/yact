@@ -32,6 +32,12 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 	}
 }
 
+func applyMaxInputLinesOverride(cfg *config.Config, maxInputLinesOverride int) {
+	if maxInputLinesOverride > 0 {
+		cfg.MaxInputLines = maxInputLinesOverride
+	}
+}
+
 func validateCodeOnlyResponse(content string) error {
 	elements, incomplete := logic.ParseCodeFilesDetailed(content)
 	if incomplete {
@@ -49,8 +55,9 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, prompt string) error {
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
+	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
 
 	if prompt != "" && !noSavePrompt {
 		if err := SetPrompt(prompt); err != nil {

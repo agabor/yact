@@ -1,18 +1,7 @@
-commands/help.go
-main.go
+commands/call.go
 commands/config.go
 config/config.go
+commands/help.go
+main.go
 ==========
-Goal: Make --no-write and --validate-code flags mutually exclusive, with explicitly set CLI flags taking precedence over conflicting flags derived from the system prompt's "flags:" header.
-
-Steps:
-
-1. Update main.go:
-   - Modify applyDefaultFlags(flags []string, skipModelFlags bool, skipNoWrite bool, skipValidateCode bool, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, noContextFlag, noSavePromptFlag *bool, claudeLevel, qwenLevel *int) to:
-     - Add two new boolean parameters skipNoWrite and skipValidateCode.
-     - In case "n": only set *noWriteFlag = true and *validateCodeFlag = false when skipNoWrite is false.
-     - In case "v": only set *validateCodeFlag = true and *noWriteFlag = false when skipValidateCode is false.
-   - In main(), after flag.Parse(), compute:
-     - noWriteExplicit := flag.CommandLine.Changed("no-write")
-     - validateCodeExplicit := flag.CommandLine.Changed("validate-code")
-   - In the default command case (where applyDefaultFlags is invoked), pass validateCodeExplicit as skipNoWrite and noWriteExplicit as skipValidateCode, so a user-provided --validate-code prevents the system prompt's "n" flag from taking effect, and a user-provided --no-write prevents the system prompt's "v" flag from taking effect.
+Add a new flag -m/--max-input-lines that sets max input lines for the current command, without changing config
