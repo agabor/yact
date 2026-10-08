@@ -232,7 +232,7 @@ func main() {
 		commandErr = commands.HandleNewCommand()
 	case "commit":
 		requireNoArgs("commit", commandArgs)
-		commandErr = commands.HandleCommitCommand()
+		commandErr = commands.HandleCommitCommand(*validateCodeFlag)
 	case "query":
 		if *bufferFlag {
 			requireArgCount("query", commandArgs, 0)
