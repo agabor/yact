@@ -230,6 +230,9 @@ func main() {
 		commandErr = commands.HandlePromptCommand(commandArgs, *bufferFlag)
 	case "new":
 		commandErr = commands.HandleNewCommand()
+	case "commit":
+		requireNoArgs("commit", commandArgs)
+		commandErr = commands.HandleCommitCommand()
 	case "query":
 		if *bufferFlag {
 			requireArgCount("query", commandArgs, 0)
