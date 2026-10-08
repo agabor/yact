@@ -1,32 +1,3 @@
-commands/help.go
-main.go
-logic/codefile.go
-logic/transaction.go
-go.mod
-go.sum
-commands/prompt.go
-logic/buffer.go
-commands/call.go
-commands/commit.go
+systemprompts/plan.txt
 ==========
-Goal: Add a "commit" command that reads code blocks from the buffer, validates them (no free text outside code blocks, no incomplete blocks), and writes them to disk only if valid.
-
-Steps:
-
-1. Create commands/commit.go with:
-   - HandleCommitCommand() error
-     - Reads buffer content using logic.ReadBuffer()
-     - Parses code blocks using logic.ParseCodeFilesDetailed(content)
-     - Checks for incomplete code block, returns error if found
-     - Checks for any non-empty free text elements outside code blocks, returns error if found
-     - If no errors, iterates over all parsed code file elements and writes them to disk using CodeFile.Write() (or CodeFile.Delete() if the code file content IsEmpty(), matching existing processResponse behavior)
-     - Aggregates any write errors and returns a combined error if any occurred
-     - Returns nil on success
-
-2. Update main.go:
-   - In the command switch statement, add a new case "commit":
-     - Call requireNoArgs("commit", commandArgs)
-     - Set commandErr = commands.HandleCommitCommand()
-
-3. Update commands/help.go:
-   - In printHelpHeader(), add a new line documenting the "commit" command, e.g. "commit                                Write code blocks from the buffer to disk", placed logically among other commands (e.g. after "query" or near "read").
+Every step should also refer to the files that are needed as context (for understanding) for that specific step. always refer to files verbatim with full file path
