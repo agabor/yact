@@ -20,6 +20,7 @@ Commands:
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   query [prompt]                       Call the LLM without a system prompt
+  commit                                Write code blocks from the buffer to disk
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
 }
 
