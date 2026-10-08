@@ -1,30 +1,32 @@
 commands/help.go
 main.go
-commands/commit.go
-commands/call.go
-logic/codefile.go
+commands/narrow.go
 ==========
-Goal: make the `-v/--validate-code` flag affect the `commit` command. With `-v`, commit fails before writing anything if the buffer has an incomplete code block or free text outside code blocks. Without `-v`, commit is lenient and behaves like the normal LLM response handling: it warns on incomplete blocks and prints free text. This assumes commit's current always-strict behavior should become opt-in via `-v`.
+Goal: Add a `narrow` command that removes files from the context list in `.yact/prompt.txt` when their paths do not appear verbatim in the saved prompt text. The prompt and the remaining files are kept.
 
 Steps:
 
-1. Update the commit handler (commands/commit.go):
-   - Change the signature to `HandleCommitCommand(validateCode bool) error`.
-   - Read the buffer with `logic.ReadBuffer()` as before.
-   - If `validateCode` is true:
-     - Call `logic.ParseCodeFilesDetailed(content)`.
-     - Return an error for an incomplete block or for non-empty free text. Keep the existing messages, and do this before any file is written or deleted.
-   - If `validateCode` is false:
-     - Call `logic.ParseCodeFiles(content)`, which prints the incomplete-block warning.
-     - Print any non-empty free-text element with `fmt.Println`.
-   - In both cases, process the code-file elements as today: delete empty files, write the others, collect the errors, and return the combined "error processing code blocks" error.
-   - Optionally extract the validation into a helper, `validateBufferCodeOnly(elements []logic.ParsedElement, incomplete bool) error`, inside the same file.
+1. Create the narrow command (commands/narrow.go) with the following functions:
+   - `HandleNarrowCommand() error`
+     - Loads the transaction with `logic.LoadTransaction()`.
+     - Returns an error if there is no saved prompt (`Request` is empty or blank), so the command does not wipe the whole context by accident.
+     - Calls `narrowContext` with the prompt text, which is `Request[0]`.
+     - Stores the kept files in `transaction.Context`.
+     - Saves with `transaction.Save()`.
+     - Prints each removed file as "Removed: <path>".
+     - Prints a summary line with the number of files kept and removed.
+   - `narrowContext(context []string, prompt string) (kept []string, removed []string)`
+     - Keeps a path only if `strings.Contains(prompt, path)` is true.
+     - Preserves the original order.
+     - Returns non-nil empty slices when nothing is kept or removed.
 
-2. Update the command dispatch (main.go):
-   - In the `case "commit":` branch, keep `requireNoArgs("commit", commandArgs)`.
-   - Change the call to `commands.HandleCommitCommand(*validateCodeFlag)`.
-   - No signature changes are needed for `main`, `applyDefaultFlags` or `buildFlagString`.
+2. Register the command in main.go (`main()` switch on `command`):
+   - Add `case "narrow":`.
+   - Call `requireNoArgs("narrow", commandArgs)`.
+   - Set `commandErr = commands.HandleNarrowCommand()`.
+   - Place the case next to the "new" and "commit" cases.
 
-3. Update the help text (commands/help.go):
-   - In `printHelpHeader()`, change the `commit` line to say it writes code blocks from the buffer to disk and that `-v` makes it fail on free text or incomplete blocks. Fix the indentation of that line.
-   - In `printHelpFooter()`, change the `-v, --validate-code` description to cover both cases. For example: "Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks".
+3. Document the command in commands/help.go (`printHelpHeader()`):
+   - Add this line to the Commands list, aligned with the existing entries: `narrow    Remove files from the task context that are not referenced verbatim in the prompt`.
+
+No other files are needed.
