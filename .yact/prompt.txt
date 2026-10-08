@@ -1,3 +1,30 @@
-systemprompts/plan.txt
+commands/help.go
+main.go
+commands/commit.go
+commands/call.go
+logic/codefile.go
 ==========
-Every step should also refer to the files that are needed as context (for understanding) for that specific step. always refer to files verbatim with full file path
+Goal: make the `-v/--validate-code` flag affect the `commit` command. With `-v`, commit fails before writing anything if the buffer has an incomplete code block or free text outside code blocks. Without `-v`, commit is lenient and behaves like the normal LLM response handling: it warns on incomplete blocks and prints free text. This assumes commit's current always-strict behavior should become opt-in via `-v`.
+
+Steps:
+
+1. Update the commit handler (commands/commit.go):
+   - Change the signature to `HandleCommitCommand(validateCode bool) error`.
+   - Read the buffer with `logic.ReadBuffer()` as before.
+   - If `validateCode` is true:
+     - Call `logic.ParseCodeFilesDetailed(content)`.
+     - Return an error for an incomplete block or for non-empty free text. Keep the existing messages, and do this before any file is written or deleted.
+   - If `validateCode` is false:
+     - Call `logic.ParseCodeFiles(content)`, which prints the incomplete-block warning.
+     - Print any non-empty free-text element with `fmt.Println`.
+   - In both cases, process the code-file elements as today: delete empty files, write the others, collect the errors, and return the combined "error processing code blocks" error.
+   - Optionally extract the validation into a helper, `validateBufferCodeOnly(elements []logic.ParsedElement, incomplete bool) error`, inside the same file.
+
+2. Update the command dispatch (main.go):
+   - In the `case "commit":` branch, keep `requireNoArgs("commit", commandArgs)`.
+   - Change the call to `commands.HandleCommitCommand(*validateCodeFlag)`.
+   - No signature changes are needed for `main`, `applyDefaultFlags` or `buildFlagString`.
+
+3. Update the help text (commands/help.go):
+   - In `printHelpHeader()`, change the `commit` line to say it writes code blocks from the buffer to disk and that `-v` makes it fail on free text or incomplete blocks. Fix the indentation of that line.
+   - In `printHelpFooter()`, change the `-v, --validate-code` description to cover both cases. For example: "Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks".
