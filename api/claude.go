@@ -33,13 +33,13 @@ func (c *ClaudeClient) Init(cfg *config.Config) {
 func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
 	switch strings.ToLower(cfg.ClaudeModel) {
 	case "fable":
-		return anthropic.ModelClaudeFable5
+		return anthropic.ModelClaudeFable5_1
 	case "opus":
-		return anthropic.ModelClaudeOpus5
+		return anthropic.ModelClaudeOpus5_5
 	case "sonnet":
-		return anthropic.ModelClaudeSonnet5
+		return anthropic.ModelClaudeSonnet5_5
 	default:
-		return anthropic.ModelClaudeHaiku4_5
+		return anthropic.ModelClaudeHaiku5_5
 	}
 }
 
