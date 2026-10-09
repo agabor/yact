@@ -8,7 +8,6 @@ Minimal, responsive, transparent LLM coding assistant.
 
 **License:** GNU GPL v3, see [LICENSE](https://github.com/agabor/yact/blob/main/LICENSE) in the repository
 
-
 > **Not affiliated with Anthropic or Amazon.** YACT is an independent, open-source,
 > third-party tool. It is not made, endorsed, or supported by Anthropic PBC or Amazon Web
 > Services. "Claude" and "Anthropic" are trademarks of Anthropic PBC, "AWS" and "Bedrock"
