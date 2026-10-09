@@ -75,6 +75,10 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext b
 		transactionForLLM.Context = []string{}
 	}
 
+	if prompt != "" {
+		transactionForLLM.Request = []string{prompt}
+	}
+
 	totalLength := 0
 
 	if prompt != "" {

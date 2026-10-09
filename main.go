@@ -252,7 +252,7 @@ func main() {
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, true, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
