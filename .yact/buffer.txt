@@ -1,118 +1,229 @@
 ````
-//commands/narrow.go
+//commands/call.go
 package commands
 
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"yact/api"
+	"yact/config"
 	"yact/logic"
 )
 
-func narrowContext(context []string, prompt string) ([]string, []string) {
-	kept := []string{}
-	removed := []string{}
-	for _, path := range context {
-		if strings.Contains(prompt, path) {
-			kept = append(kept, path)
-		} else {
-			removed = append(removed, path)
+func showProgress(done chan bool) {
+	chars := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+	idx := 0
+	for {
+		select {
+		case <-done:
+			fmt.Print("\r \r")
+			return
+		default:
+			fmt.Printf("\r%c", chars[idx%len(chars)])
+			idx++
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	return kept, removed
 }
 
-func HandleNarrowCommand() error {
+func applyModelOverride(cfg *config.Config, modelOverride string) {
+	if modelOverride != "" {
+		cfg.ClaudeModel = modelOverride
+	}
+}
+
+func applyMaxInputLinesOverride(cfg *config.Config, maxInputLinesOverride int) {
+	if maxInputLinesOverride > 0 {
+		cfg.MaxInputLines = maxInputLinesOverride
+	}
+}
+
+func validateCodeOnlyResponse(content string) error {
+	elements, incomplete := logic.ParseCodeFilesDetailed(content)
+	if incomplete {
+		return fmt.Errorf("response contains an incomplete code block")
+	}
+
+	for _, element := range elements {
+		if !element.IsCodeFile {
+			if strings.TrimSpace(element.Text) != "" {
+				return fmt.Errorf("response contains free text outside code blocks")
+			}
+		}
+	}
+
+	return nil
+}
+
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
+	applyModelOverride(cfg, modelOverride)
+	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
+
+	if prompt != "" && !noSavePrompt {
+		if err := SetPrompt(prompt); err != nil {
+			return err
+		}
+	}
+
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
 		return err
 	}
 
-	if len(transaction.Request) == 0 || strings.TrimSpace(transaction.Request[0]) == "" {
-		return fmt.Errorf("no saved prompt found, refusing to narrow the context")
+	transactionForLLM := transaction
+	if noContext {
+		transactionForLLM.Context = []string{}
 	}
 
-	kept, removed := narrowContext(transaction.Context, transaction.Request[0])
-	transaction.Context = kept
+	if prompt != "" {
+		transactionForLLM.Request = []string{prompt}
+	}
 
-	if err := transaction.Save(); err != nil {
+	totalLength := 0
+
+	if prompt != "" {
+		totalLength += len(strings.Split(prompt, "\n"))
+	}
+
+	for _, contextPath := range transactionForLLM.Context {
+		codeFile, err := logic.ReadAsFile(contextPath)
+		if err != nil {
+			return err
+		}
+		totalLength += len(strings.Split(codeFile.Content, "\n"))
+	}
+
+	if totalLength > cfg.MaxInputLines {
+		return fmt.Errorf("input exceeds maximum number allowed lines (%d), got %d. Increase max_input_lines to override.", cfg.MaxInputLines, totalLength)
+	}
+
+	fmt.Printf("Input lines: %d\n", totalLength)
+
+	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
+	if err != nil {
 		return err
 	}
 
-	for _, path := range removed {
-		fmt.Printf("Removed: %s\n", path)
+	if validateCode {
+		if err := validateCodeOnlyResponse(response); err != nil {
+			return err
+		}
 	}
-	fmt.Printf("Kept %d file(s), removed %d file(s)\n", len(kept), len(removed))
+
+	if noWrite {
+		fmt.Println("\n" + response)
+		return nil
+	}
+
+	transaction, err = processResponse(transaction, response)
+	if err != nil {
+		fmt.Printf("Input lines: %d\n", totalLength)
+		return err
+	}
+
+	if err = transaction.Save(); err != nil {
+		fmt.Printf("Input lines: %d\n", totalLength)
+		return err
+	}
 
 	return nil
 }
-````
-````
-//commands/help.go
-package commands
 
-import (
-	"fmt"
+func newClient(cfg *config.Config) api.Client {
+	var client api.Client
 
-	"yact/config"
-)
-
-func printHelpHeader() {
-	fmt.Println(`yact - Yet Another Coding Tool
-
-Usage:
-  y [flags] <command> [arguments]
-
-Commands:
-  help                                 Show this help message
-  read <file> [<file2> ...]            Add files to the task context (supports glob patterns and tags)
-  keyword <keyword>                    Recursively add files containing the keyword to the task context
-  tag <tagname> <file> [<file2> ...]   Tag files (supports glob patterns) for later use with the read command
-  config [key] [value]                 Manage configuration settings
-  new                                  Create a new empty task context
-  narrow                               Remove files from the task context that are not referenced verbatim in the prompt
-  query [prompt]                       Call the LLM without a system prompt
-  commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
-  <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
-}
-
-func printPromptCommands() {
-	promptNames, err := config.ListPromptNames()
-	if err != nil || len(promptNames) == 0 {
-		return
+	modelType := strings.ToLower(cfg.ClaudeModel)
+	if modelType == "qmax" || modelType == "qcoder" || modelType == "qnext" {
+		client = &api.BedrockClient{}
+	} else {
+		client = &api.ClaudeClient{}
 	}
 
-	fmt.Println()
-	fmt.Println("  Available Commands:")
-	for _, name := range promptNames {
-		fmt.Printf("  %s\n", name)
+	client.Init(cfg)
+
+	return client
+}
+
+func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config, systemPrompt string) (string, error) {
+	client := newClient(cfg)
+
+	if noProgress {
+		return client.Call(transaction, cfg, systemPrompt)
 	}
+
+	fmt.Printf("Sending request...\n")
+	fmt.Printf("Model: %s\n", client.GetModelName())
+
+	done := make(chan bool)
+	go showProgress(done)
+
+	response, err := client.Call(transaction, cfg, systemPrompt)
+
+	done <- true
+	close(done)
+
+	return response, err
 }
 
-func printHelpFooter() {
-	fmt.Println(`
-Global Flags:
-  -h, --help                           Show help message
-  -n, --no-write                       Do not write files, print response instead
-  -c, --claude <level>                 Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
-  -q, --qwen <level>                   Use Qwen model (1: Coder, 2: Max)
-  -b, --buffer                         Use the buffer content as the prompt
-  -d, --download                       Download the system prompt for the command
-  --no-progress                        Hide progress indicator
-  -v, --validate-code                  Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks
-  -x, --no-context                     Do not send the selected files to the LLM
-  -p, --no-save-prompt                 Do not update prompt.txt with the prompt given as a CLI argument
-  -m, --max-input-lines <n>            Set max input lines for the current command, without changing config
-
-For more information, visit: https://github.com/agabor/yact`)
+func removeFromContext(context []string, path string) []string {
+	result := make([]string, 0, len(context))
+	for _, existingPath := range context {
+		if existingPath != path {
+			result = append(result, existingPath)
+		}
+	}
+	return result
 }
 
-func ShowHelp() {
-	printHelpHeader()
-	printPromptCommands()
-	printHelpFooter()
+func processResponse(transaction logic.Transaction, content string) (logic.Transaction, error) {
+	var parseErrors []string
+	elements := logic.ParseCodeFiles(content)
+
+	seenPaths := make(map[string]bool)
+	for _, filePath := range transaction.Context {
+		seenPaths[filePath] = true
+	}
+
+	for _, element := range elements {
+		if element.IsCodeFile {
+			v := element.CodeFile
+			if v.IsEmpty() {
+				err := v.Delete()
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+				} else {
+					seenPaths[v.Path] = false
+					transaction.Context = removeFromContext(transaction.Context, v.Path)
+				}
+			} else {
+				err := v.Write()
+
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+				} else {
+					if !seenPaths[v.Path] {
+						seenPaths[v.Path] = true
+						transaction.Context = append(transaction.Context, v.Path)
+					}
+				}
+			}
+		} else {
+			if strings.TrimSpace(element.Text) != "" {
+				fmt.Println(element.Text)
+			}
+		}
+	}
+
+	if len(parseErrors) > 0 {
+		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
+	}
+
+	return transaction, nil
 }
 ````
+
 ````
 //main.go
 package main
@@ -369,7 +480,7 @@ func main() {
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, true, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
