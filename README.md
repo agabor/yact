@@ -64,6 +64,13 @@ regardless.
 If a response contains a code block that has only a file path comment and no content, YACT
 deletes that file from disk and removes it from the task context.
 
+### Input size limit
+
+Before every call YACT counts the lines of the prompt plus the lines of all files in the
+task context and prints the total as `Input lines: <n>`. If the total exceeds
+`max_input_lines` (default: 1000), the call is refused. Raise the limit permanently with
+`y config max_input_lines <n>`, or for a single call with `-m <n>`.
+
 ### Trade-offs to be aware of
 
 YACT is a Swiss army knife for LLM assisted coding rather than a complete automated coding
@@ -174,6 +181,27 @@ You can also write your own prompt files in `~/.yact/systemprompts/`, or tailor 
 official ones to your workflow. Run `y help` to see the list of currently available prompt
 commands.
 
+### Default flags in prompt files
+
+A prompt file may start with a line of the form `flags: <letters>`. Each letter enables the
+short form of a global flag whenever that prompt command runs. That first line is not sent
+to the model. For example, a prompt file beginning with:
+
+```
+flags: nc
+```
+
+behaves as if `-n -c` had been passed. Supported letters:
+
+- `n` — `--no-write` (ignored if `-v` is active)
+- `c` — Claude Sonnet (ignored if you pass `-c` or `-q` yourself)
+- `q` — Qwen Max on Bedrock (ignored if you pass `-c` or `-q` yourself)
+- `b` — `--buffer`
+- `d` — `--download`
+- `v` — `--validate-code` (ignored if `-n` is active)
+- `x` — `--no-context`
+- `p` — `--no-save-prompt`
+
 ## Commands
 
 ### Start a new task
@@ -219,6 +247,17 @@ y read api
 Tags are stored in `.yact/tags.csv`. The `read` command first checks whether its argument
 matches a tag name, and falls back to glob matching if it does not.
 
+### Narrow the context
+
+Remove every file from the task context whose path does not appear verbatim in the saved
+prompt:
+
+```
+y narrow
+```
+
+The command refuses to run if there is no saved prompt.
+
 ### Set the prompt
 
 Set the task prompt in `.yact/prompt.txt` directly from the CLI:
@@ -252,6 +291,10 @@ y plan "add authentication"
 y bash "find all TODO comments in Go files"
 ```
 
+Pass `-p` / `--no-save-prompt` to use an inline prompt for the call without overwriting
+`.yact/prompt.txt`. Pass `-x` / `--no-context` to leave the selected files out of the
+request.
+
 The response is parsed for code blocks. Complete source files found in the response are
 written directly to your filesystem, and newly created files are automatically added to the
 task context. Any text outside code blocks is printed to the terminal. The raw response is
@@ -265,35 +308,69 @@ writing files:
 y -n act
 ```
 
+### Validate that a response is code only
+
+With `-v` / `--validate-code`, the call fails if the response contains free text outside
+code blocks or an incomplete code block. Nothing is written to disk in that case, although
+the response is still logged to `.yact/buffer.txt`:
+
+```
+y -v act
+```
+
+`-v` and `-n` are mutually exclusive when set through a prompt file's `flags:` line.
+
+### Query without a system prompt
+
+Call the LLM with no system prompt. The response is printed and never written to disk, and
+the prompt is not saved:
+
+```
+y query "explain what the narrow command does"
+```
+
+### Commit the buffer
+
+Write the code blocks of the last response in `.yact/buffer.txt` to disk, for example after
+a `-n` run:
+
+```
+y -n act
+y commit
+```
+
+With `-v`, the commit fails if the buffer contains free text or an incomplete code block.
+
 ## Global flags
 
 ```
--h, --help        Show help message
--t, --think       Enable extended thinking mode
--n, --no-write    Do not write files, print response instead
--f, --fable       Use the Claude Fable model
--o, --opus        Use the Claude Opus model
--s, --sonnet      Use the Claude Sonnet model
-    --haiku       Use the Claude Haiku model
--w, --qmax        Use the Qwen3 235B A22B Instruct 2507 model on AWS Bedrock
--e, --qcoder      Use the Qwen3 Coder 30B A3B model on AWS Bedrock
--b, --buffer      Use the buffer content as the prompt
--d, --download    Download the system prompt for the command
--q, --quiet       Hide progress indicator
+-h, --help                 Show help message
+-n, --no-write             Do not write files, print response instead
+-c, --claude <level>       Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
+-q, --qwen <level>         Use Qwen model on AWS Bedrock (1: Coder, 2: Max)
+-b, --buffer               Use the buffer content as the prompt
+-d, --download             Download the system prompt for the command
+    --no-progress          Hide progress indicator
+-v, --validate-code        Fail if the response (or, for commit, the buffer) contains
+                           free text or incomplete code blocks
+-x, --no-context           Do not send the selected files to the LLM
+-p, --no-save-prompt       Do not update prompt.txt with the prompt given as a CLI argument
+-m, --max-input-lines <n>  Set max input lines for the current command, without changing config
 ```
 
 Flags come before the command:
 
 ```
-y -t act
-y --think --sonnet plan
-y -o ask
+y -c 3 ask
+y --claude 2 --no-progress plan
+y -q 1 act
+y -m 3000 act
 ```
 
-Model flags override the configured model for a single invocation. With `--think`, the
-model's reasoning is printed before the response; extended thinking is not supported by the
-Bedrock models and is ignored there. Model availability depends on your own Anthropic or
-AWS account.
+Model flags override the configured model for a single invocation. Qwen level 1 selects
+`qnext` and level 2 selects `qmax`. Model availability depends on your own Anthropic or AWS
+account. When a flag is used, YACT prints the effective flags as `Executing: y <flags>
+<command>` before the call.
 
 ## Configuration
 
@@ -308,7 +385,7 @@ Set configuration values:
 ```
 y config claude_model sonnet
 y config max_tokens 32000
-y config think_budget 16000
+y config max_input_lines 2000
 ```
 
 Available configuration keys:
@@ -316,16 +393,19 @@ Available configuration keys:
 - `anthropic_api_key` — your own Anthropic API key, stored locally (required for Claude
   models)
 - `claude_model` — which model to use: `fable`, `opus`, `sonnet`, `haiku`, `qmax` or
-  `qcoder` (default: `haiku`)
+  `qnext` (default: `haiku`)
 - `bedrock_model` — Bedrock model id used by `qmax`
   (default: `qwen.qwen3-235b-a22b-2507-v1:0`)
-- `bedrock_coder_model` — Bedrock model id used by `qcoder`
-  (default: `qwen.qwen3-coder-30b-a3b-v1:0`)
+- `bedrock_next_model` — Bedrock model id used by `qnext`
+  (default: `qwen.qwen3-coder-30b-a3b-next-v1:0`)
 - `aws_region` — AWS region for Bedrock calls (default: `us-west-2`)
 - `aws_api_key` — Bedrock API key, stored locally; when empty, the default AWS credential
   chain is used instead
 - `max_tokens` — maximum output tokens per API call (default: 16000)
-- `think_budget` — token budget for extended thinking mode (default: 8000)
+- `think_budget` — token budget for extended thinking, used only with models that support
+  it (default: 8000)
+- `max_input_lines` — maximum number of lines of prompt plus context files sent in one
+  call (default: 1000)
 
 Note that `max_tokens` caps the size of what the model can write back. Since YACT generates
 complete source files, this value bounds the size of the files it can edit. Raise it if
@@ -333,15 +413,15 @@ responses are being truncated; the ceiling is the model's own output limit.
 
 ### AWS Bedrock
 
-Selecting `qmax` or `qcoder`, either through configuration or the `-w` / `-e` flags, routes
-the call to AWS Bedrock instead of Anthropic. Authentication works in one of two ways:
+Selecting `qmax` or `qnext`, either through configuration or the `-q` flag, routes the call
+to AWS Bedrock instead of Anthropic. Authentication works in one of two ways:
 
 - Set `aws_api_key` and YACT sends it as a bearer token, bypassing SigV4 signing.
 - Leave `aws_api_key` empty and YACT uses the standard AWS credential chain (environment
   variables, shared config, instance roles).
 
-The region comes from `aws_region`, and the model id from `bedrock_model` or
-`bedrock_coder_model` depending on which flag you used.
+The region comes from `aws_region`, and the model id from `bedrock_model` (`qmax`) or
+`bedrock_next_model` (`qnext`).
 
 ### File extensions
 
@@ -394,6 +474,17 @@ y -h
 - Configure AWS credentials and region, or set a Bedrock key:
   `y config aws_api_key <your-own-key>`
 - Check that `aws_region` matches a region where the model is available
+
+**"input exceeds maximum number allowed lines"**
+
+- Remove files from the context, for example with `y narrow`, or run with `-x`
+- Raise the limit for one call with `-m <n>`, or permanently with
+  `y config max_input_lines <n>`
+
+**"response contains free text outside code blocks" / "incomplete code block"**
+
+- These come from `-v` / `--validate-code`. Rerun the command, or drop `-v` to accept
+  free text. The rejected response is still available in `.yact/buffer.txt`.
 
 **"No files found matching pattern"**
 

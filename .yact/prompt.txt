@@ -1,20 +1,22 @@
 commands/call.go
 main.go
+api/bedrock.go
+api/claude.go
+api/client.go
+commands/commit.go
+commands/config.go
+commands/help.go
+commands/keyword.go
+commands/narrow.go
+commands/new.go
+commands/prompt.go
+commands/read.go
+commands/tag.go
+config/config.go
+logic/buffer.go
+logic/codefile.go
+logic/tags.go
+logic/transaction.go
+README.md
 ==========
-Goal: Make the `query` command send the prompt given on the CLI to the LLM without writing it to `.yact/prompt.txt`. The function name before "()" in your request was cut off, so I assumed it means `query`. Two things are needed:
-- The CLI prompt must actually reach the LLM when saving is skipped. Today `HandleCommand` only reads the prompt back from `prompt.txt` after saving it, so with `--no-save-prompt` the stale saved prompt is sent instead.
-- `query` must always skip saving.
-
-Steps:
-
-1. Update the `HandleCommand` function in `commands/call.go`.
-   - Keep the signature unchanged: `HandleCommand(noWrite bool, noProgress bool, validateCode bool, noContext bool, noSavePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error`.
-   - Keep the existing save step, `SetPrompt(prompt)`, running only when `prompt != "" && !noSavePrompt`.
-   - After `transactionForLLM := transaction` and the `noContext` handling, add a rule: if `prompt != ""`, set `transactionForLLM.Request` to a new single-element slice containing `prompt`.
-   - Leave `transaction` unchanged, so `processResponse` and `transaction.Save()` do not write the CLI prompt back into `prompt.txt` when saving is disabled.
-   - Do not change the line-count logic. It already counts the CLI prompt and the context files.
-
-2. Update the `query` case in `main()` in `main.go`.
-   - In the call to `commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *noContextFlag, *noSavePromptFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)`, pass `true` for the `noSavePrompt` argument instead of `*noSavePromptFlag`.
-   - With no CLI prompt (empty prompt, or `--buffer` mode), `query` still uses the saved prompt from `prompt.txt` as before.
-   - For `--buffer` mode, `resolvePrompt` returns the buffer text as `prompt`. That text is also sent to the LLM and not saved.
+Update readme to code
