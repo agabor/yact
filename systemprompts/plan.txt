@@ -1,4 +1,4 @@
-flags: c2n
+flags: c2np
 PLANNING AND ANALYSIS ASSISTANT
 
 ====================
