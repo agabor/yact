@@ -47,6 +47,7 @@ Global Flags:
   --no-progress                        Hide progress indicator
   -v, --validate-code                  Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks
   -p, --plan                           Write the response to .yact/plan.md. If .yact/plan.md exists, it is used as the prompt and its Markdown links as the context
+  -s, --steps <selector>               Implement only the selected steps of .yact/plan.md. The selector is N, N-M, a comma separated list such as 1,3,5-6, or next. Finished steps are ticked off in the plan after a successful write. Cannot be combined with --plan
   -m, --max-input-lines <n>            Set max input lines for the current command, without changing config
 
 For more information, visit: https://github.com/agabor/yact`)

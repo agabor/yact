@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,6 +62,12 @@ func printLinkWarnings(warnings []string) {
 	}
 }
 
+func printStepWarnings(warnings []string) {
+	for _, warning := range warnings {
+		fmt.Printf("Warning: %s\n", warning)
+	}
+}
+
 func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transaction {
 	if prompt == "" {
 		return transaction
@@ -85,7 +92,71 @@ func resolvePlanPrompt(writePlan bool) (string, bool, error) {
 	return logic.ReadPlan()
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
+func validateStepsOptions(stepsSelector string, writePlan bool) error {
+	if stepsSelector == "" {
+		return nil
+	}
+	if writePlan {
+		return fmt.Errorf("--steps and --plan cannot be combined")
+	}
+	_, err := logic.ParseStepSelector(stepsSelector)
+	return err
+}
+
+func formatStepNumbers(steps []logic.PlanStep) string {
+	texts := make([]string, 0, len(steps))
+	for _, number := range logic.StepNumbers(steps) {
+		texts = append(texts, strconv.Itoa(number))
+	}
+	return strings.Join(texts, ", ")
+}
+
+func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
+	parsedPlan := logic.ParsePlan(planText)
+	if selector == "" {
+		return planText, parsedPlan.Steps, false, nil
+	}
+
+	stepSelector, err := logic.ParseStepSelector(selector)
+	if err != nil {
+		return "", nil, false, err
+	}
+
+	selection, err := logic.SelectSteps(parsedPlan, stepSelector)
+	if err != nil {
+		return "", nil, false, err
+	}
+
+	printStepWarnings(selection.Warnings)
+
+	if selection.AllDone {
+		fmt.Println("All plan steps are done.")
+		return "", nil, true, nil
+	}
+
+	fmt.Printf("Plan steps: %s\n", formatStepNumbers(selection.Steps))
+
+	return logic.BuildStepsPrompt(parsedPlan, selection.Steps), selection.Steps, false, nil
+}
+
+func tickPlanSteps(planText string, steps []logic.PlanStep) error {
+	if len(steps) == 0 {
+		return nil
+	}
+
+	if err := logic.WritePlan(logic.MarkStepsDone(planText, steps)); err != nil {
+		return err
+	}
+
+	fmt.Printf("Marked done: %s\n", formatStepNumbers(steps))
+	return nil
+}
+
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, stepsSelector string, prompt string) error {
+	if err := validateStepsOptions(stepsSelector, writePlan); err != nil {
+		return err
+	}
+
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
 
@@ -99,10 +170,23 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		return err
 	}
 
+	if stepsSelector != "" && !planUsed {
+		return fmt.Errorf("no plan found in %s", config.GetProjectPlanPath())
+	}
+
 	transactionForLLM := transaction
+	var sentSteps []logic.PlanStep
 
 	if planUsed {
-		prompt = planPrompt
+		selectedPrompt, selectedSteps, allDone, err := selectPlanSteps(planPrompt, stepsSelector)
+		if err != nil {
+			return err
+		}
+		if allDone {
+			return nil
+		}
+		prompt = selectedPrompt
+		sentSteps = selectedSteps
 		transactionForLLM.Context = []string{}
 	}
 
@@ -165,6 +249,10 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 	if err = transaction.Save(); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
+	}
+
+	if planUsed {
+		return tickPlanSteps(planPrompt, sentSteps)
 	}
 
 	return nil
