@@ -199,13 +199,6 @@ func main() {
 	case "config":
 		requireArgCount("config", commandArgs, 0, 2)
 		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
-	case "prompt":
-		if *bufferFlag {
-			requireArgCount("prompt", commandArgs, 0)
-		} else {
-			requireArgCount("prompt", commandArgs, 1)
-		}
-		commandErr = commands.HandlePromptCommand(commandArgs, *bufferFlag)
 	case "new":
 		commandErr = commands.HandleNewCommand()
 	case "commit":
@@ -227,7 +220,7 @@ func main() {
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, false, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
@@ -270,7 +263,7 @@ func main() {
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, true, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, prompt)
 	}
 
 	if commandErr != nil {

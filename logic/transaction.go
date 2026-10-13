@@ -7,17 +7,15 @@ import (
 	"yact/config"
 )
 
-const separator = "=========="
-
 type Transaction struct {
 	Request []string
 	Context []string
 }
 
 func LoadTransaction() (Transaction, error) {
-	promptPath := config.GetProjectPromptPath()
+	contextPath := config.GetProjectContextPath()
 
-	data, err := os.ReadFile(promptPath)
+	data, err := os.ReadFile(contextPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return Transaction{}, nil
@@ -25,25 +23,15 @@ func LoadTransaction() (Transaction, error) {
 		return Transaction{}, err
 	}
 
-	content := string(data)
-	parts := strings.Split(content, separator)
-
 	transaction := Transaction{
 		Request: []string{},
 		Context: []string{},
 	}
 
-	contextLines := strings.Split(strings.TrimSpace(parts[0]), "\n")
-	for _, line := range contextLines {
-		if strings.TrimSpace(line) != "" {
-			transaction.Context = append(transaction.Context, line)
-		}
-	}
-
-	if len(parts) > 1 {
-		requestContent := strings.TrimSpace(parts[1])
-		if requestContent != "" {
-			transaction.Request = []string{requestContent}
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine != "" {
+			transaction.Context = append(transaction.Context, trimmedLine)
 		}
 	}
 
@@ -51,9 +39,9 @@ func LoadTransaction() (Transaction, error) {
 }
 
 func (transaction *Transaction) Save() error {
-	promptPath := config.GetProjectPromptPath()
+	contextPath := config.GetProjectContextPath()
 
-	dir := filepath.Dir(promptPath)
+	dir := filepath.Dir(contextPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -65,13 +53,5 @@ func (transaction *Transaction) Save() error {
 		builder.WriteString("\n")
 	}
 
-	builder.WriteString(separator)
-	builder.WriteString("\n")
-
-	if len(transaction.Request) > 0 && strings.TrimSpace(transaction.Request[0]) != "" {
-		builder.WriteString(transaction.Request[0])
-		builder.WriteString("\n")
-	}
-
-	return os.WriteFile(promptPath, []byte(builder.String()), 0644)
+	return os.WriteFile(contextPath, []byte(builder.String()), 0644)
 }

@@ -55,15 +55,9 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, savePrompt bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
-
-	if prompt != "" && savePrompt {
-		if err := SetPrompt(prompt); err != nil {
-			return err
-		}
-	}
 
 	transaction, err := logic.LoadTransaction()
 	if err != nil {
