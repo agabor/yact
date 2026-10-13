@@ -33,12 +33,10 @@ func LoadTransaction() (Transaction, error) {
 		Context: []string{},
 	}
 
-	if len(parts) > 0 {
-		contextLines := strings.Split(strings.TrimSpace(parts[0]), "\n")
-		for _, line := range contextLines {
-			if strings.TrimSpace(line) != "" {
-				transaction.Context = append(transaction.Context, line)
-			}
+	contextLines := strings.Split(strings.TrimSpace(parts[0]), "\n")
+	for _, line := range contextLines {
+		if strings.TrimSpace(line) != "" {
+			transaction.Context = append(transaction.Context, line)
 		}
 	}
 

@@ -75,10 +75,6 @@ func GetProjectPromptPath() string {
 	return filepath.Join(GetProjectYactDir(), "prompt.txt")
 }
 
-func GetProjectIndexPath() string {
-	return filepath.Join(GetProjectYactDir(), "index.csv")
-}
-
 func GetProjectExtensionsPath() string {
 	return filepath.Join(GetProjectYactDir(), "extensions.txt")
 }
@@ -168,38 +164,14 @@ func (c *Config) Save() error {
 	return os.WriteFile(configFile, data, 0644)
 }
 
-func LoadPrompt(name string) (string, error) {
-	promptFile, err := getPromptFile(name)
-	if err != nil {
-		return "", err
-	}
-
-	data, err := os.ReadFile(promptFile)
-	if err != nil {
-		return "", err
-	}
-
-	return string(data), nil
-}
-
 func parseFlags(content string) []string {
 	if !strings.HasPrefix(content, "flags: ") {
 		return []string{}
 	}
-	
-	lines := strings.Split(content, "\n")
-	if len(lines) == 0 {
-		return []string{}
-	}
-	
-	firstLine := lines[0]
-	if !strings.HasPrefix(firstLine, "flags: ") {
-		return []string{}
-	}
-	
-	flagsStr := strings.TrimPrefix(firstLine, "flags: ")
-	flagsStr = strings.TrimSpace(flagsStr)
-	
+
+	firstLine := strings.Split(content, "\n")[0]
+	flagsStr := strings.TrimSpace(strings.TrimPrefix(firstLine, "flags: "))
+
 	var flags []string
 	for _, ch := range flagsStr {
 		flags = append(flags, string(ch))
