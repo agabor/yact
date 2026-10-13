@@ -116,7 +116,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 	}
 }
 
-func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag bool, claudeLevel, qwenLevel, maxInputLines int) string {
+func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, qwenLevel, maxInputLines int) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -140,6 +140,9 @@ func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, vali
 	if validateCodeFlag {
 		flags = append(flags, "--validate-code")
 	}
+	if planFlag {
+		flags = append(flags, "--plan")
+	}
 	if maxInputLines > 0 {
 		flags = append(flags, fmt.Sprintf("--max-input-lines %d", maxInputLines))
 	}
@@ -156,6 +159,7 @@ func main() {
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
 	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
+	planFlag := flag.BoolP("plan", "p", false, "Write the response to .yact/plan.md")
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 
 	flag.Parse()
@@ -216,11 +220,11 @@ func main() {
 			break
 		}
 		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
+		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
 	default:
 		if *bufferFlag {
 			requireArgCount(command, commandArgs, 0)
@@ -259,11 +263,11 @@ func main() {
 		}
 
 		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
+		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, prompt)
+		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, prompt)
 	}
 
 	if commandErr != nil {
