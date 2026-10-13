@@ -55,6 +55,29 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
+func printLinkWarnings(warnings []string) {
+	for _, warning := range warnings {
+		fmt.Printf("Warning: %s\n", warning)
+	}
+}
+
+func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transaction {
+	if prompt == "" {
+		return transaction
+	}
+
+	links := logic.ResolvePromptLinks(prompt)
+	printLinkWarnings(links.Warnings)
+
+	if !links.HasLinks {
+		return transaction
+	}
+
+	linkedTransaction := transaction
+	linkedTransaction.Context = append([]string{}, links.Paths...)
+	return linkedTransaction
+}
+
 func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
@@ -69,6 +92,8 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config
 	if prompt != "" {
 		transactionForLLM.Request = []string{prompt}
 	}
+
+	transactionForLLM = applyPromptLinks(transactionForLLM, prompt)
 
 	totalLength := 0
 
