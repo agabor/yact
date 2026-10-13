@@ -71,8 +71,8 @@ func GetProjectYactDir() string {
 	return ".yact"
 }
 
-func GetProjectPromptPath() string {
-	return filepath.Join(GetProjectYactDir(), "prompt.txt")
+func GetProjectContextPath() string {
+	return filepath.Join(GetProjectYactDir(), "context.txt")
 }
 
 func GetProjectExtensionsPath() string {
