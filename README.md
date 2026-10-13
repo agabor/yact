@@ -61,33 +61,43 @@ regardless.
 If a response contains a code block that has only a file path comment and no content, YACT
 deletes that file from disk and removes it from the task context.
 
-### Links in prompts
+### Prompt or plan
 
-If the prompt contains Markdown links to local files, such as
-`[src/router/router.go](src/router/router.go)`, YACT sends the linked files instead of the
-files in `.yact/context.txt`. The links become the context for that call. A link means
-exactly one thing: "send this file's content to the model".
+Every prompt command and `query` takes its prompt from one of two places:
+
+- **A prompt argument.** The argument is the prompt, and the files in `.yact/context.txt`
+  are sent as context. Links inside the argument are not interpreted.
+- **The saved plan.** Without a prompt argument, `.yact/plan.md` is the prompt, and only
+  the files linked in the plan are sent as context. A missing or empty plan is an error.
+
+The plan workflow is described in [Plan, then act](#plan-then-act).
+
+### Links in plans
+
+If the plan contains Markdown links to local files, such as
+`[src/router/router.go](src/router/router.go)`, YACT sends the linked files. The links
+become the context for that call. A link means exactly one thing: "send this file's content
+to the model".
 
 - Links to URLs, anchors (`#...`) and protocol-relative targets are skipped with a warning;
   nothing is downloaded.
 - Links to missing files, unreadable files or directories are skipped with a warning.
 - Duplicate links are sent once.
-- If the prompt contains links but none of them is usable, no context files are sent.
-- If the prompt contains no links at all, the files in `.yact/context.txt` are used as
-  usual.
-- `.yact/context.txt` itself is not modified by link resolution. Files created by the
-  response are still added to it.
+- If the plan contains no links, or none of them is usable, no context files are sent.
+- `.yact/context.txt` is neither used nor modified while a plan is the prompt, and files
+  created by the response are not added to it.
 
 This is what makes the `plan` → `act` workflow work: the `plan` prompt produces a Markdown
 plan whose links point to the files each step needs, the plan is saved to
-`.yact/plan.md`, and the next call uses that plan as its prompt (see
-[Plan, then act](#plan-then-act)).
+`.yact/plan.md`, and the next call without a prompt argument uses that plan as its prompt
+(see [Plan, then act](#plan-then-act)).
 
 ### Input size limit
 
 Before every call YACT counts the lines of the prompt plus the lines of all files sent as
-context (the linked files when the prompt contains links, otherwise the files in
-`.yact/context.txt`) and prints the total as `Input lines: <n>`. If the total exceeds
+context (the files linked in the plan when the plan is the prompt, otherwise the files in
+`.yact/context.txt`) and prints the total as `Input lines: <n>`. When only some plan steps
+are selected, only the text that is actually sent is counted. If the total exceeds
 `max_input_lines` (default: 1000), the call is refused. Raise the limit permanently with
 `y config max_input_lines <n>`, or for a single call with `-m <n>`.
 
@@ -219,11 +229,11 @@ behaves as if `-n -c` had been passed. Supported letters:
 - `q` — Qwen Max on Bedrock (ignored if you pass `-c` or `-q` yourself)
 - `d` — `--download`
 - `v` — `--validate-code` (ignored if `-n` is active)
+- `p` — `--plan`
 
 Any other character is ignored. The official prompts use these defaults: `act` runs with
 `c1v` (the `1` is not a supported letter and is ignored), `ask` with `c2n`, `bash` with
-`c1n`, and `plan` with `c2np` (the `2` selects nothing by itself, and `p` is not a
-supported letter, so pass `-p` yourself when you want the plan saved).
+`c1n`, and `plan` with `c2np` (the `2` is ignored, `p` saves the response as the plan).
 
 ## Commands
 
@@ -269,13 +279,14 @@ y plan "add authentication"
 y bash "find all TODO comments in Go files"
 ```
 
-The prompt is sent together with the task context, or with the files linked in the prompt
-(see [Links in prompts](#links-in-prompts)). The prompt is not saved anywhere.
+The prompt is sent together with the files in the task context. Without a prompt argument,
+the saved plan is used instead (see [Prompt or plan](#prompt-or-plan)). The prompt is not
+saved anywhere.
 
 The response is parsed for code blocks. Complete source files found in the response are
 written directly to your filesystem, and newly created files are automatically added to the
-task context. Any text outside code blocks is printed to the terminal. The raw response is
-always logged to `.yact/buffer.txt`.
+task context (when a prompt argument was given). Any text outside code blocks is printed to
+the terminal. The raw response is always logged to `.yact/buffer.txt`.
 
 Because responses are written to disk, run YACT inside a version-controlled working tree so
 you can review and revert what it writes. Use `--no-write` to print the response instead of
@@ -287,34 +298,67 @@ y -n act "implement Foo"
 
 ### Plan, then act
 
-The `plan` prompt asks the model for a short Markdown plan with one file per step. Each
-step ends with a `**Context:**` line holding links to the files needed for that step. With
-`-p` / `--plan`, the response is not processed as code; it is saved to `.yact/plan.md`:
+The `plan` prompt asks the model for a short Markdown plan. The plan has a `# Goal` section
+and a `## Steps` section with one `### [ ] N. <title>` heading per step, and each step
+changes exactly one file. Each step ends with a `**Context:**` line holding links to the
+files needed for that step. With `-p` / `--plan`, the response is not processed as code; it
+is saved to `.yact/plan.md`:
 
 ```
 y -p plan "add authentication"
 ```
 
-While `.yact/plan.md` exists and is not empty, every call made without `-p` uses the plan
-instead of your inline prompt. The context is built only from the files linked in the plan;
-`.yact/context.txt` is not used, and a plan without usable links sends no context files.
-Pass the command without an argument:
+Then run a prompt command without a prompt argument:
 
 ```
 y act
 ```
 
-Review or edit `.yact/plan.md` between the two steps if you want to adjust the plan. The
-plan is never deleted automatically, so remove it when you are done, otherwise it keeps
-replacing the prompt of later calls:
+The plan is the prompt. The context is built only from the files linked in the plan;
+`.yact/context.txt` is not used or modified, and a plan without usable links sends no
+context files. If `.yact/plan.md` is missing or empty, the call fails. Passing a prompt
+argument ignores the plan.
+
+Review or edit `.yact/plan.md` between the two steps if you want to adjust the plan.
+
+#### Implementing selected steps
+
+With `-s` / `--steps <selector>`, only the selected steps are implemented, one call at a
+time. The text before the first step (the goal) and the selected steps are sent; all other
+steps are left out, and so are their links. The selector can be:
+
+- `N` — a single step, for example `2`
+- `N-M` — a range of steps, for example `2-4`
+- a comma separated list of the above, for example `1,3,5-6`
+- `next` — the first step that is not ticked off yet
+
+```
+y -s next act
+y -s 1,3 act
+```
+
+`--steps` requires a plan, and cannot be combined with a prompt argument or with `--plan`.
+Plans with duplicate step numbers, selectors that name steps missing from the plan, and
+plans without steps are rejected. Selecting a step that is already done prints a warning,
+and the step is sent again.
+
+#### Ticking off steps
+
+After a call has successfully written its response, the steps that were sent are marked
+done in `.yact/plan.md`: `### [ ] 1. Title` becomes `### [x] 1. Title`. Without `--steps`
+all steps are sent and ticked. When every step is already ticked, YACT prints
+`All plan steps are done.` and makes no call. Steps are not ticked when `-n` is used or
+when the call fails. Untick a step by hand to run it again.
+
+#### Replacing the plan
+
+Running a call with `-p` writes the response to `.yact/plan.md`, overwriting any existing
+plan. Nothing is written to your source tree and the response is not validated in that
+case. The plan is never deleted automatically; remove it when you no longer need it:
 
 ```
 rm .yact/plan.md
 ```
-
-Running a call with `-p` while a plan exists ignores the old plan, uses your inline prompt
-and context as usual, and overwrites `.yact/plan.md` with the new response. Nothing is
-written to your source tree and the response is not validated in that case.
 
 ### Validate that a response is code only
 
@@ -336,8 +380,8 @@ Call the LLM with no system prompt. The response is printed and never written to
 y query "explain what the keyword command does"
 ```
 
-The task context (or the files linked in the prompt) is still sent. `query` also honours
-`.yact/plan.md` and `-p` the same way prompt commands do.
+The task context is still sent. Without a prompt argument, `query` uses the saved plan and
+its links, and honours `-p` and `-s` the same way prompt commands do.
 
 ### Commit the buffer
 
@@ -362,9 +406,11 @@ With `-v`, the commit fails if the buffer contains free text or an incomplete co
     --no-progress          Hide progress indicator
 -v, --validate-code        Fail if the response (or, for commit, the buffer) contains
                            free text or incomplete code blocks
--p, --plan                 Write the response to .yact/plan.md. If .yact/plan.md exists
-                           (and -p is not given), it is used as the prompt and its
-                           Markdown links as the context
+-p, --plan                 Write the response to .yact/plan.md
+-s, --steps <selector>     Implement only the selected steps of .yact/plan.md (N, N-M,
+                           a comma separated list such as 1,3,5-6, or next). Requires a
+                           plan; cannot be combined with a prompt argument or with --plan.
+                           Finished steps are ticked off after a successful write
 -m, --max-input-lines <n>  Set max input lines for the current command, without changing config
 ```
 
@@ -376,6 +422,7 @@ y --claude 2 --no-progress plan "add authentication"
 y -q 1 act "add a --version flag"
 y -m 3000 act "add a --version flag"
 y -p plan "add authentication"
+y -s next act
 ```
 
 Model flags override the configured model for a single invocation. Qwen level 1 selects
@@ -461,7 +508,8 @@ Per-project state lives in `.yact/` inside your project directory:
 
 - `context.txt` — the task context, one file path per line
 - `buffer.txt` — log of the last LLM response
-- `plan.md` — the saved plan written by `-p`; while it exists it is used as the prompt
+- `plan.md` — the saved plan written by `-p`; used as the prompt, and its links as the
+  context, when a call is made without a prompt argument
 - `extensions.txt` — file extensions scanned by the keyword command
 
 Add `.yact/` to your `.gitignore` so task context and response logs are not committed.
@@ -489,6 +537,7 @@ y -h
 **"input exceeds maximum number allowed lines"**
 
 - Start a smaller context with `y new` and re-add only the files you need
+- Select fewer plan steps with `-s`
 - Raise the limit for one call with `-m <n>`, or permanently with
   `y config max_input_lines <n>`
 
@@ -497,18 +546,25 @@ y -h
 - These come from `-v` / `--validate-code`. Rerun the command, or drop `-v` to accept
   free text. The rejected response is still available in `.yact/buffer.txt`.
 
+**"no plan found in .yact/plan.md, provide a prompt or create a plan with --plan"**
+
+- You ran a call without a prompt argument and there is no saved plan. Pass a prompt, or
+  create a plan with `y -p plan "<task>"`.
+
+**"--steps and --plan cannot be combined" / "--steps cannot be combined with a prompt argument"**
+
+- `--steps` works on the saved plan only. Drop the prompt argument or the `-p` flag.
+
+**"step range ... does not match the plan" / "invalid step selector item"**
+
+- The selector names steps the plan does not contain, or is malformed. Use `N`, `N-M`, a
+  comma separated list, or `next`, and check the numbers in `.yact/plan.md`.
+
 **"Warning: link '...' skipped: ..."**
 
-- A Markdown link in the prompt points to a URL, a missing file, an unreadable file or a
-  directory, so it was not sent. Fix the link target or remove the link.
-- Be aware that a prompt with links ignores `.yact/context.txt`; only the linked files are
-  sent.
-
-**My prompt or context is ignored**
-
-- A leftover `.yact/plan.md` replaces the prompt of every call made without `-p`, and
-  `.yact/context.txt` is not used while it exists. Delete it with `rm .yact/plan.md` when
-  the plan is finished.
+- A Markdown link in the plan points to a URL, a missing file, an unreadable file or a
+  directory, so it was not sent. Fix the link target in `.yact/plan.md` or remove the link.
+- Be aware that a plan ignores `.yact/context.txt`; only the linked files are sent.
 
 **"No files found matching pattern"**
 
@@ -546,13 +602,13 @@ accepts input.
   your own AWS account.
 - **No telemetry.** YACT does not phone home, collect analytics, or report usage. The only
   outbound network connections it makes are the API calls you explicitly trigger, and
-  system-prompt downloads when you pass `-d`. Links to URLs in a prompt are never fetched.
+  system-prompt downloads when you pass `-d`. Links to URLs in a plan are never fetched.
 - **No background activity.** YACT runs when you invoke it and exits. It installs no
   service, daemon, or scheduled task, and modifies nothing outside `~/.yact/` and the
   `.yact/` directory of the project you are working in.
 - **You choose what is sent.** Only the files you add with `y read` or `y keyword` (or
-  link in your prompt or saved plan), plus the prompt you write, are included in a request.
-  YACT never scans or uploads your codebase on its own initiative.
+  link in your saved plan), plus the prompt you write, are included in a request. YACT
+  never scans or uploads your codebase on its own initiative.
 - **Auditable.** The complete source is public. Every release is built from a tagged
   commit in the repository, and every response is logged verbatim to `.yact/buffer.txt`.
 
