@@ -77,7 +77,7 @@ func hasUserSetModelFlag(claudeLevel, qwenLevel int) bool {
 	return claudeLevel > 0 || qwenLevel > 0
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag *bool, claudeLevel, qwenLevel *int) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag, planFlag *bool, claudeLevel, qwenLevel *int) {
 	for _, f := range flags {
 		switch f {
 		case "n":
@@ -98,6 +98,8 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloa
 			if *noWriteFlag == false {
 				*validateCodeFlag = true
 			}
+		case "p":
+			*planFlag = true
 		}
 	}
 }
@@ -220,7 +222,7 @@ func main() {
 		}
 
 		skipModelFlags := hasUserSetModelFlag(*claudeLevel, *qwenLevel)
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, claudeLevel, qwenLevel)
+		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, planFlag, claudeLevel, qwenLevel)
 
 		prompt := getOptionalPrompt(commandArgs)
 
