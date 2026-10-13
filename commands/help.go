@@ -49,8 +49,6 @@ Global Flags:
   -d, --download                       Download the system prompt for the command
   --no-progress                        Hide progress indicator
   -v, --validate-code                  Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks
-  -x, --no-context                     Do not send the selected files to the LLM
-  -p, --no-save-prompt                 Do not update prompt.txt with the prompt given as a CLI argument
   -m, --max-input-lines <n>            Set max input lines for the current command, without changing config
 
 For more information, visit: https://github.com/agabor/yact`)
