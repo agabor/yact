@@ -208,9 +208,6 @@ func main() {
 		commandErr = commands.HandlePromptCommand(commandArgs, *bufferFlag)
 	case "new":
 		commandErr = commands.HandleNewCommand()
-	case "narrow":
-		requireNoArgs("narrow", commandArgs)
-		commandErr = commands.HandleNarrowCommand()
 	case "commit":
 		requireNoArgs("commit", commandArgs)
 		commandErr = commands.HandleCommitCommand(*validateCodeFlag)
