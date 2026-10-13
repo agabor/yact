@@ -83,10 +83,6 @@ func GetProjectExtensionsPath() string {
 	return filepath.Join(GetProjectYactDir(), "extensions.txt")
 }
 
-func GetProjectTagsPath() string {
-	return filepath.Join(GetProjectYactDir(), "tags.csv")
-}
-
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey:   "",

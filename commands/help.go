@@ -14,9 +14,8 @@ Usage:
 
 Commands:
   help                                 Show this help message
-  read <file> [<file2> ...]            Add files to the task context (supports glob patterns and tags)
+  read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
   keyword <keyword>                    Recursively add files containing the keyword to the task context
-  tag <tagname> <file> [<file2> ...]   Tag files (supports glob patterns) for later use with the read command
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   narrow                               Remove files from the task context that are not referenced verbatim in the prompt
