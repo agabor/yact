@@ -7,7 +7,6 @@ import (
 
 	"yact/commands"
 	"yact/config"
-	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -64,17 +63,6 @@ func getModelOverride(claudeLevel, qwenLevel int) string {
 	return ""
 }
 
-func resolvePrompt(useBuffer bool, args []string) (string, error) {
-	if useBuffer {
-		bufferPrompt, err := logic.ReadBuffer()
-		if err != nil {
-			return "", err
-		}
-		return bufferPrompt, nil
-	}
-	return getOptionalPrompt(args), nil
-}
-
 func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
 	if !downloaded {
@@ -89,7 +77,7 @@ func hasUserSetModelFlag(claudeLevel, qwenLevel int) bool {
 	return claudeLevel > 0 || qwenLevel > 0
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag *bool, claudeLevel, qwenLevel *int) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag *bool, claudeLevel, qwenLevel *int) {
 	for _, f := range flags {
 		switch f {
 		case "n":
@@ -104,8 +92,6 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 			if !skipModelFlags {
 				*qwenLevel = 2
 			}
-		case "b":
-			*bufferFlag = true
 		case "d":
 			*downloadFlag = true
 		case "v":
@@ -116,7 +102,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, bufferF
 	}
 }
 
-func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, qwenLevel, maxInputLines int) string {
+func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, qwenLevel, maxInputLines int) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -127,9 +113,6 @@ func buildFlagString(noWriteFlag, bufferFlag, downloadFlag, noProgressFlag, vali
 	}
 	if qwenLevel > 0 {
 		flags = append(flags, fmt.Sprintf("--qwen %d", qwenLevel))
-	}
-	if bufferFlag {
-		flags = append(flags, "--buffer")
 	}
 	if downloadFlag {
 		flags = append(flags, "--download")
@@ -155,7 +138,6 @@ func main() {
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
 	claudeLevel := flag.IntP("claude", "c", 0, "Claude model level (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)")
 	qwenLevel := flag.IntP("qwen", "q", 0, "Qwen model level (1: Coder, 2: Max)")
-	bufferFlag := flag.BoolP("buffer", "b", false, "Use the buffer content as the prompt")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
 	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
@@ -209,28 +191,16 @@ func main() {
 		requireNoArgs("commit", commandArgs)
 		commandErr = commands.HandleCommitCommand(*validateCodeFlag)
 	case "query":
-		if *bufferFlag {
-			requireArgCount("query", commandArgs, 0)
-		} else {
-			requireArgCount("query", commandArgs, 0, 1)
-		}
-		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
-		if promptErr != nil {
-			commandErr = promptErr
-			break
-		}
+		requireArgCount("query", commandArgs, 0, 1)
+		prompt := getOptionalPrompt(commandArgs)
 		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
 		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, prompt)
 	default:
-		if *bufferFlag {
-			requireArgCount(command, commandArgs, 0)
-		} else {
-			requireArgCount(command, commandArgs, 0, 1)
-		}
+		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag
 		if downloaded {
 			if err := config.DownloadPrompt(command); err != nil {
@@ -246,13 +216,9 @@ func main() {
 		}
 
 		skipModelFlags := hasUserSetModelFlag(*claudeLevel, *qwenLevel)
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, bufferFlag, downloadFlag, validateCodeFlag, claudeLevel, qwenLevel)
+		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, claudeLevel, qwenLevel)
 
-		prompt, promptErr := resolvePrompt(*bufferFlag, commandArgs)
-		if promptErr != nil {
-			commandErr = promptErr
-			break
-		}
+		prompt := getOptionalPrompt(commandArgs)
 
 		cleanedPrompt := systemPrompt
 		if strings.HasPrefix(cleanedPrompt, "flags: ") {
@@ -263,7 +229,7 @@ func main() {
 		}
 
 		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *bufferFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
