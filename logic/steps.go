@@ -126,6 +126,18 @@ func (p ParsedPlan) Validate() error {
 	return nil
 }
 
+func (p ParsedPlan) AllChecked() bool {
+	if len(p.Steps) == 0 {
+		return false
+	}
+	for _, step := range p.Steps {
+		if !step.Checked {
+			return false
+		}
+	}
+	return true
+}
+
 func parseStepNumber(text string) (int, error) {
 	trimmedText := strings.TrimSpace(text)
 	number, err := strconv.Atoi(trimmedText)

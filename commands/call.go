@@ -126,6 +126,10 @@ func formatStepNumbers(steps []logic.PlanStep) string {
 func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
 	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
+		if parsedPlan.AllChecked() {
+			fmt.Println("All plan steps are done.")
+			return "", nil, true, nil
+		}
 		return planText, parsedPlan.Steps, false, nil
 	}
 
