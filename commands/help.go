@@ -18,7 +18,6 @@ Commands:
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
-  narrow                               Remove files from the task context that are not referenced verbatim in the prompt
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.`)
