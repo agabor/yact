@@ -85,19 +85,31 @@ func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transa
 	return linkedTransaction
 }
 
-func resolvePlanPrompt(writePlan bool) (string, bool, error) {
-	if writePlan {
+func resolvePlanPrompt(prompt string, writePlan bool) (string, bool, error) {
+	if prompt != "" || writePlan {
 		return "", false, nil
 	}
-	return logic.ReadPlan()
+
+	planText, planFound, err := logic.ReadPlan()
+	if err != nil {
+		return "", false, err
+	}
+	if !planFound {
+		return "", false, fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPlanPath())
+	}
+
+	return planText, true, nil
 }
 
-func validateStepsOptions(stepsSelector string, writePlan bool) error {
+func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
 	if stepsSelector == "" {
 		return nil
 	}
 	if writePlan {
 		return fmt.Errorf("--steps and --plan cannot be combined")
+	}
+	if prompt != "" {
+		return fmt.Errorf("--steps cannot be combined with a prompt argument")
 	}
 	_, err := logic.ParseStepSelector(stepsSelector)
 	return err
@@ -152,29 +164,34 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 	return nil
 }
 
+func buildPlanModeTransaction(selectedPrompt string) logic.Transaction {
+	planTransaction := logic.Transaction{Request: []string{selectedPrompt}}
+	return applyPromptLinks(planTransaction, selectedPrompt)
+}
+
+func buildPromptModeTransaction(transaction logic.Transaction, prompt string) logic.Transaction {
+	promptTransaction := transaction
+	if prompt != "" {
+		promptTransaction.Request = []string{prompt}
+	}
+	return promptTransaction
+}
+
 func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, stepsSelector string, prompt string) error {
-	if err := validateStepsOptions(stepsSelector, writePlan); err != nil {
+	if err := validateStepsOptions(stepsSelector, writePlan, prompt); err != nil {
 		return err
 	}
 
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
 
-	transaction, err := logic.LoadTransaction()
+	planPrompt, planUsed, err := resolvePlanPrompt(prompt, writePlan)
 	if err != nil {
 		return err
 	}
 
-	planPrompt, planUsed, err := resolvePlanPrompt(writePlan)
-	if err != nil {
-		return err
-	}
-
-	if stepsSelector != "" && !planUsed {
-		return fmt.Errorf("no plan found in %s", config.GetProjectPlanPath())
-	}
-
-	transactionForLLM := transaction
+	transaction := logic.Transaction{}
+	var transactionForLLM logic.Transaction
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
@@ -187,14 +204,14 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		}
 		prompt = selectedPrompt
 		sentSteps = selectedSteps
-		transactionForLLM.Context = []string{}
+		transactionForLLM = buildPlanModeTransaction(selectedPrompt)
+	} else {
+		transaction, err = logic.LoadTransaction()
+		if err != nil {
+			return err
+		}
+		transactionForLLM = buildPromptModeTransaction(transaction, prompt)
 	}
-
-	if prompt != "" {
-		transactionForLLM.Request = []string{prompt}
-	}
-
-	transactionForLLM = applyPromptLinks(transactionForLLM, prompt)
 
 	totalLength := 0
 
@@ -246,13 +263,13 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		return err
 	}
 
+	if planUsed {
+		return tickPlanSteps(planPrompt, sentSteps)
+	}
+
 	if err = transaction.Save(); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
-	}
-
-	if planUsed {
-		return tickPlanSteps(planPrompt, sentSteps)
 	}
 
 	return nil
