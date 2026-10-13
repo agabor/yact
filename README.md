@@ -79,8 +79,9 @@ exactly one thing: "send this file's content to the model".
   response are still added to it.
 
 This is what makes the `plan` → `act` workflow work: the `plan` prompt produces a Markdown
-plan whose links point to the files each step needs, and you feed that plan to `act` with
-`-b` (see [Plan, then act](#plan-then-act)).
+plan whose links point to the files each step needs, the plan is saved to
+`.yact/plan.md`, and the next call uses that plan as its prompt (see
+[Plan, then act](#plan-then-act)).
 
 ### Input size limit
 
@@ -216,12 +217,13 @@ behaves as if `-n -c` had been passed. Supported letters:
 - `n` — `--no-write` (ignored if `-v` is active)
 - `c` — Claude Sonnet (ignored if you pass `-c` or `-q` yourself)
 - `q` — Qwen Max on Bedrock (ignored if you pass `-c` or `-q` yourself)
-- `b` — `--buffer`
 - `d` — `--download`
 - `v` — `--validate-code` (ignored if `-n` is active)
 
-The official prompts use these defaults: `act` runs with `c1v` (the `1` is not a supported
-letter and is ignored), `ask` and `plan` with `c2n`, and `bash` with `c1n`.
+Any other character is ignored. The official prompts use these defaults: `act` runs with
+`c1v` (the `1` is not a supported letter and is ignored), `ask` with `c2n`, `bash` with
+`c1n`, and `plan` with `c2np` (the `2` selects nothing by itself, and `p` is not a
+supported letter, so pass `-p` yourself when you want the plan saved).
 
 ## Commands
 
@@ -270,14 +272,6 @@ y bash "find all TODO comments in Go files"
 The prompt is sent together with the task context, or with the files linked in the prompt
 (see [Links in prompts](#links-in-prompts)). The prompt is not saved anywhere.
 
-With the `-b` / `--buffer` flag, the content of `.yact/buffer.txt` (the last LLM response)
-is used as the prompt instead of an inline argument. No inline argument may be given in
-that case:
-
-```
-y -b act
-```
-
 The response is parsed for code blocks. Complete source files found in the response are
 written directly to your filesystem, and newly created files are automatically added to the
 task context. Any text outside code blocks is printed to the terminal. The raw response is
@@ -294,19 +288,33 @@ y -n act "implement Foo"
 ### Plan, then act
 
 The `plan` prompt asks the model for a short Markdown plan with one file per step. Each
-step ends with a `**Context:**` line holding links to the files needed for that step. Since
-every Markdown link in a prompt is resolved to file content, the plan can be passed
-unchanged to `act`:
+step ends with a `**Context:**` line holding links to the files needed for that step. With
+`-p` / `--plan`, the response is not processed as code; it is saved to `.yact/plan.md`:
 
 ```
-y plan "add authentication"
-y -b act
+y -p plan "add authentication"
 ```
 
-The first call prints the plan and logs it to `.yact/buffer.txt`. The second call reads the
-plan from the buffer, sends the linked files together with the plan, and writes the result
-to disk. Review or edit `.yact/buffer.txt` between the two steps if you want to adjust the
-plan.
+While `.yact/plan.md` exists and is not empty, every call made without `-p` uses the plan
+instead of your inline prompt. The context is built only from the files linked in the plan;
+`.yact/context.txt` is not used, and a plan without usable links sends no context files.
+Pass the command without an argument:
+
+```
+y act
+```
+
+Review or edit `.yact/plan.md` between the two steps if you want to adjust the plan. The
+plan is never deleted automatically, so remove it when you are done, otherwise it keeps
+replacing the prompt of later calls:
+
+```
+rm .yact/plan.md
+```
+
+Running a call with `-p` while a plan exists ignores the old plan, uses your inline prompt
+and context as usual, and overwrites `.yact/plan.md` with the new response. Nothing is
+written to your source tree and the response is not validated in that case.
 
 ### Validate that a response is code only
 
@@ -328,8 +336,8 @@ Call the LLM with no system prompt. The response is printed and never written to
 y query "explain what the keyword command does"
 ```
 
-The task context (or the files linked in the prompt) is still sent. `query` also accepts
-`-b` to use the buffer as the prompt.
+The task context (or the files linked in the prompt) is still sent. `query` also honours
+`.yact/plan.md` and `-p` the same way prompt commands do.
 
 ### Commit the buffer
 
@@ -350,11 +358,13 @@ With `-v`, the commit fails if the buffer contains free text or an incomplete co
 -n, --no-write             Do not write files, print response instead
 -c, --claude <level>       Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
 -q, --qwen <level>         Use Qwen model on AWS Bedrock (1: Coder, 2: Max)
--b, --buffer               Use the buffer content as the prompt
 -d, --download             Download the system prompt for the command
     --no-progress          Hide progress indicator
 -v, --validate-code        Fail if the response (or, for commit, the buffer) contains
                            free text or incomplete code blocks
+-p, --plan                 Write the response to .yact/plan.md. If .yact/plan.md exists
+                           (and -p is not given), it is used as the prompt and its
+                           Markdown links as the context
 -m, --max-input-lines <n>  Set max input lines for the current command, without changing config
 ```
 
@@ -365,6 +375,7 @@ y -c 3 ask "how does the parser work?"
 y --claude 2 --no-progress plan "add authentication"
 y -q 1 act "add a --version flag"
 y -m 3000 act "add a --version flag"
+y -p plan "add authentication"
 ```
 
 Model flags override the configured model for a single invocation. Qwen level 1 selects
@@ -450,6 +461,7 @@ Per-project state lives in `.yact/` inside your project directory:
 
 - `context.txt` — the task context, one file path per line
 - `buffer.txt` — log of the last LLM response
+- `plan.md` — the saved plan written by `-p`; while it exists it is used as the prompt
 - `extensions.txt` — file extensions scanned by the keyword command
 
 Add `.yact/` to your `.gitignore` so task context and response logs are not committed.
@@ -492,6 +504,12 @@ y -h
 - Be aware that a prompt with links ignores `.yact/context.txt`; only the linked files are
   sent.
 
+**My prompt or context is ignored**
+
+- A leftover `.yact/plan.md` replaces the prompt of every call made without `-p`, and
+  `.yact/context.txt` is not used while it exists. Delete it with `rm .yact/plan.md` when
+  the plan is finished.
+
 **"No files found matching pattern"**
 
 - Check that the glob pattern matches existing files
@@ -533,8 +551,8 @@ accepts input.
   service, daemon, or scheduled task, and modifies nothing outside `~/.yact/` and the
   `.yact/` directory of the project you are working in.
 - **You choose what is sent.** Only the files you add with `y read` or `y keyword` (or
-  link in your prompt), plus the prompt you write, are included in a request. YACT never
-  scans or uploads your codebase on its own initiative.
+  link in your prompt or saved plan), plus the prompt you write, are included in a request.
+  YACT never scans or uploads your codebase on its own initiative.
 - **Auditable.** The complete source is public. Every release is built from a tagged
   commit in the repository, and every response is logged verbatim to `.yact/buffer.txt`.
 
