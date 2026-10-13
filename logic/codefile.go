@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-var unknownFileCounter = 0
-
 const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
@@ -18,22 +16,10 @@ type CodeFile struct {
 	Content string
 }
 
-type codeFileJSON struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
-}
-
 type ParsedElement struct {
 	IsCodeFile bool
 	CodeFile   CodeFile
 	Text       string
-}
-
-func NewCodeFile(path, content string) CodeFile {
-	return CodeFile{
-		Path:    strings.TrimPrefix(strings.TrimSpace(path), "./"),
-		Content: content,
-	}
 }
 
 func NewCodeFileElement(cf CodeFile) ParsedElement {
@@ -54,7 +40,6 @@ func extractFilenameFromComment(line string) string {
 	patterns := []string{
 		`^\s*//\s*(.+?)(?:\s*//.*)?$`,
 		`^\s*#\s*(.+?)(?:\s*#.*)?$`,
-		`^\s*#\s*//\s*(.+?)(?:\s*#.*)?$`,
 		`^\s*/\*\s*(.+?)\s*\*/$`,
 		`^\s*--\s*(.+?)(?:\s*--.*)?$`,
 		`^\s*<!--\s*(.+?)\s*-->$`,
@@ -111,12 +96,8 @@ func linesToCodeFile(lines []string) CodeFile {
 		relPath := filePath[1:]
 		if _, err := os.Stat(relPath); err == nil {
 			filePath = relPath
-		} else {
-			if _, err := os.Stat(filePath); err == nil {
-
-			} else {
-				filePath = relPath
-			}
+		} else if _, err := os.Stat(filePath); err != nil {
+			filePath = relPath
 		}
 	}
 
