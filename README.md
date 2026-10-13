@@ -32,17 +32,15 @@ Minimal, responsive, transparent LLM coding assistant.
 
 YACT is a CLI tool. You assemble a task by hand, send it once, and get one response back.
 
-The current task lives in a plain text file, `.yact/prompt.txt`, in your project directory.
-It has two sections separated by a `==========` line:
+The task context lives in a plain text file, `.yact/context.txt`, in your project
+directory. It is a list of file paths, one per line. The contents of these files are sent
+to the LLM together with your prompt.
 
-- **Above the separator:** a list of file paths that form the task context. The contents of
-  these files are sent to the LLM.
-- **Below the separator:** your task prompt.
-
-You add files with `y read`, write your prompt, then run a prompt command such as `ask`,
-`plan`, `act` or `bash`. Each of those makes exactly one API call. Responses are parsed for
-code blocks; complete source files found in the response are written to disk, and any prose
-outside code blocks is printed to the terminal.
+You add files with `y read` (or `y keyword`), then run a prompt command such as `ask`,
+`plan`, `act` or `bash`, passing your task prompt as an argument. Each of those makes
+exactly one API call. Responses are parsed for code blocks; complete source files found in
+the response are written to disk, and any prose outside code blocks is printed to the
+terminal.
 
 ### Whole files, not diffs
 
@@ -63,10 +61,32 @@ regardless.
 If a response contains a code block that has only a file path comment and no content, YACT
 deletes that file from disk and removes it from the task context.
 
+### Links in prompts
+
+If the prompt contains Markdown links to local files, such as
+`[src/router/router.go](src/router/router.go)`, YACT sends the linked files instead of the
+files in `.yact/context.txt`. The links become the context for that call. A link means
+exactly one thing: "send this file's content to the model".
+
+- Links to URLs, anchors (`#...`) and protocol-relative targets are skipped with a warning;
+  nothing is downloaded.
+- Links to missing files, unreadable files or directories are skipped with a warning.
+- Duplicate links are sent once.
+- If the prompt contains links but none of them is usable, no context files are sent.
+- If the prompt contains no links at all, the files in `.yact/context.txt` are used as
+  usual.
+- `.yact/context.txt` itself is not modified by link resolution. Files created by the
+  response are still added to it.
+
+This is what makes the `plan` → `act` workflow work: the `plan` prompt produces a Markdown
+plan whose links point to the files each step needs, and you feed that plan to `act` with
+`-b` (see [Plan, then act](#plan-then-act)).
+
 ### Input size limit
 
-Before every call YACT counts the lines of the prompt plus the lines of all files in the
-task context and prints the total as `Input lines: <n>`. If the total exceeds
+Before every call YACT counts the lines of the prompt plus the lines of all files sent as
+context (the linked files when the prompt contains links, otherwise the files in
+`.yact/context.txt`) and prints the total as `Input lines: <n>`. If the total exceeds
 `max_input_lines` (default: 1000), the call is refused. Raise the limit permanently with
 `y config max_input_lines <n>`, or for a single call with `-m <n>`.
 
@@ -150,9 +170,10 @@ Verify your configuration at any time:
 y config
 ```
 
-Then start a task:
+Download the official system prompts, then start a task:
 
 ```
+y -d act
 y new
 y read main.go
 y act "add a --version flag"
@@ -199,6 +220,9 @@ behaves as if `-n -c` had been passed. Supported letters:
 - `d` — `--download`
 - `v` — `--validate-code` (ignored if `-n` is active)
 
+The official prompts use these defaults: `act` runs with `c1v` (the `1` is not a supported
+letter and is ignored), `ask` and `plan` with `c2n`, and `bash` with `c1n`.
+
 ## Commands
 
 ### Start a new task
@@ -218,8 +242,8 @@ y read main.go
 y read "commands/*.go"
 ```
 
-Glob patterns are supported, and a tag name can be used in place of a path (see `y tag`
-below). Directories are skipped, and files already in the context are not added twice.
+Glob patterns are supported. Directories are skipped, and files already in the context are
+not added twice. The list is stored in `.yact/context.txt`.
 
 ### Add files by keyword
 
@@ -232,55 +256,9 @@ y keyword Transaction
 Hidden directories are skipped, and only files with indexed extensions are considered (see
 `y config ext` below). Files already in the context are not added twice.
 
-### Tag files
-
-Group files under a name so you can add them all at once later:
-
-```
-y tag api "api/*.go"
-y read api
-```
-
-Tags are stored in `.yact/tags.csv`. The `read` command first checks whether its argument
-matches a tag name, and falls back to glob matching if it does not.
-
-### Narrow the context
-
-Remove every file from the task context whose path does not appear verbatim in the saved
-prompt:
-
-```
-y narrow
-```
-
-Each removed path is printed. If nothing needs to be removed, the command reports that and
-leaves the context untouched.
-
-### Set the prompt
-
-Set the task prompt in `.yact/prompt.txt` directly from the CLI:
-
-```
-y prompt "implement the Foo feature"
-```
-
-With the `-b` / `--buffer` flag, the content of `.yact/buffer.txt` (the last LLM response)
-is used as the prompt:
-
-```
-y -b prompt
-```
-
 ### Run a prompt command
 
-Write your task into `.yact/prompt.txt`, then run any prompt command:
-
-```
-y act
-```
-
-You can also pass the prompt inline as an optional argument, which replaces the prompt in
-`.yact/prompt.txt` before the API call:
+Run any prompt command with the task prompt as an optional argument:
 
 ```
 y act "implement Foo"
@@ -289,8 +267,16 @@ y plan "add authentication"
 y bash "find all TODO comments in Go files"
 ```
 
-With the `-b` / `--buffer` flag, the content of `.yact/buffer.txt` is used as the prompt
-instead of an inline argument.
+The prompt is sent together with the task context, or with the files linked in the prompt
+(see [Links in prompts](#links-in-prompts)). The prompt is not saved anywhere.
+
+With the `-b` / `--buffer` flag, the content of `.yact/buffer.txt` (the last LLM response)
+is used as the prompt instead of an inline argument. No inline argument may be given in
+that case:
+
+```
+y -b act
+```
 
 The response is parsed for code blocks. Complete source files found in the response are
 written directly to your filesystem, and newly created files are automatically added to the
@@ -302,8 +288,25 @@ you can review and revert what it writes. Use `--no-write` to print the response
 writing files:
 
 ```
-y -n act
+y -n act "implement Foo"
 ```
+
+### Plan, then act
+
+The `plan` prompt asks the model for a short Markdown plan with one file per step. Each
+step ends with a `**Context:**` line holding links to the files needed for that step. Since
+every Markdown link in a prompt is resolved to file content, the plan can be passed
+unchanged to `act`:
+
+```
+y plan "add authentication"
+y -b act
+```
+
+The first call prints the plan and logs it to `.yact/buffer.txt`. The second call reads the
+plan from the buffer, sends the linked files together with the plan, and writes the result
+to disk. Review or edit `.yact/buffer.txt` between the two steps if you want to adjust the
+plan.
 
 ### Validate that a response is code only
 
@@ -312,19 +315,21 @@ code blocks or an incomplete code block. Nothing is written to disk in that case
 the response is still logged to `.yact/buffer.txt`:
 
 ```
-y -v act
+y -v act "implement Foo"
 ```
 
 `-v` and `-n` are mutually exclusive when set through a prompt file's `flags:` line.
 
 ### Query without a system prompt
 
-Call the LLM with no system prompt. The response is printed and never written to disk, and
-the prompt is not saved:
+Call the LLM with no system prompt. The response is printed and never written to disk:
 
 ```
-y query "explain what the narrow command does"
+y query "explain what the keyword command does"
 ```
+
+The task context (or the files linked in the prompt) is still sent. `query` also accepts
+`-b` to use the buffer as the prompt.
 
 ### Commit the buffer
 
@@ -332,7 +337,7 @@ Write the code blocks of the last response in `.yact/buffer.txt` to disk, for ex
 a `-n` run:
 
 ```
-y -n act
+y -n act "implement Foo"
 y commit
 ```
 
@@ -356,10 +361,10 @@ With `-v`, the commit fails if the buffer contains free text or an incomplete co
 Flags come before the command:
 
 ```
-y -c 3 ask
-y --claude 2 --no-progress plan
-y -q 1 act
-y -m 3000 act
+y -c 3 ask "how does the parser work?"
+y --claude 2 --no-progress plan "add authentication"
+y -q 1 act "add a --version flag"
+y -m 3000 act "add a --version flag"
 ```
 
 Model flags override the configured model for a single invocation. Qwen level 1 selects
@@ -443,9 +448,8 @@ Global settings live in `~/.yact/`:
 
 Per-project state lives in `.yact/` inside your project directory:
 
-- `prompt.txt` — the current task context and prompt
+- `context.txt` — the task context, one file path per line
 - `buffer.txt` — log of the last LLM response
-- `tags.csv` — file tags created with `y tag`
 - `extensions.txt` — file extensions scanned by the keyword command
 
 Add `.yact/` to your `.gitignore` so task context and response logs are not committed.
@@ -472,7 +476,7 @@ y -h
 
 **"input exceeds maximum number allowed lines"**
 
-- Remove files from the context, for example with `y narrow`
+- Start a smaller context with `y new` and re-add only the files you need
 - Raise the limit for one call with `-m <n>`, or permanently with
   `y config max_input_lines <n>`
 
@@ -480,6 +484,13 @@ y -h
 
 - These come from `-v` / `--validate-code`. Rerun the command, or drop `-v` to accept
   free text. The rejected response is still available in `.yact/buffer.txt`.
+
+**"Warning: link '...' skipped: ..."**
+
+- A Markdown link in the prompt points to a URL, a missing file, an unreadable file or a
+  directory, so it was not sent. Fix the link target or remove the link.
+- Be aware that a prompt with links ignores `.yact/context.txt`; only the linked files are
+  sent.
 
 **"No files found matching pattern"**
 
@@ -517,13 +528,13 @@ accepts input.
   your own AWS account.
 - **No telemetry.** YACT does not phone home, collect analytics, or report usage. The only
   outbound network connections it makes are the API calls you explicitly trigger, and
-  system-prompt downloads when you pass `-d`.
+  system-prompt downloads when you pass `-d`. Links to URLs in a prompt are never fetched.
 - **No background activity.** YACT runs when you invoke it and exits. It installs no
   service, daemon, or scheduled task, and modifies nothing outside `~/.yact/` and the
   `.yact/` directory of the project you are working in.
-- **You choose what is sent.** Only the files you add with `y read`, `y tag` or
-  `y keyword`, plus the prompt you write, are included in a request. YACT never scans or
-  uploads your codebase on its own initiative.
+- **You choose what is sent.** Only the files you add with `y read` or `y keyword` (or
+  link in your prompt), plus the prompt you write, are included in a request. YACT never
+  scans or uploads your codebase on its own initiative.
 - **Auditable.** The complete source is public. Every release is built from a tagged
   commit in the repository, and every response is logged verbatim to `.yact/buffer.txt`.
 
