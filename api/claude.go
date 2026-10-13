@@ -12,13 +12,17 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
+const haikuLongPromptThreshold int64 = 100000
+
 type ClaudeClient struct {
 	apiKey          string
 	model           anthropic.Model
 	maxOutputTokens int
 	thinkBudget     int
-	inputPrice      int
-	outputPrice     int
+	inputPrice      float64
+	outputPrice     float64
+	longInputPrice  float64
+	longOutputPrice float64
 }
 
 func (c *ClaudeClient) Init(cfg *config.Config) {
@@ -28,6 +32,8 @@ func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.thinkBudget = cfg.ThinkBudget
 	c.inputPrice = c.selectInputPrice(cfg)
 	c.outputPrice = c.selectOutputPrice(cfg)
+	c.longInputPrice = c.selectLongInputPrice(cfg)
+	c.longOutputPrice = c.selectLongOutputPrice(cfg)
 }
 
 func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
@@ -43,25 +49,47 @@ func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
 	}
 }
 
-func (c *ClaudeClient) selectInputPrice(cfg *config.Config) int {
+func (c *ClaudeClient) selectInputPrice(cfg *config.Config) float64 {
 	switch strings.ToLower(cfg.ClaudeModel) {
+	case "fable":
+		return 10
 	case "opus":
-		return 5
+		return 4
 	case "sonnet":
-		return 3
+		return 2
 	default:
-		return 1
+		return 0.10
 	}
 }
 
-func (c *ClaudeClient) selectOutputPrice(cfg *config.Config) int {
+func (c *ClaudeClient) selectOutputPrice(cfg *config.Config) float64 {
 	switch strings.ToLower(cfg.ClaudeModel) {
+	case "fable":
+		return 50
 	case "opus":
-		return 25
+		return 20
 	case "sonnet":
-		return 15
+		return 10
 	default:
-		return 5
+		return 0.50
+	}
+}
+
+func (c *ClaudeClient) selectLongInputPrice(cfg *config.Config) float64 {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "fable", "opus", "sonnet":
+		return 0
+	default:
+		return 0.50
+	}
+}
+
+func (c *ClaudeClient) selectLongOutputPrice(cfg *config.Config) float64 {
+	switch strings.ToLower(cfg.ClaudeModel) {
+	case "fable", "opus", "sonnet":
+		return 0
+	default:
+		return 2.50
 	}
 }
 
@@ -70,7 +98,10 @@ func (c *ClaudeClient) GetModelName() string {
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
-	return FormatCost(inputTokens, outputTokens, float64(c.inputPrice), float64(c.outputPrice))
+	if c.longInputPrice > 0 && inputTokens > haikuLongPromptThreshold {
+		return FormatCost(inputTokens, outputTokens, c.longInputPrice, c.longOutputPrice)
+	}
+	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
 }
 
 func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
