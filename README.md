@@ -198,8 +198,6 @@ behaves as if `-n -c` had been passed. Supported letters:
 - `b` — `--buffer`
 - `d` — `--download`
 - `v` — `--validate-code` (ignored if `-n` is active)
-- `x` — `--no-context`
-- `p` — `--no-save-prompt`
 
 ## Commands
 
@@ -255,7 +253,8 @@ prompt:
 y narrow
 ```
 
-The command refuses to run if there is no saved prompt.
+Each removed path is printed. If nothing needs to be removed, the command reports that and
+leaves the context untouched.
 
 ### Set the prompt
 
@@ -290,9 +289,8 @@ y plan "add authentication"
 y bash "find all TODO comments in Go files"
 ```
 
-Pass `-p` / `--no-save-prompt` to use an inline prompt for the call without overwriting
-`.yact/prompt.txt`. Pass `-x` / `--no-context` to leave the selected files out of the
-request.
+With the `-b` / `--buffer` flag, the content of `.yact/buffer.txt` is used as the prompt
+instead of an inline argument.
 
 The response is parsed for code blocks. Complete source files found in the response are
 written directly to your filesystem, and newly created files are automatically added to the
@@ -352,8 +350,6 @@ With `-v`, the commit fails if the buffer contains free text or an incomplete co
     --no-progress          Hide progress indicator
 -v, --validate-code        Fail if the response (or, for commit, the buffer) contains
                            free text or incomplete code blocks
--x, --no-context           Do not send the selected files to the LLM
--p, --no-save-prompt       Do not update prompt.txt with the prompt given as a CLI argument
 -m, --max-input-lines <n>  Set max input lines for the current command, without changing config
 ```
 
@@ -476,7 +472,7 @@ y -h
 
 **"input exceeds maximum number allowed lines"**
 
-- Remove files from the context, for example with `y narrow`, or run with `-x`
+- Remove files from the context, for example with `y narrow`
 - Raise the limit for one call with `-m <n>`, or permanently with
   `y config max_input_lines <n>`
 
