@@ -15,20 +15,6 @@ func HandleReadCommand(args []string) error {
 	}
 
 	for _, pattern := range args {
-		tagFiles, err := logic.GetFilesByTag(pattern)
-		if err != nil {
-			return err
-		}
-
-		if len(tagFiles) > 0 {
-			for _, filePath := range tagFiles {
-				if err := readFile(filePath); err != nil {
-					return err
-				}
-			}
-			continue
-		}
-
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return fmt.Errorf("error matching pattern %s: %w", pattern, err)
