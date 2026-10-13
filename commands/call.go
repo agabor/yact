@@ -78,7 +78,14 @@ func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transa
 	return linkedTransaction
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
+func resolvePlanPrompt(writePlan bool) (string, bool, error) {
+	if writePlan {
+		return "", false, nil
+	}
+	return logic.ReadPlan()
+}
+
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, prompt string) error {
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
 
@@ -87,7 +94,17 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config
 		return err
 	}
 
+	planPrompt, planUsed, err := resolvePlanPrompt(writePlan)
+	if err != nil {
+		return err
+	}
+
 	transactionForLLM := transaction
+
+	if planUsed {
+		prompt = planPrompt
+		transactionForLLM.Context = []string{}
+	}
 
 	if prompt != "" {
 		transactionForLLM.Request = []string{prompt}
@@ -118,6 +135,14 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, cfg *config
 	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
 	if err != nil {
 		return err
+	}
+
+	if writePlan {
+		if err := logic.WritePlan(response); err != nil {
+			return err
+		}
+		fmt.Printf("Plan written to %s\n", config.GetProjectPlanPath())
+		return nil
 	}
 
 	if validateCode {
