@@ -43,7 +43,6 @@ Global Flags:
   -n, --no-write                       Do not write files, print response instead
   -c, --claude <level>                 Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
   -q, --qwen <level>                   Use Qwen model (1: Coder, 2: Max)
-  -b, --buffer                         Use the buffer content as the prompt
   -d, --download                       Download the system prompt for the command
   --no-progress                        Hide progress indicator
   -v, --validate-code                  Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks
