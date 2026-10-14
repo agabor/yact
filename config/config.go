@@ -17,7 +17,6 @@ const (
 	BedrockNextModel = "qwen.qwen3-coder-30b-a3b-next-v1:0"
 	AWSRegion    = "us-west-2"
 	MaxTokens    = 16000
-	ThinkBudget  = 8000
 	MaxInputLines = 1000
 )
 
@@ -31,7 +30,6 @@ type Config struct {
 	AWSRegion         string `json:"aws_region"`
 	AWSAPIKey         string `json:"aws_api_key"`
 	MaxTokens         int    `json:"max_tokens"`
-	ThinkBudget       int    `json:"think_budget"`
 	MaxInputLines     int    `json:"max_input_lines"`
 }
 
@@ -92,7 +90,6 @@ func DefaultConfig() *Config {
 		AWSRegion:         AWSRegion,
 		AWSAPIKey:         "",
 		MaxTokens:         MaxTokens,
-		ThinkBudget:       ThinkBudget,
 		MaxInputLines:     MaxInputLines,
 	}
 }

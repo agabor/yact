@@ -18,7 +18,6 @@ type ClaudeClient struct {
 	apiKey          string
 	model           anthropic.Model
 	maxOutputTokens int
-	thinkBudget     int
 	inputPrice      float64
 	outputPrice     float64
 	longInputPrice  float64
@@ -29,7 +28,6 @@ func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
 	c.model = c.selectModel(cfg)
 	c.maxOutputTokens = cfg.MaxTokens
-	c.thinkBudget = cfg.ThinkBudget
 	c.inputPrice = c.selectInputPrice(cfg)
 	c.outputPrice = c.selectOutputPrice(cfg)
 	c.longInputPrice = c.selectLongInputPrice(cfg)
@@ -134,10 +132,6 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 		Messages:  messageParams,
 	}
 
-	if c.thinkBudget > 0 && c.model == anthropic.ModelClaudeHaiku5_5 {
-		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(c.thinkBudget))
-	}
-
 	if systemPrompt != "" {
 		params.System = []anthropic.TextBlockParam{
 			{Text: systemPrompt},
@@ -159,21 +153,9 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 		message.Usage.OutputTokens)
 
 	var responseText strings.Builder
-	var thinkingText string
 
 	for _, block := range message.Content {
-		if block.Type == "thinking" {
-			thinkingText = block.Thinking
-		} else {
-			responseText.WriteString(block.Text)
-		}
-	}
-
-	if thinkingText != "" {
-		fmt.Println("\n=== Claude's Thinking ===")
-		fmt.Println(thinkingText)
-		fmt.Println("===")
-		fmt.Println("")
+		responseText.WriteString(block.Text)
 	}
 
 	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
