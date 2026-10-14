@@ -91,8 +91,9 @@ plan whose links point to the files each step needs, the plan is saved to
 
 Before every call YACT counts the lines of the prompt plus the lines of all files sent as
 context (the files linked in the plan when the plan is the prompt, otherwise the files in
-`.yact/context.txt`) and prints the total as `Input lines: <n>`. When only some plan steps
-are selected, only the text that is actually sent is counted. If the total exceeds
+`.yact/context.txt`) and prints the total as `Input lines: <n>`. Only the text that is
+actually sent is counted, so when the plan is the prompt, steps that are left out, whether
+through `--steps` or because they are already done, are not counted. If the total exceeds
 `max_input_lines` (default: 1000), the call is refused. Raise the limit permanently with
 `y config max_input_lines <n>`, or for a single call with `-m <n>`.
 
@@ -309,10 +310,12 @@ Then run a prompt command without a prompt argument:
 y act
 ```
 
-The plan is the prompt. The context is built only from the files linked in the plan;
-`.yact/context.txt` is not used or modified, and a plan without usable links sends no
-context files. If `.yact/plan.md` is missing or empty, the call fails. Passing a prompt
-argument ignores the plan.
+The plan is the prompt. Without `--steps`, the goal and all steps that are not ticked off
+yet are sent; steps that are already done are left out, and so are their links. A plan
+without steps is sent as a whole. The context is built only from the files linked in the
+text that is sent; `.yact/context.txt` is not used or modified, and a plan without usable
+links sends no context files. If `.yact/plan.md` is missing or empty, the call fails.
+Passing a prompt argument ignores the plan.
 
 Review or edit `.yact/plan.md` between the two steps if you want to adjust the plan.
 
@@ -341,9 +344,10 @@ and the step is sent again.
 
 After a call has successfully written its response, the steps that were sent are marked
 done in `.yact/plan.md`: `### [ ] 1. Title` becomes `### [x] 1. Title`. Without `--steps`
-all steps are sent and ticked. When every step is already ticked, YACT prints
-`All plan steps are done.` and makes no call. Steps are not ticked when `-n` is used or
-when the call fails. Untick a step by hand to run it again.
+only the remaining unticked steps are sent and ticked; a plan without steps is sent whole.
+When every step is already ticked, YACT prints `All plan steps are done.` and makes no
+call. Steps are not ticked when `-n` is used or when the call fails. Untick a step by hand
+to run it again.
 
 #### Replacing the plan
 
