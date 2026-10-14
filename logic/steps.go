@@ -138,6 +138,16 @@ func (p ParsedPlan) AllChecked() bool {
 	return true
 }
 
+func (p ParsedPlan) UncheckedSteps() []PlanStep {
+	uncheckedSteps := []PlanStep{}
+	for _, step := range p.Steps {
+		if !step.Checked {
+			uncheckedSteps = append(uncheckedSteps, step)
+		}
+	}
+	return uncheckedSteps
+}
+
 func parseStepNumber(text string) (int, error) {
 	trimmedText := strings.TrimSpace(text)
 	number, err := strconv.Atoi(trimmedText)

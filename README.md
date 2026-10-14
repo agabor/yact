@@ -455,8 +455,6 @@ Available configuration keys:
 - `aws_api_key` — Bedrock API key, stored locally; when empty, the default AWS credential
   chain is used instead
 - `max_tokens` — maximum output tokens per API call (default: 16000)
-- `think_budget` — token budget for extended thinking, used only with models that support
-  it (default: 8000)
 - `max_input_lines` — maximum number of lines of prompt plus context files sent in one
   call (default: 1000)
 
