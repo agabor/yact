@@ -130,7 +130,12 @@ func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep
 			fmt.Println("All plan steps are done.")
 			return "", nil, true, nil
 		}
-		return planText, parsedPlan.Steps, false, nil
+		if len(parsedPlan.Steps) == 0 {
+			return planText, parsedPlan.Steps, false, nil
+		}
+		remainingSteps := parsedPlan.UncheckedSteps()
+		fmt.Printf("Plan steps: %s\n", formatStepNumbers(remainingSteps))
+		return logic.BuildStepsPrompt(parsedPlan, remainingSteps), remainingSteps, false, nil
 	}
 
 	stepSelector, err := logic.ParseStepSelector(selector)
