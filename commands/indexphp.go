@@ -6,14 +6,22 @@ var phpModifiers = []string{"public", "protected", "private", "static", "abstrac
 
 var phpDeclarationKeywords = []string{"function", "class", "interface", "trait"}
 
-func scanPHPSignatures(source string) []string {
-	return scanSignatures(source, isPHPDeclarationStart)
+var phpSignatureRules = signatureRules{
+	IsDeclarationStart: isPHPDeclarationStart,
+	IsMemberStart:      isPHPDeclarationStart,
+	IsContainerStart:   isPHPContainerStart,
 }
 
 func isPHPDeclarationStart(source string, lineStart int) bool {
 	position := skipIndentation(source, lineStart)
 	position = skipModifiers(source, position, phpModifiers)
 	return startsWithKeyword(source, position, phpDeclarationKeywords, " &")
+}
+
+func isPHPContainerStart(source string, lineStart int) bool {
+	position := skipIndentation(source, lineStart)
+	position = skipModifiers(source, position, phpModifiers)
+	return startsWithKeyword(source, position, []string{"class", "interface", "trait"}, " \t\r\n")
 }
 
 func skipIndentation(source string, lineStart int) int {
