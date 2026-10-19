@@ -12,23 +12,39 @@ const indexFileName = "index.txt"
 type IndexNode struct {
 	Name      string
 	Type      string
-	Functions []string
+	Functions []IndexSignature
 	Children  []*IndexNode
 }
 
+type IndexSignature struct {
+	Text  string
+	Depth int
+}
+
+type signatureRules struct {
+	IsDeclarationStart func(source string, lineStart int) bool
+	IsMemberStart      func(source string, lineStart int) bool
+	IsContainerStart   func(source string, lineStart int) bool
+}
+
 type indexLanguage struct {
-	Extensions     []string
-	ScanSignatures func(source string) []string
+	Extensions []string
+	Rules      signatureRules
+}
+
+var goSignatureRules = signatureRules{
+	IsDeclarationStart: isFuncDeclarationStart,
+	IsMemberStart:      isFuncDeclarationStart,
 }
 
 func lookupIndexLanguage(name string) (indexLanguage, error) {
 	switch strings.ToLower(name) {
 	case "go":
-		return indexLanguage{Extensions: []string{".go"}, ScanSignatures: scanFuncSignatures}, nil
+		return indexLanguage{Extensions: []string{".go"}, Rules: goSignatureRules}, nil
 	case "php":
-		return indexLanguage{Extensions: []string{".php"}, ScanSignatures: scanPHPSignatures}, nil
+		return indexLanguage{Extensions: []string{".php"}, Rules: phpSignatureRules}, nil
 	case "js":
-		return indexLanguage{Extensions: []string{".js", ".mjs", ".cjs"}, ScanSignatures: scanJSSignatures}, nil
+		return indexLanguage{Extensions: []string{".js", ".mjs", ".cjs"}, Rules: jsSignatureRules}, nil
 	}
 	return indexLanguage{}, fmt.Errorf("unsupported language %q (expected go, php or js)", name)
 }
@@ -76,13 +92,14 @@ func collectFileSections(node *IndexNode, prefix string, sections []string) []st
 	return sections
 }
 
-func renderFileSection(path string, functions []string) string {
+func renderFileSection(path string, signatures []IndexSignature) string {
 	var builder strings.Builder
 	builder.WriteString(path)
 	builder.WriteString("\n")
-	for _, function := range functions {
+	for _, signature := range signatures {
 		builder.WriteString("  ")
-		builder.WriteString(function)
+		builder.WriteString(strings.Repeat("  ", signature.Depth))
+		builder.WriteString(signature.Text)
 		builder.WriteString("\n")
 	}
 	return builder.String()
@@ -153,32 +170,50 @@ func buildSourceFileNode(path string, name string, language indexLanguage) (*Ind
 	}, nil
 }
 
-func extractFunctions(path string, language indexLanguage) ([]string, error) {
+func extractFunctions(path string, language indexLanguage) ([]IndexSignature, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
-	return language.ScanSignatures(string(content)), nil
+	return scanSignatures(string(content), language.Rules), nil
 }
 
-func scanFuncSignatures(source string) []string {
-	return scanSignatures(source, isFuncDeclarationStart)
+func scanSignatures(source string, rules signatureRules) []IndexSignature {
+	return scanSignatureBlock(source, 0, len(source), 0, rules, false)
 }
 
-func scanSignatures(source string, isDeclarationStart func(source string, lineStart int) bool) []string {
-	var signatures []string
-	lineStart := 0
-	for lineStart < len(source) {
-		if !isDeclarationStart(source, lineStart) {
+func scanSignatureBlock(source string, start int, end int, depth int, rules signatureRules, inContainer bool) []IndexSignature {
+	isStart := selectDeclarationMatcher(rules, inContainer)
+	var signatures []IndexSignature
+	lineStart := start
+	for lineStart < end {
+		if !isStart(source, lineStart) {
 			lineStart = nextLineStart(source, lineStart)
 			continue
 		}
 		signature, stop := signatureText(source, lineStart)
 		declarationEnd := findDeclarationEnd(source, stop)
-		signatures = append(signatures, signature)
+		signatures = append(signatures, IndexSignature{Text: signature, Depth: depth})
+		if isContainerDeclaration(source, lineStart, stop, rules) {
+			signatures = append(signatures, scanSignatureBlock(source, stop+1, declarationEnd-1, depth+1, rules, true)...)
+		}
 		lineStart = nextLineStart(source, declarationEnd)
 	}
 	return signatures
+}
+
+func selectDeclarationMatcher(rules signatureRules, inContainer bool) func(source string, lineStart int) bool {
+	if inContainer && rules.IsMemberStart != nil {
+		return rules.IsMemberStart
+	}
+	return rules.IsDeclarationStart
+}
+
+func isContainerDeclaration(source string, lineStart int, stop int, rules signatureRules) bool {
+	if rules.IsContainerStart == nil || !rules.IsContainerStart(source, lineStart) {
+		return false
+	}
+	return stop < len(source) && source[stop] == '{'
 }
 
 func findDeclarationEnd(source string, stop int) int {
