@@ -4,12 +4,16 @@ import "strings"
 
 var phpModifiers = []string{"public", "protected", "private", "static", "abstract", "final", "readonly"}
 
+var phpNonPublicModifiers = []string{"private", "protected"}
+
 var phpDeclarationKeywords = []string{"function", "class", "interface", "trait"}
 
 var phpSignatureRules = signatureRules{
-	IsDeclarationStart: isPHPDeclarationStart,
-	IsMemberStart:      isPHPDeclarationStart,
-	IsContainerStart:   isPHPContainerStart,
+	IsDeclarationStart:  isPHPDeclarationStart,
+	IsMemberStart:       isPHPDeclarationStart,
+	IsContainerStart:    isPHPContainerStart,
+	IsPublicDeclaration: isPHPPublic,
+	IsPublicMember:      isPHPPublic,
 }
 
 func isPHPDeclarationStart(source string, lineStart int) bool {
@@ -22,6 +26,38 @@ func isPHPContainerStart(source string, lineStart int) bool {
 	position := skipIndentation(source, lineStart)
 	position = skipModifiers(source, position, phpModifiers)
 	return startsWithKeyword(source, position, []string{"class", "interface", "trait"}, " \t\r\n")
+}
+
+func isPHPPublic(source string, lineStart int) bool {
+	position := skipIndentation(source, lineStart)
+	for {
+		modifier, matched := matchModifier(source, position, phpModifiers)
+		if !matched {
+			return true
+		}
+		if containsString(phpNonPublicModifiers, modifier) {
+			return false
+		}
+		position = skipIndentation(source, position+len(modifier))
+	}
+}
+
+func matchModifier(source string, position int, modifiers []string) (string, bool) {
+	for _, modifier := range modifiers {
+		if strings.HasPrefix(source[position:], modifier+" ") {
+			return modifier, true
+		}
+	}
+	return "", false
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
 
 func skipIndentation(source string, lineStart int) int {

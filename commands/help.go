@@ -20,7 +20,7 @@ Commands:
   new                                  Create a new empty task context
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
-  index <go|php|js>                    Recursively scan files of the given language in the current directory and write index.txt with the files and their functions
+  index [private|public]               Recursively scan Go, PHP and JS files in the current directory and write index.txt with the files and their functions. private (default) indexes all functions and types, public indexes only the public interface
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
 Prompt rules for query and <command>:

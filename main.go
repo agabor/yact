@@ -39,6 +39,13 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
+func getIndexVisibility(args []string) string {
+	if len(args) > 0 {
+		return args[0]
+	}
+	return "private"
+}
+
 func getModelOverride(claudeLevel, qwenLevel int) string {
 	if claudeLevel > 0 {
 		switch claudeLevel {
@@ -206,8 +213,8 @@ func main() {
 		}
 		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
 	case "index":
-		requireArgCount("index", commandArgs, 1)
-		commandErr = commands.HandleIndexCommand(commandArgs[0])
+		requireArgCount("index", commandArgs, 0, 1)
+		commandErr = commands.HandleIndexCommand(getIndexVisibility(commandArgs))
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag

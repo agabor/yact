@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 const indexFileName = "index.txt"
@@ -22,9 +24,12 @@ type IndexSignature struct {
 }
 
 type signatureRules struct {
-	IsDeclarationStart func(source string, lineStart int) bool
-	IsMemberStart      func(source string, lineStart int) bool
-	IsContainerStart   func(source string, lineStart int) bool
+	IsDeclarationStart  func(source string, lineStart int) bool
+	IsMemberStart       func(source string, lineStart int) bool
+	IsContainerStart    func(source string, lineStart int) bool
+	PublicOnly          bool
+	IsPublicDeclaration func(source string, lineStart int) bool
+	IsPublicMember      func(source string, lineStart int) bool
 }
 
 type indexLanguage struct {
@@ -33,20 +38,37 @@ type indexLanguage struct {
 }
 
 var goSignatureRules = signatureRules{
-	IsDeclarationStart: isFuncDeclarationStart,
-	IsMemberStart:      isFuncDeclarationStart,
+	IsDeclarationStart:  isFuncDeclarationStart,
+	IsMemberStart:       isFuncDeclarationStart,
+	IsPublicDeclaration: isGoPublicDeclaration,
+	IsPublicMember:      isGoPublicDeclaration,
 }
 
-func lookupIndexLanguage(name string) (indexLanguage, error) {
-	switch strings.ToLower(name) {
-	case "go":
-		return indexLanguage{Extensions: []string{".go"}, Rules: goSignatureRules}, nil
-	case "php":
-		return indexLanguage{Extensions: []string{".php"}, Rules: phpSignatureRules}, nil
-	case "js":
-		return indexLanguage{Extensions: []string{".js", ".mjs", ".cjs"}, Rules: jsSignatureRules}, nil
+var indexLanguages = []indexLanguage{
+	{Extensions: []string{".go"}, Rules: goSignatureRules},
+	{Extensions: []string{".php"}, Rules: phpSignatureRules},
+	{Extensions: []string{".js", ".mjs", ".cjs"}, Rules: jsSignatureRules},
+}
+
+func languagesForVisibility(visibility string) ([]indexLanguage, error) {
+	if visibility != "public" && visibility != "private" {
+		return nil, fmt.Errorf("invalid visibility %q, expected private or public", visibility)
 	}
-	return indexLanguage{}, fmt.Errorf("unsupported language %q (expected go, php or js)", name)
+	languages := make([]indexLanguage, len(indexLanguages))
+	copy(languages, indexLanguages)
+	for position := range languages {
+		languages[position].Rules.PublicOnly = visibility == "public"
+	}
+	return languages, nil
+}
+
+func findLanguageForFile(name string, languages []indexLanguage) (indexLanguage, bool) {
+	for _, language := range languages {
+		if hasLanguageExtension(name, language.Extensions) {
+			return language, true
+		}
+	}
+	return indexLanguage{}, false
 }
 
 func hasLanguageExtension(name string, extensions []string) bool {
@@ -58,12 +80,12 @@ func hasLanguageExtension(name string, extensions []string) bool {
 	return false
 }
 
-func HandleIndexCommand(language string) error {
-	indexLang, err := lookupIndexLanguage(language)
+func HandleIndexCommand(visibility string) error {
+	languages, err := languagesForVisibility(visibility)
 	if err != nil {
 		return err
 	}
-	root, err := buildIndexNode(".", indexLang)
+	root, err := buildIndexNode(".", languages)
 	if err != nil {
 		return err
 	}
@@ -105,7 +127,7 @@ func renderFileSection(path string, signatures []IndexSignature) string {
 	return builder.String()
 }
 
-func buildIndexNode(dir string, language indexLanguage) (*IndexNode, error) {
+func buildIndexNode(dir string, languages []indexLanguage) (*IndexNode, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -119,7 +141,7 @@ func buildIndexNode(dir string, language indexLanguage) (*IndexNode, error) {
 			continue
 		}
 		childPath := filepath.Join(dir, entry.Name())
-		child, err := buildChildIndexNode(childPath, entry, language)
+		child, err := buildChildIndexNode(childPath, entry, languages)
 		if err != nil {
 			return nil, err
 		}
@@ -137,18 +159,19 @@ func shouldSkipIndexEntry(name string) bool {
 		name == indexFileName
 }
 
-func buildChildIndexNode(path string, entry os.DirEntry, language indexLanguage) (*IndexNode, error) {
+func buildChildIndexNode(path string, entry os.DirEntry, languages []indexLanguage) (*IndexNode, error) {
 	if entry.IsDir() {
-		return buildNonEmptyDirNode(path, language)
+		return buildNonEmptyDirNode(path, languages)
 	}
-	if hasLanguageExtension(entry.Name(), language.Extensions) {
-		return buildSourceFileNode(path, entry.Name(), language)
+	language, found := findLanguageForFile(entry.Name(), languages)
+	if !found {
+		return nil, nil
 	}
-	return nil, nil
+	return buildSourceFileNode(path, entry.Name(), language)
 }
 
-func buildNonEmptyDirNode(path string, language indexLanguage) (*IndexNode, error) {
-	child, err := buildIndexNode(path, language)
+func buildNonEmptyDirNode(path string, languages []indexLanguage) (*IndexNode, error) {
+	child, err := buildIndexNode(path, languages)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +216,10 @@ func scanSignatureBlock(source string, start int, end int, depth int, rules sign
 		}
 		signature, stop := signatureText(source, lineStart)
 		declarationEnd := findDeclarationEnd(source, stop)
+		if !isVisibleDeclaration(source, lineStart, rules, inContainer) {
+			lineStart = nextLineStart(source, declarationEnd)
+			continue
+		}
 		signatures = append(signatures, IndexSignature{Text: signature, Depth: depth})
 		if isContainerDeclaration(source, lineStart, stop, rules) {
 			signatures = append(signatures, scanSignatureBlock(source, stop+1, declarationEnd-1, depth+1, rules, true)...)
@@ -207,6 +234,24 @@ func selectDeclarationMatcher(rules signatureRules, inContainer bool) func(sourc
 		return rules.IsMemberStart
 	}
 	return rules.IsDeclarationStart
+}
+
+func selectPublicMatcher(rules signatureRules, inContainer bool) func(source string, lineStart int) bool {
+	if inContainer {
+		return rules.IsPublicMember
+	}
+	return rules.IsPublicDeclaration
+}
+
+func isVisibleDeclaration(source string, lineStart int, rules signatureRules, inContainer bool) bool {
+	if !rules.PublicOnly {
+		return true
+	}
+	isPublic := selectPublicMatcher(rules, inContainer)
+	if isPublic == nil {
+		return true
+	}
+	return isPublic(source, lineStart)
 }
 
 func isContainerDeclaration(source string, lineStart int, stop int, rules signatureRules) bool {
@@ -230,6 +275,26 @@ func isFuncDeclarationStart(source string, lineStart int) bool {
 	}
 	after := rest[len("func"):]
 	return strings.HasPrefix(after, " ") || strings.HasPrefix(after, "(")
+}
+
+func isGoPublicDeclaration(source string, lineStart int) bool {
+	position := skipIndentation(source, lineStart+len("func"))
+	if strings.HasPrefix(source[lineStart:], "func") && position < len(source) && source[position] == '(' {
+		position = skipIndentation(source, skipGoReceiver(source, position))
+	}
+	if position >= len(source) {
+		return false
+	}
+	first, _ := utf8.DecodeRuneInString(source[position:])
+	return unicode.IsUpper(first)
+}
+
+func skipGoReceiver(source string, position int) int {
+	closing := strings.IndexByte(source[position:], ')')
+	if closing < 0 {
+		return len(source)
+	}
+	return position + closing + 1
 }
 
 func nextLineStart(source string, offset int) int {
