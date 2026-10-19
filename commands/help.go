@@ -20,6 +20,7 @@ Commands:
   new                                  Create a new empty task context
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
+  index                                Recursively scan Go files in the current directory and write index.json with the files and their functions
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
 Prompt rules for query and <command>:
