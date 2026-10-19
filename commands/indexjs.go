@@ -7,9 +7,11 @@ var jsDeclarationKeywords = []string{"function", "class"}
 var jsMethodModifiers = []string{"static", "async"}
 
 var jsSignatureRules = signatureRules{
-	IsDeclarationStart: isJSDeclarationStart,
-	IsMemberStart:      isJSMemberStart,
-	IsContainerStart:   isJSContainerStart,
+	IsDeclarationStart:  isJSDeclarationStart,
+	IsMemberStart:       isJSMemberStart,
+	IsContainerStart:    isJSContainerStart,
+	IsPublicDeclaration: isJSPublicDeclaration,
+	IsPublicMember:      isJSPublicMember,
 }
 
 func isJSDeclarationStart(source string, lineStart int) bool {
@@ -26,6 +28,20 @@ func isJSContainerStart(source string, lineStart int) bool {
 
 func isJSMemberStart(source string, lineStart int) bool {
 	return isJSDeclarationStart(source, lineStart) || isJSMethodStart(source, lineStart)
+}
+
+func isJSPublicDeclaration(source string, lineStart int) bool {
+	position := skipIndentation(source, lineStart)
+	return startsWithKeyword(source, position, []string{"export"}, " ")
+}
+
+func isJSPublicMember(source string, lineStart int) bool {
+	position := skipIndentation(source, lineStart)
+	position = skipModifiers(source, position, jsMethodModifiers)
+	if position < len(source) && source[position] == '*' {
+		position = skipIndentation(source, position+1)
+	}
+	return position >= len(source) || source[position] != '#'
 }
 
 func isJSMethodStart(source string, lineStart int) bool {
