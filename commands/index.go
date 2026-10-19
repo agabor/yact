@@ -16,8 +16,38 @@ type IndexNode struct {
 	Children  []*IndexNode
 }
 
-func HandleIndexCommand() error {
-	root, err := buildIndexNode(".")
+type indexLanguage struct {
+	Extensions     []string
+	ScanSignatures func(source string) []string
+}
+
+func lookupIndexLanguage(name string) (indexLanguage, error) {
+	switch strings.ToLower(name) {
+	case "go":
+		return indexLanguage{Extensions: []string{".go"}, ScanSignatures: scanFuncSignatures}, nil
+	case "php":
+		return indexLanguage{Extensions: []string{".php"}, ScanSignatures: scanPHPSignatures}, nil
+	case "js":
+		return indexLanguage{Extensions: []string{".js", ".mjs", ".cjs"}, ScanSignatures: scanJSSignatures}, nil
+	}
+	return indexLanguage{}, fmt.Errorf("unsupported language %q (expected go, php or js)", name)
+}
+
+func hasLanguageExtension(name string, extensions []string) bool {
+	for _, extension := range extensions {
+		if strings.HasSuffix(name, extension) {
+			return true
+		}
+	}
+	return false
+}
+
+func HandleIndexCommand(language string) error {
+	indexLang, err := lookupIndexLanguage(language)
+	if err != nil {
+		return err
+	}
+	root, err := buildIndexNode(".", indexLang)
 	if err != nil {
 		return err
 	}
@@ -58,7 +88,7 @@ func renderFileSection(path string, functions []string) string {
 	return builder.String()
 }
 
-func buildIndexNode(dir string) (*IndexNode, error) {
+func buildIndexNode(dir string, language indexLanguage) (*IndexNode, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -72,7 +102,7 @@ func buildIndexNode(dir string) (*IndexNode, error) {
 			continue
 		}
 		childPath := filepath.Join(dir, entry.Name())
-		child, err := buildChildIndexNode(childPath, entry)
+		child, err := buildChildIndexNode(childPath, entry, language)
 		if err != nil {
 			return nil, err
 		}
@@ -90,18 +120,18 @@ func shouldSkipIndexEntry(name string) bool {
 		name == indexFileName
 }
 
-func buildChildIndexNode(path string, entry os.DirEntry) (*IndexNode, error) {
+func buildChildIndexNode(path string, entry os.DirEntry, language indexLanguage) (*IndexNode, error) {
 	if entry.IsDir() {
-		return buildNonEmptyDirNode(path)
+		return buildNonEmptyDirNode(path, language)
 	}
-	if strings.HasSuffix(entry.Name(), ".go") {
-		return buildGoFileNode(path, entry.Name())
+	if hasLanguageExtension(entry.Name(), language.Extensions) {
+		return buildSourceFileNode(path, entry.Name(), language)
 	}
 	return nil, nil
 }
 
-func buildNonEmptyDirNode(path string) (*IndexNode, error) {
-	child, err := buildIndexNode(path)
+func buildNonEmptyDirNode(path string, language indexLanguage) (*IndexNode, error) {
+	child, err := buildIndexNode(path, language)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +141,8 @@ func buildNonEmptyDirNode(path string) (*IndexNode, error) {
 	return child, nil
 }
 
-func buildGoFileNode(path string, name string) (*IndexNode, error) {
-	functions, err := extractFunctions(path)
+func buildSourceFileNode(path string, name string, language indexLanguage) (*IndexNode, error) {
+	functions, err := extractFunctions(path, language)
 	if err != nil {
 		return nil, err
 	}
@@ -123,28 +153,39 @@ func buildGoFileNode(path string, name string) (*IndexNode, error) {
 	}, nil
 }
 
-func extractFunctions(path string) ([]string, error) {
+func extractFunctions(path string, language indexLanguage) ([]string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
-	return scanFuncSignatures(string(content)), nil
+	return language.ScanSignatures(string(content)), nil
 }
 
 func scanFuncSignatures(source string) []string {
+	return scanSignatures(source, isFuncDeclarationStart)
+}
+
+func scanSignatures(source string, isDeclarationStart func(source string, lineStart int) bool) []string {
 	var signatures []string
 	lineStart := 0
 	for lineStart < len(source) {
-		if !isFuncDeclarationStart(source, lineStart) {
+		if !isDeclarationStart(source, lineStart) {
 			lineStart = nextLineStart(source, lineStart)
 			continue
 		}
-		signature, open := signatureText(source, lineStart)
-		bodyEnd := findFuncBodyEnd(source, open)
+		signature, stop := signatureText(source, lineStart)
+		declarationEnd := findDeclarationEnd(source, stop)
 		signatures = append(signatures, signature)
-		lineStart = nextLineStart(source, bodyEnd)
+		lineStart = nextLineStart(source, declarationEnd)
 	}
 	return signatures
+}
+
+func findDeclarationEnd(source string, stop int) int {
+	if stop < len(source) && source[stop] == ';' {
+		return stop + 1
+	}
+	return findFuncBodyEnd(source, stop)
 }
 
 func isFuncDeclarationStart(source string, lineStart int) bool {
@@ -225,12 +266,12 @@ func skipLiteral(source string, start int) int {
 }
 
 func signatureText(source string, start int) (string, int) {
-	open := strings.IndexByte(source[start:], '{')
-	if open < 0 {
+	stop := strings.IndexAny(source[start:], "{;")
+	if stop < 0 {
 		return collapseWhitespace(source[start:]), len(source)
 	}
-	open += start
-	return collapseWhitespace(source[start:open]), open
+	stop += start
+	return collapseWhitespace(source[start:stop]), stop
 }
 
 func collapseWhitespace(text string) string {

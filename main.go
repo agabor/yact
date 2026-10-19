@@ -206,8 +206,8 @@ func main() {
 		}
 		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
 	case "index":
-		requireNoArgs("index", commandArgs)
-		commandErr = commands.HandleIndexCommand()
+		requireArgCount("index", commandArgs, 1)
+		commandErr = commands.HandleIndexCommand(commandArgs[0])
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag
