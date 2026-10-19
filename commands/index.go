@@ -3,9 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,18 +10,11 @@ import (
 
 const indexFileName = "index.json"
 
-type FunctionEntry struct {
-	Name     string `json:"name"`
-	Receiver string `json:"receiver,omitempty"`
-	Line     int    `json:"line"`
-}
-
 type IndexNode struct {
-	Name      string          `json:"name"`
-	Path      string          `json:"path"`
-	Type      string          `json:"type"`
-	Functions []FunctionEntry `json:"functions,omitempty"`
-	Children  []*IndexNode    `json:"children,omitempty"`
+	Name      string       `json:"name"`
+	Type      string       `json:"type"`
+	Functions []string     `json:"functions,omitempty"`
+	Children  []*IndexNode `json:"children,omitempty"`
 }
 
 func HandleIndexCommand() error {
@@ -50,7 +40,6 @@ func buildIndexNode(dir string) (*IndexNode, error) {
 	}
 	node := &IndexNode{
 		Name: filepath.Base(dir),
-		Path: filepath.ToSlash(dir),
 		Type: "dir",
 	}
 	for _, entry := range entries {
@@ -104,51 +93,121 @@ func buildGoFileNode(path string, name string) (*IndexNode, error) {
 	}
 	return &IndexNode{
 		Name:      name,
-		Path:      filepath.ToSlash(path),
 		Type:      "file",
 		Functions: functions,
 	}, nil
 }
 
-func extractFunctions(path string) ([]FunctionEntry, error) {
-	fileSet := token.NewFileSet()
-	file, err := parser.ParseFile(fileSet, path, nil, parser.SkipObjectResolution)
+func extractFunctions(path string) ([]string, error) {
+	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", path, err)
+		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
+	return scanFuncSignatures(string(content)), nil
+}
 
-	var functions []FunctionEntry
-	for _, decl := range file.Decls {
-		funcDecl, ok := decl.(*ast.FuncDecl)
-		if !ok {
+func scanFuncSignatures(source string) []string {
+	var signatures []string
+	lineStart := 0
+	for lineStart < len(source) {
+		if !isFuncDeclarationStart(source, lineStart) {
+			lineStart = nextLineStart(source, lineStart)
 			continue
 		}
-		functions = append(functions, FunctionEntry{
-			Name:     funcDecl.Name.Name,
-			Receiver: receiverOfFunc(funcDecl),
-			Line:     fileSet.Position(funcDecl.Pos()).Line,
-		})
+		signature, open := signatureText(source, lineStart)
+		bodyEnd := findFuncBodyEnd(source, open)
+		signatures = append(signatures, signature)
+		lineStart = nextLineStart(source, bodyEnd)
 	}
-	return functions, nil
+	return signatures
 }
 
-func receiverOfFunc(funcDecl *ast.FuncDecl) string {
-	if funcDecl.Recv == nil || len(funcDecl.Recv.List) == 0 {
-		return ""
+func isFuncDeclarationStart(source string, lineStart int) bool {
+	rest := source[lineStart:]
+	if !strings.HasPrefix(rest, "func") {
+		return false
 	}
-	return receiverTypeName(funcDecl.Recv.List[0].Type)
+	after := rest[len("func"):]
+	return strings.HasPrefix(after, " ") || strings.HasPrefix(after, "(")
 }
 
-func receiverTypeName(expr ast.Expr) string {
-	switch receiverType := expr.(type) {
-	case *ast.StarExpr:
-		return receiverTypeName(receiverType.X)
-	case *ast.Ident:
-		return receiverType.Name
-	case *ast.IndexExpr:
-		return receiverTypeName(receiverType.X)
-	case *ast.IndexListExpr:
-		return receiverTypeName(receiverType.X)
+func nextLineStart(source string, offset int) int {
+	newline := strings.IndexByte(source[offset:], '\n')
+	if newline < 0 {
+		return len(source)
 	}
-	return ""
+	return offset + newline + 1
+}
+
+func findFuncBodyEnd(source string, open int) int {
+	depth := 0
+	for index := open; index < len(source); {
+		switch {
+		case strings.HasPrefix(source[index:], "//"):
+			index = skipLineComment(source, index)
+		case strings.HasPrefix(source[index:], "/*"):
+			index = skipBlockComment(source, index)
+		case isLiteralQuote(source[index]):
+			index = skipLiteral(source, index)
+		case source[index] == '{':
+			depth++
+			index++
+		case source[index] == '}':
+			depth--
+			index++
+			if depth == 0 {
+				return index
+			}
+		default:
+			index++
+		}
+	}
+	return len(source)
+}
+
+func isLiteralQuote(char byte) bool {
+	return char == '"' || char == '\'' || char == '`'
+}
+
+func skipLineComment(source string, start int) int {
+	newline := strings.IndexByte(source[start:], '\n')
+	if newline < 0 {
+		return len(source)
+	}
+	return start + newline
+}
+
+func skipBlockComment(source string, start int) int {
+	end := strings.Index(source[start+2:], "*/")
+	if end < 0 {
+		return len(source)
+	}
+	return start + 2 + end + 2
+}
+
+func skipLiteral(source string, start int) int {
+	quote := source[start]
+	for index := start + 1; index < len(source); index++ {
+		if source[index] == '\\' && quote != '`' {
+			index++
+			continue
+		}
+		if source[index] == quote {
+			return index + 1
+		}
+	}
+	return len(source)
+}
+
+func signatureText(source string, start int) (string, int) {
+	open := strings.IndexByte(source[start:], '{')
+	if open < 0 {
+		return collapseWhitespace(source[start:]), len(source)
+	}
+	open += start
+	return collapseWhitespace(source[start:open]), open
+}
+
+func collapseWhitespace(text string) string {
+	return strings.Join(strings.Fields(text), " ")
 }
