@@ -1,20 +1,19 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-const indexFileName = "index.json"
+const indexFileName = "index.txt"
 
 type IndexNode struct {
-	Name      string       `json:"name"`
-	Type      string       `json:"type"`
-	Functions []string     `json:"functions,omitempty"`
-	Children  []*IndexNode `json:"children,omitempty"`
+	Name      string
+	Type      string
+	Functions []string
+	Children  []*IndexNode
 }
 
 func HandleIndexCommand() error {
@@ -22,15 +21,41 @@ func HandleIndexCommand() error {
 	if err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(root, "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(indexFileName, data, 0644); err != nil {
+	data := renderIndex(root)
+	if err := os.WriteFile(indexFileName, []byte(data), 0644); err != nil {
 		return err
 	}
 	fmt.Printf("Written: %s\n", indexFileName)
 	return nil
+}
+
+func renderIndex(root *IndexNode) string {
+	sections := collectFileSections(root, "", nil)
+	return strings.Join(sections, "\n")
+}
+
+func collectFileSections(node *IndexNode, prefix string, sections []string) []string {
+	for _, child := range node.Children {
+		childPath := prefix + child.Name
+		if child.Type == "dir" {
+			sections = collectFileSections(child, childPath+"/", sections)
+			continue
+		}
+		sections = append(sections, renderFileSection(childPath, child.Functions))
+	}
+	return sections
+}
+
+func renderFileSection(path string, functions []string) string {
+	var builder strings.Builder
+	builder.WriteString(path)
+	builder.WriteString("\n")
+	for _, function := range functions {
+		builder.WriteString("  ")
+		builder.WriteString(function)
+		builder.WriteString("\n")
+	}
+	return builder.String()
 }
 
 func buildIndexNode(dir string) (*IndexNode, error) {
@@ -124,7 +149,7 @@ func scanFuncSignatures(source string) []string {
 
 func isFuncDeclarationStart(source string, lineStart int) bool {
 	rest := source[lineStart:]
-	if !strings.HasPrefix(rest, "func") {
+	if !strings.HasPrefix(rest, "func") && !strings.HasPrefix(rest, "type") {
 		return false
 	}
 	after := rest[len("func"):]
