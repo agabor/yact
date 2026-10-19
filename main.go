@@ -205,6 +205,9 @@ func main() {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
 		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
+	case "index":
+		requireNoArgs("index", commandArgs)
+		commandErr = commands.HandleIndexCommand()
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag
