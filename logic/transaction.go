@@ -8,50 +8,73 @@ import (
 )
 
 type Transaction struct {
-	Request []string
-	Context []string
+	Request  []string
+	Context  []string
+	Messages []string
 }
 
-func LoadTransaction() (Transaction, error) {
-	contextPath := config.GetProjectContextPath()
+func messagesPath() string {
+	return filepath.Join(filepath.Dir(config.GetProjectContextPath()), "messages.txt")
+}
 
-	data, err := os.ReadFile(contextPath)
+func readPathList(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return Transaction{}, nil
+			return []string{}, nil
 		}
-		return Transaction{}, err
+		return nil, err
 	}
 
-	transaction := Transaction{
-		Request: []string{},
-		Context: []string{},
-	}
-
+	paths := []string{}
 	for _, line := range strings.Split(string(data), "\n") {
 		trimmedLine := strings.TrimSpace(line)
 		if trimmedLine != "" {
-			transaction.Context = append(transaction.Context, trimmedLine)
+			paths = append(paths, trimmedLine)
 		}
 	}
 
-	return transaction, nil
+	return paths, nil
 }
 
-func (transaction *Transaction) Save() error {
-	contextPath := config.GetProjectContextPath()
-
-	dir := filepath.Dir(contextPath)
+func writePathList(path string, lines []string) error {
+	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
 	var builder strings.Builder
 
-	for _, contextLine := range transaction.Context {
-		builder.WriteString(contextLine)
+	for _, line := range lines {
+		builder.WriteString(line)
 		builder.WriteString("\n")
 	}
 
-	return os.WriteFile(contextPath, []byte(builder.String()), 0644)
+	return os.WriteFile(path, []byte(builder.String()), 0644)
+}
+
+func LoadTransaction() (Transaction, error) {
+	context, err := readPathList(config.GetProjectContextPath())
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	messages, err := readPathList(messagesPath())
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	return Transaction{
+		Request:  []string{},
+		Context:  context,
+		Messages: messages,
+	}, nil
+}
+
+func (transaction *Transaction) Save() error {
+	if err := writePathList(config.GetProjectContextPath(), transaction.Context); err != nil {
+		return err
+	}
+
+	return writePathList(messagesPath(), transaction.Messages)
 }

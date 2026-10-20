@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -226,6 +227,14 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 
 	if prompt != "" {
 		totalLength += len(strings.Split(prompt, "\n"))
+	}
+
+	for _, messagePath := range transactionForLLM.Messages {
+		messageContent, err := os.ReadFile(messagePath)
+		if err != nil {
+			return err
+		}
+		totalLength += len(strings.Split(string(messageContent), "\n"))
 	}
 
 	for _, contextPath := range transactionForLLM.Context {
