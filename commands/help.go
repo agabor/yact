@@ -15,6 +15,7 @@ Usage:
 Commands:
   help                                 Show this help message
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
+  message <file> [<file2> ...]         Add files as verbatim messages, sent to the LLM without code block delimiters or file path comment, always before the context files (supports glob patterns)
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
