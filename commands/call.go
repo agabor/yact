@@ -256,6 +256,10 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		return err
 	}
 
+	if err := storeBuffer(response); err != nil {
+		return err
+	}
+
 	if writePlan {
 		if err := logic.WritePlan(response); err != nil {
 			return err
@@ -327,6 +331,13 @@ func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config,
 	close(done)
 
 	return response, err
+}
+
+func storeBuffer(response string) error {
+	if err := logic.PutBuffer(response); err != nil {
+		return fmt.Errorf("error writing buffer: %w", err)
+	}
+	return nil
 }
 
 func removeFromContext(context []string, path string) []string {
