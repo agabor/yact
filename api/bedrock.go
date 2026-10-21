@@ -223,9 +223,5 @@ func (c *BedrockClient) Call(transaction logic.Transaction, cfg *config.Config, 
 
 	trimmedResponse := strings.TrimSpace(c.extractText(resp.Output))
 
-	if err := logic.PutBuffer(trimmedResponse); err != nil {
-		return "", fmt.Errorf("error writing buffer: %w", err)
-	}
-
 	return trimmedResponse, nil
 }

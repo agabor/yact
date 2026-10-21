@@ -167,9 +167,5 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 
 	trimmedResponse := strings.TrimSpace(responseText.String())
 
-	if err := logic.PutBuffer(trimmedResponse); err != nil {
-		return "", fmt.Errorf("error writing buffer: %w", err)
-	}
-
 	return trimmedResponse, nil
 }
