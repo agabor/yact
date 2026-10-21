@@ -30,6 +30,7 @@ type signatureRules struct {
 	PublicOnly          bool
 	IsPublicDeclaration func(source string, lineStart int) bool
 	IsPublicMember      func(source string, lineStart int) bool
+	EndsAtLineBreak     bool
 }
 
 type indexLanguage struct {
@@ -48,6 +49,9 @@ var indexLanguages = []indexLanguage{
 	{Extensions: []string{".go"}, Rules: goSignatureRules},
 	{Extensions: []string{".php"}, Rules: phpSignatureRules},
 	{Extensions: []string{".js", ".mjs", ".cjs"}, Rules: jsSignatureRules},
+	{Extensions: []string{".cs"}, Rules: csharpSignatureRules},
+	{Extensions: []string{".swift"}, Rules: swiftSignatureRules},
+	{Extensions: []string{".kt", ".kts"}, Rules: kotlinSignatureRules},
 }
 
 func languagesForVisibility(visibility string) ([]indexLanguage, error) {
@@ -214,7 +218,7 @@ func scanSignatureBlock(source string, start int, end int, depth int, rules sign
 			lineStart = nextLineStart(source, lineStart)
 			continue
 		}
-		signature, stop := signatureText(source, lineStart)
+		signature, stop := signatureText(source, lineStart, rules.EndsAtLineBreak)
 		declarationEnd := findDeclarationEnd(source, stop)
 		if !isVisibleDeclaration(source, lineStart, rules, inContainer) {
 			lineStart = nextLineStart(source, declarationEnd)
@@ -264,6 +268,9 @@ func isContainerDeclaration(source string, lineStart int, stop int, rules signat
 func findDeclarationEnd(source string, stop int) int {
 	if stop < len(source) && source[stop] == ';' {
 		return stop + 1
+	}
+	if stop < len(source) && source[stop] == '\n' {
+		return stop
 	}
 	return findFuncBodyEnd(source, stop)
 }
@@ -365,8 +372,12 @@ func skipLiteral(source string, start int) int {
 	return len(source)
 }
 
-func signatureText(source string, start int) (string, int) {
-	stop := strings.IndexAny(source[start:], "{;")
+func signatureText(source string, start int, endsAtLineBreak bool) (string, int) {
+	terminators := "{;"
+	if endsAtLineBreak {
+		terminators = "{;\n"
+	}
+	stop := strings.IndexAny(source[start:], terminators)
 	if stop < 0 {
 		return collapseWhitespace(source[start:]), len(source)
 	}
