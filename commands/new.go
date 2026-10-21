@@ -14,6 +14,9 @@ func HandleNewCommand() error {
 	if err != nil {
 		return err
 	}
+	if err := logic.RemoveMessages(); err != nil {
+		return err
+	}
 	return removePlanFile()
 }
 
