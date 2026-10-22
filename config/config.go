@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -151,7 +152,14 @@ func parseFlags(content string) []string {
 	flagsStr := strings.TrimSpace(strings.TrimPrefix(firstLine, "flags: "))
 
 	var flags []string
-	for _, ch := range flagsStr {
+	runes := []rune(flagsStr)
+	for index := 0; index < len(runes); index++ {
+		ch := runes[index]
+		if ch == 'c' && index+1 < len(runes) && unicode.IsDigit(runes[index+1]) {
+			flags = append(flags, string(runes[index:index+2]))
+			index++
+			continue
+		}
 		flags = append(flags, string(ch))
 	}
 	return flags

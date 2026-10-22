@@ -74,16 +74,30 @@ func hasUserSetModelFlag(claudeLevel int) bool {
 	return claudeLevel > 0
 }
 
+func claudeLevelFromFlag(flag string) int {
+	const fallbackClaudeLevel = 2
+	if len(flag) < 2 {
+		return fallbackClaudeLevel
+	}
+	digit := flag[1]
+	if digit < '1' || digit > '4' {
+		return fallbackClaudeLevel
+	}
+	return int(digit - '0')
+}
+
 func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag, planFlag *bool, claudeLevel *int) {
 	for _, f := range flags {
+		if strings.HasPrefix(f, "c") {
+			if !skipModelFlags {
+				*claudeLevel = claudeLevelFromFlag(f)
+			}
+			continue
+		}
 		switch f {
 		case "n":
 			if *validateCodeFlag == false {
 				*noWriteFlag = true
-			}
-		case "c":
-			if !skipModelFlags {
-				*claudeLevel = 2
 			}
 		case "d":
 			*downloadFlag = true
