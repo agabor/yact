@@ -12,7 +12,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		fmt.Println("Current configuration:")
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
-		printConfigValue("max_tokens", fmt.Sprintf("%d", cfg.MaxTokens), false)
 		printConfigValue("max_input_lines", fmt.Sprintf("%d", cfg.MaxInputLines), false)
 		return nil
 	}
@@ -30,10 +29,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.AnthropicAPIKey = value
 		case "claude_model":
 			cfg.ClaudeModel = value
-		case "max_tokens":
-			if err := setIntValue(&cfg.MaxTokens, value); err != nil {
-				return err
-			}
 		case "max_input_lines":
 			if err := setIntValue(&cfg.MaxInputLines, value); err != nil {
 				return err

@@ -23,7 +23,6 @@ const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/ref
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
 	ClaudeModel     string `json:"claude_model"`
-	MaxTokens       int    `json:"max_tokens"`
 	MaxInputLines   int    `json:"max_input_lines"`
 }
 
@@ -79,7 +78,6 @@ func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
 		ClaudeModel:     ClaudeModel,
-		MaxTokens:       MaxTokens,
 		MaxInputLines:   MaxInputLines,
 	}
 }
