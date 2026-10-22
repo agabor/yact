@@ -86,22 +86,6 @@ func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transa
 	return linkedTransaction
 }
 
-func resolvePlanPrompt(prompt string, writePlan bool) (string, bool, error) {
-	if prompt != "" || writePlan {
-		return "", false, nil
-	}
-
-	planText, planFound, err := logic.ReadPlan()
-	if err != nil {
-		return "", false, err
-	}
-	if !planFound {
-		return "", false, fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPlanPath())
-	}
-
-	return planText, true, nil
-}
-
 func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
 	if stepsSelector == "" {
 		return nil
@@ -195,9 +179,20 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 	applyModelOverride(cfg, modelOverride)
 	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
 
-	planPrompt, planUsed, err := resolvePlanPrompt(prompt, writePlan)
-	if err != nil {
-		return err
+	var err error
+	planPrompt := ""
+	planUsed := false
+
+	if prompt == "" {
+		var planFound bool
+		planPrompt, planFound, err = logic.ReadPlan()
+		if err != nil {
+			return err
+		}
+		if !planFound {
+			return fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPlanPath())
+		}
+		planUsed = true
 	}
 
 	transaction := logic.Transaction{}
