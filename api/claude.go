@@ -17,7 +17,6 @@ const haikuLongPromptThreshold int64 = 100000
 type ClaudeClient struct {
 	apiKey          string
 	model           anthropic.Model
-	maxOutputTokens int
 	inputPrice      float64
 	outputPrice     float64
 	longInputPrice  float64
@@ -27,7 +26,6 @@ type ClaudeClient struct {
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
 	c.model = c.selectModel(cfg)
-	c.maxOutputTokens = cfg.MaxTokens
 	c.inputPrice = c.selectInputPrice(cfg)
 	c.outputPrice = c.selectOutputPrice(cfg)
 	c.longInputPrice = c.selectLongInputPrice(cfg)
@@ -102,6 +100,19 @@ func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) floa
 	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
 }
 
+func accumulateStream(client anthropic.Client, params anthropic.MessageNewParams) (anthropic.Message, error) {
+	stream := client.Messages.NewStreaming(context.Background(), params)
+
+	var message anthropic.Message
+	for stream.Next() {
+		if err := message.Accumulate(stream.Current()); err != nil {
+			return message, err
+		}
+	}
+
+	return message, stream.Err()
+}
+
 func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
 	if c.apiKey == "" {
 		return "", fmt.Errorf("Claude API key not configured. Please set your API key with: y config anthropic_api_key YOUR_API_KEY")
@@ -128,7 +139,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 	})
 	params := anthropic.MessageNewParams{
 		Model:     c.model,
-		MaxTokens: int64(c.maxOutputTokens),
+		MaxTokens: int64(config.MaxTokens),
 		Messages:  messageParams,
 	}
 
@@ -140,7 +151,7 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 
 	fmt.Printf("Calling Claude with %d messages (%d files)\n", len(messageParams), fileCount)
 
-	message, err := client.Messages.New(context.Background(), params)
+	message, err := accumulateStream(client, params)
 
 	if err != nil {
 		return "", fmt.Errorf("error calling Claude API: %w", err)
@@ -161,8 +172,8 @@ func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, s
 	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
 	fmt.Printf("Cost: $%.6f\n", cost)
 
-	if message.Usage.OutputTokens >= int64(c.maxOutputTokens) {
-		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", c.maxOutputTokens)
+	if message.Usage.OutputTokens >= int64(config.MaxTokens) {
+		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", config.MaxTokens)
 	}
 
 	trimmedResponse := strings.TrimSpace(responseText.String())
