@@ -39,6 +39,27 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
+func readPromptFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read prompt file %s: %w", path, err)
+	}
+	if strings.TrimSpace(string(content)) == "" {
+		return "", fmt.Errorf("prompt file %s is empty", path)
+	}
+	return string(content), nil
+}
+
+func resolvePrompt(args []string, promptFile string) (string, error) {
+	if promptFile == "" {
+		return getOptionalPrompt(args), nil
+	}
+	if len(args) > 0 {
+		return "", fmt.Errorf("--file cannot be combined with a prompt argument")
+	}
+	return readPromptFile(promptFile)
+}
+
 func getIndexVisibility(args []string) string {
 	if len(args) > 0 {
 		return args[0]
@@ -111,7 +132,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloa
 	}
 }
 
-func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, maxInputLines int, steps string) string {
+func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, maxInputLines int, steps string, promptFile string) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -138,6 +159,9 @@ func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag
 	if steps != "" {
 		flags = append(flags, fmt.Sprintf("--steps %s", steps))
 	}
+	if promptFile != "" {
+		flags = append(flags, fmt.Sprintf("--file %s", promptFile))
+	}
 
 	return strings.Join(flags, " ")
 }
@@ -152,6 +176,7 @@ func main() {
 	planFlag := flag.BoolP("plan", "p", false, "Write the response to .yact/plan.md")
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
+	fileFlag := flag.StringP("file", "f", "", "Read the prompt from the given file instead of the command line argument")
 
 	flag.Parse()
 
@@ -207,9 +232,13 @@ func main() {
 		commandErr = commands.HandleCommitCommand(*validateCodeFlag)
 	case "query":
 		requireArgCount("query", commandArgs, 0, 1)
-		prompt := getOptionalPrompt(commandArgs)
+		prompt, promptErr := resolvePrompt(commandArgs, *fileFlag)
+		if promptErr != nil {
+			commandErr = promptErr
+			break
+		}
 		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
@@ -236,7 +265,11 @@ func main() {
 		skipModelFlags := hasUserSetModelFlag(*claudeLevel)
 		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, planFlag, claudeLevel)
 
-		prompt := getOptionalPrompt(commandArgs)
+		prompt, promptErr := resolvePrompt(commandArgs, *fileFlag)
+		if promptErr != nil {
+			commandErr = promptErr
+			break
+		}
 
 		cleanedPrompt := systemPrompt
 		if strings.HasPrefix(cleanedPrompt, "flags: ") {
@@ -247,7 +280,7 @@ func main() {
 		}
 
 		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
