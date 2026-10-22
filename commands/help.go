@@ -56,6 +56,7 @@ Global Flags:
   -p, --plan                           Write the response to .yact/plan.md
   -s, --steps <selector>               Implement only the selected steps of .yact/plan.md. Requires .yact/plan.md and cannot be combined with a prompt argument or with --plan. The selector is N, N-M, a comma separated list such as 1,3,5-6, or next. Finished steps are ticked off in the plan after a successful write
   -m, --max-input-lines <n>            Set max input lines for the current command, without changing config
+  -f, --file <path>                    Read the prompt from the given file instead of the command line argument
 
 For more information, visit: https://github.com/agabor/yact`)
 }
