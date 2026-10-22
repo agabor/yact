@@ -7,9 +7,9 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-)
 
-const indexFileName = "index.txt"
+	"yact/logic"
+)
 
 type IndexNode struct {
 	Name      string
@@ -94,10 +94,14 @@ func HandleIndexCommand(visibility string) error {
 		return err
 	}
 	data := renderIndex(root)
-	if err := os.WriteFile(indexFileName, []byte(data), 0644); err != nil {
+	indexPath := logic.IndexFilePath()
+	if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 		return err
 	}
-	fmt.Printf("Written: %s\n", indexFileName)
+	if err := os.WriteFile(indexPath, []byte(data), 0644); err != nil {
+		return err
+	}
+	fmt.Printf("Written: %s\n", indexPath)
 	return nil
 }
 
@@ -159,8 +163,7 @@ func buildIndexNode(dir string, languages []indexLanguage) (*IndexNode, error) {
 func shouldSkipIndexEntry(name string) bool {
 	return strings.HasPrefix(name, ".") ||
 		name == "vendor" ||
-		name == "node_modules" ||
-		name == indexFileName
+		name == "node_modules"
 }
 
 func buildChildIndexNode(path string, entry os.DirEntry, languages []indexLanguage) (*IndexNode, error) {

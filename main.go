@@ -193,7 +193,11 @@ func main() {
 	case "read":
 		commandErr = commands.HandleReadCommand(commandArgs)
 	case "message":
+		requireArgCount("message", commandArgs, 1)
 		commandErr = commands.HandleMessageCommand(commandArgs)
+	case "output":
+		requireNoArgs("output", commandArgs)
+		commandErr = commands.HandleOutputCommand(commandArgs)
 	case "keyword":
 		requireArgCount("keyword", commandArgs, 1)
 		commandErr = commands.HandleKeywordCommand(commandArgs)
