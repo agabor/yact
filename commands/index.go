@@ -54,6 +54,16 @@ var indexLanguages = []indexLanguage{
 	{Extensions: []string{".kt", ".kts"}, Rules: kotlinSignatureRules},
 }
 
+const indexHeaderIntroduction = `This is an index of the source code in the project.
+Each section starts with a file path relative to the project root, followed by
+the signatures of the declarations (functions, methods, types, classes) found in that file.
+Function bodies are omitted. Indented signatures are members of the declaration above them.
+Use this index to understand the structure of the project and to locate code.`
+
+const publicIndexScope = "Only the public interface is listed: private declarations are omitted."
+
+const privateIndexScope = "All declarations are listed, including private ones."
+
 func languagesForVisibility(visibility string) ([]indexLanguage, error) {
 	if visibility != "public" && visibility != "private" {
 		return nil, fmt.Errorf("invalid visibility %q, expected private or public", visibility)
@@ -93,7 +103,7 @@ func HandleIndexCommand(visibility string) error {
 	if err != nil {
 		return err
 	}
-	data := renderIndex(root)
+	data := renderIndex(root, visibility)
 	indexPath := logic.IndexFilePath()
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 		return err
@@ -105,9 +115,20 @@ func HandleIndexCommand(visibility string) error {
 	return nil
 }
 
-func renderIndex(root *IndexNode) string {
+func renderIndex(root *IndexNode, visibility string) string {
 	sections := collectFileSections(root, "", nil)
-	return strings.Join(sections, "\n")
+	return renderIndexHeader(visibility) + "\n" + strings.Join(sections, "\n")
+}
+
+func renderIndexHeader(visibility string) string {
+	return indexHeaderIntroduction + "\n" + indexScopeDescription(visibility) + "\n"
+}
+
+func indexScopeDescription(visibility string) string {
+	if visibility == "public" {
+		return publicIndexScope
+	}
+	return privateIndexScope
 }
 
 func collectFileSections(node *IndexNode, prefix string, sections []string) []string {
