@@ -15,13 +15,14 @@ Usage:
 Commands:
   help                                 Show this help message
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
-  message <file> [<file2> ...]         Add files as verbatim messages, sent to the LLM without code block delimiters or file path comment, always before the context files (supports glob patterns)
+  message <text>                       Write the text to .yact/message.txt, sent before the index file, the output file and the context files
+  output                               Read standard input into .yact/output.txt, sent after the index file and before the context files
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
-  index [private|public]               Recursively scan Go, PHP and JS files in the current directory and write index.txt with the files and their functions. private (default) indexes all functions and types, public indexes only the public interface
+  index [private|public]               Recursively scan Go, PHP and JS files in the current directory and write .yact/index.txt with the files and their functions. private (default) indexes all functions and types, public indexes only the public interface
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
 Prompt rules for query and <command>:
