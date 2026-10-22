@@ -46,26 +46,16 @@ func getIndexVisibility(args []string) string {
 	return "private"
 }
 
-func getModelOverride(claudeLevel, qwenLevel int) string {
-	if claudeLevel > 0 {
-		switch claudeLevel {
-		case 1:
-			return "haiku"
-		case 2:
-			return "sonnet"
-		case 3:
-			return "opus"
-		case 4:
-			return "fable"
-		}
-	}
-	if qwenLevel > 0 {
-		switch qwenLevel {
-		case 1:
-			return "qnext"
-		case 2:
-			return "qmax"
-		}
+func getModelOverride(claudeLevel int) string {
+	switch claudeLevel {
+	case 1:
+		return "haiku"
+	case 2:
+		return "sonnet"
+	case 3:
+		return "opus"
+	case 4:
+		return "fable"
 	}
 	return ""
 }
@@ -80,11 +70,11 @@ func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
-func hasUserSetModelFlag(claudeLevel, qwenLevel int) bool {
-	return claudeLevel > 0 || qwenLevel > 0
+func hasUserSetModelFlag(claudeLevel int) bool {
+	return claudeLevel > 0
 }
 
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag, planFlag *bool, claudeLevel, qwenLevel *int) {
+func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag, planFlag *bool, claudeLevel *int) {
 	for _, f := range flags {
 		switch f {
 		case "n":
@@ -94,10 +84,6 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloa
 		case "c":
 			if !skipModelFlags {
 				*claudeLevel = 2
-			}
-		case "q":
-			if !skipModelFlags {
-				*qwenLevel = 2
 			}
 		case "d":
 			*downloadFlag = true
@@ -111,7 +97,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloa
 	}
 }
 
-func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, qwenLevel, maxInputLines int, steps string) string {
+func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, maxInputLines int, steps string) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -119,9 +105,6 @@ func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag
 	}
 	if claudeLevel > 0 {
 		flags = append(flags, fmt.Sprintf("--claude %d", claudeLevel))
-	}
-	if qwenLevel > 0 {
-		flags = append(flags, fmt.Sprintf("--qwen %d", qwenLevel))
 	}
 	if downloadFlag {
 		flags = append(flags, "--download")
@@ -149,7 +132,6 @@ func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
 	claudeLevel := flag.IntP("claude", "c", 0, "Claude model level (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)")
-	qwenLevel := flag.IntP("qwen", "q", 0, "Qwen model level (1: Coder, 2: Max)")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
 	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
 	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
@@ -212,8 +194,8 @@ func main() {
 	case "query":
 		requireArgCount("query", commandArgs, 0, 1)
 		prompt := getOptionalPrompt(commandArgs)
-		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag, *stepsFlag)
+		modelOverride := getModelOverride(*claudeLevel)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
@@ -237,8 +219,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		skipModelFlags := hasUserSetModelFlag(*claudeLevel, *qwenLevel)
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, planFlag, claudeLevel, qwenLevel)
+		skipModelFlags := hasUserSetModelFlag(*claudeLevel)
+		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, planFlag, claudeLevel)
 
 		prompt := getOptionalPrompt(commandArgs)
 
@@ -250,8 +232,8 @@ func main() {
 			}
 		}
 
-		modelOverride := getModelOverride(*claudeLevel, *qwenLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *qwenLevel, *maxInputLinesFlag, *stepsFlag)
+		modelOverride := getModelOverride(*claudeLevel)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
