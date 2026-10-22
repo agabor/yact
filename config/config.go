@@ -12,25 +12,18 @@ import (
 )
 
 const (
-	ClaudeModel  = "haiku"
-	BedrockModel = "qwen.qwen3-235b-a22b-2507-v1:0"
-	BedrockNextModel = "qwen.qwen3-coder-30b-a3b-next-v1:0"
-	AWSRegion    = "us-west-2"
-	MaxTokens    = 16000
+	ClaudeModel   = "haiku"
+	MaxTokens     = 16000
 	MaxInputLines = 1000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
 
 type Config struct {
-	AnthropicAPIKey   string `json:"anthropic_api_key"`
-	ClaudeModel       string `json:"claude_model"`
-	BedrockModel      string `json:"bedrock_model"`
-	BedrockNextModel  string `json:"bedrock_next_model"`
-	AWSRegion         string `json:"aws_region"`
-	AWSAPIKey         string `json:"aws_api_key"`
-	MaxTokens         int    `json:"max_tokens"`
-	MaxInputLines     int    `json:"max_input_lines"`
+	AnthropicAPIKey string `json:"anthropic_api_key"`
+	ClaudeModel     string `json:"claude_model"`
+	MaxTokens       int    `json:"max_tokens"`
+	MaxInputLines   int    `json:"max_input_lines"`
 }
 
 func getConfigDir() (string, error) {
@@ -83,14 +76,10 @@ func GetProjectPlanPath() string {
 
 func DefaultConfig() *Config {
 	return &Config{
-		AnthropicAPIKey:   "",
-		ClaudeModel:       ClaudeModel,
-		BedrockModel:      BedrockModel,
-		BedrockNextModel:  BedrockNextModel,
-		AWSRegion:         AWSRegion,
-		AWSAPIKey:         "",
-		MaxTokens:         MaxTokens,
-		MaxInputLines:     MaxInputLines,
+		AnthropicAPIKey: "",
+		ClaudeModel:     ClaudeModel,
+		MaxTokens:       MaxTokens,
+		MaxInputLines:   MaxInputLines,
 	}
 }
 
@@ -121,18 +110,6 @@ func Load() (*Config, error) {
 
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return cfg, err
-	}
-
-	if cfg.BedrockModel == "" {
-		cfg.BedrockModel = BedrockModel
-	}
-
-	if cfg.BedrockNextModel == "" {
-		cfg.BedrockNextModel = BedrockNextModel
-	}
-
-	if cfg.AWSRegion == "" {
-		cfg.AWSRegion = AWSRegion
 	}
 
 	if cfg.MaxInputLines == 0 {

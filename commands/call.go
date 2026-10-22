@@ -298,17 +298,8 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 }
 
 func newClient(cfg *config.Config) api.Client {
-	var client api.Client
-
-	modelType := strings.ToLower(cfg.ClaudeModel)
-	if modelType == "qmax" || modelType == "qcoder" || modelType == "qnext" {
-		client = &api.BedrockClient{}
-	} else {
-		client = &api.ClaudeClient{}
-	}
-
+	client := &api.ClaudeClient{}
 	client.Init(cfg)
-
 	return client
 }
 
