@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -57,13 +56,7 @@ func validateCodeOnlyResponse(content string) error {
 	return nil
 }
 
-func printLinkWarnings(warnings []string) {
-	for _, warning := range warnings {
-		fmt.Printf("Warning: %s\n", warning)
-	}
-}
-
-func printStepWarnings(warnings []string) {
+func printWarnings(warnings []string) {
 	for _, warning := range warnings {
 		fmt.Printf("Warning: %s\n", warning)
 	}
@@ -75,7 +68,7 @@ func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transa
 	}
 
 	links := logic.ResolvePromptLinks(prompt)
-	printLinkWarnings(links.Warnings)
+	printWarnings(links.Warnings)
 
 	if !links.HasLinks {
 		return transaction
@@ -100,14 +93,6 @@ func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) e
 	return err
 }
 
-func formatStepNumbers(steps []logic.PlanStep) string {
-	texts := make([]string, 0, len(steps))
-	for _, number := range logic.StepNumbers(steps) {
-		texts = append(texts, strconv.Itoa(number))
-	}
-	return strings.Join(texts, ", ")
-}
-
 func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
 	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
@@ -119,7 +104,7 @@ func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep
 			return planText, parsedPlan.Steps, false, nil
 		}
 		remainingSteps := parsedPlan.UncheckedSteps()
-		fmt.Printf("Plan steps: %s\n", formatStepNumbers(remainingSteps))
+		fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(remainingSteps)))
 		return logic.BuildStepsPrompt(parsedPlan, remainingSteps), remainingSteps, false, nil
 	}
 
@@ -133,14 +118,14 @@ func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep
 		return "", nil, false, err
 	}
 
-	printStepWarnings(selection.Warnings)
+	printWarnings(selection.Warnings)
 
 	if selection.AllDone {
 		fmt.Println("All plan steps are done.")
 		return "", nil, true, nil
 	}
 
-	fmt.Printf("Plan steps: %s\n", formatStepNumbers(selection.Steps))
+	fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(selection.Steps)))
 
 	return logic.BuildStepsPrompt(parsedPlan, selection.Steps), selection.Steps, false, nil
 }
@@ -154,7 +139,7 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 		return err
 	}
 
-	fmt.Printf("Marked done: %s\n", formatStepNumbers(steps))
+	fmt.Printf("Marked done: %s\n", logic.FormatNumbers(logic.StepNumbers(steps)))
 	return nil
 }
 
@@ -340,7 +325,7 @@ func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config,
 	client := newClient(cfg)
 
 	if noProgress {
-		return client.Call(transaction, cfg, systemPrompt)
+		return client.Call(transaction, systemPrompt)
 	}
 
 	fmt.Printf("Sending request...\n")
@@ -349,7 +334,7 @@ func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config,
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(transaction, cfg, systemPrompt)
+	response, err := client.Call(transaction, systemPrompt)
 
 	done <- true
 	close(done)
@@ -386,25 +371,15 @@ func processResponse(transaction logic.Transaction, content string) (logic.Trans
 	for _, element := range elements {
 		if element.IsCodeFile {
 			v := element.CodeFile
-			if v.IsEmpty() {
-				err := v.Delete()
-				if err != nil {
-					parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
-				} else {
-					seenPaths[v.Path] = false
-					transaction.Context = removeFromContext(transaction.Context, v.Path)
-				}
-			} else {
-				err := v.Write()
-
-				if err != nil {
-					parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
-				} else {
-					if !seenPaths[v.Path] {
-						seenPaths[v.Path] = true
-						transaction.Context = append(transaction.Context, v.Path)
-					}
-				}
+			err := v.Apply()
+			if err != nil {
+				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+			} else if v.IsEmpty() {
+				seenPaths[v.Path] = false
+				transaction.Context = removeFromContext(transaction.Context, v.Path)
+			} else if !seenPaths[v.Path] {
+				seenPaths[v.Path] = true
+				transaction.Context = append(transaction.Context, v.Path)
 			}
 		} else {
 			if strings.TrimSpace(element.Text) != "" {

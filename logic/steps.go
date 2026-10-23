@@ -232,7 +232,7 @@ func formatStepRange(stepRange StepRange) string {
 	return fmt.Sprintf("%d-%d", stepRange.Start, stepRange.End)
 }
 
-func formatNumbers(numbers []int) string {
+func FormatNumbers(numbers []int) string {
 	texts := make([]string, 0, len(numbers))
 	for _, number := range numbers {
 		texts = append(texts, strconv.Itoa(number))
@@ -254,7 +254,7 @@ func validateRanges(plan ParsedPlan, ranges []StepRange) error {
 	for _, stepRange := range ranges {
 		expectedCount := stepRange.End - stepRange.Start + 1
 		if countStepsInRange(plan.Steps, stepRange) != expectedCount {
-			return fmt.Errorf("step range %s does not match the plan, existing steps: %s", formatStepRange(stepRange), formatNumbers(StepNumbers(plan.Steps)))
+			return fmt.Errorf("step range %s does not match the plan, existing steps: %s", formatStepRange(stepRange), FormatNumbers(StepNumbers(plan.Steps)))
 		}
 	}
 	return nil

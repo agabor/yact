@@ -7,22 +7,6 @@ import (
 	"yact/logic"
 )
 
-func validateBufferCodeOnly(elements []logic.ParsedElement, incomplete bool) error {
-	if incomplete {
-		return fmt.Errorf("buffer contains an incomplete code block")
-	}
-
-	for _, element := range elements {
-		if !element.IsCodeFile {
-			if strings.TrimSpace(element.Text) != "" {
-				return fmt.Errorf("buffer contains free text outside code blocks")
-			}
-		}
-	}
-
-	return nil
-}
-
 func printFreeText(elements []logic.ParsedElement) {
 	for _, element := range elements {
 		if !element.IsCodeFile && strings.TrimSpace(element.Text) != "" {
@@ -33,11 +17,9 @@ func printFreeText(elements []logic.ParsedElement) {
 
 func parseBufferElements(content string, validateCode bool) ([]logic.ParsedElement, error) {
 	if validateCode {
-		elements, incomplete := logic.ParseCodeFilesDetailed(content)
-		if err := validateBufferCodeOnly(elements, incomplete); err != nil {
+		if err := validateCodeOnlyResponse(content); err != nil {
 			return nil, err
 		}
-		return elements, nil
 	}
 
 	elements := logic.ParseCodeFiles(content)
@@ -61,14 +43,8 @@ func HandleCommitCommand(validateCode bool) error {
 	for _, element := range elements {
 		if element.IsCodeFile {
 			codeFile := element.CodeFile
-			if codeFile.IsEmpty() {
-				if err := codeFile.Delete(); err != nil {
-					writeErrors = append(writeErrors, fmt.Sprintf("%v", err))
-				}
-			} else {
-				if err := codeFile.Write(); err != nil {
-					writeErrors = append(writeErrors, fmt.Sprintf("%v", err))
-				}
+			if err := codeFile.Apply(); err != nil {
+				writeErrors = append(writeErrors, fmt.Sprintf("%v", err))
 			}
 		}
 	}

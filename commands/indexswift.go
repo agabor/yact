@@ -28,24 +28,13 @@ func isSwiftIdentifierByte(char byte) bool {
 		(char >= '0' && char <= '9')
 }
 
-func skipSwiftAttributes(source string, position int) int {
-	for position < len(source) && source[position] == '@' {
-		position++
-		for position < len(source) && isSwiftIdentifierByte(source[position]) {
-			position++
-		}
-		position = skipIndentation(source, position)
-	}
-	return position
-}
-
 func isSwiftDeclarationStart(source string, lineStart int) bool {
-	position := skipSwiftAttributes(source, skipIndentation(source, lineStart))
+	position := skipAtAttributes(source, skipIndentation(source, lineStart), isSwiftIdentifierByte)
 	return matchesSwiftKeywordAfterModifiers(source, position, swiftDeclarationKeywords, nil)
 }
 
 func isSwiftContainerStart(source string, lineStart int) bool {
-	position := skipSwiftAttributes(source, skipIndentation(source, lineStart))
+	position := skipAtAttributes(source, skipIndentation(source, lineStart), isSwiftIdentifierByte)
 	return matchesSwiftKeywordAfterModifiers(source, position, swiftContainerKeywords, swiftFunctionKeywords)
 }
 
@@ -61,12 +50,12 @@ func matchesSwiftKeywordAfterModifiers(source string, position int, keywords []s
 		if !matched {
 			return false
 		}
-		position = skipSwiftAttributes(source, next)
+		position = skipAtAttributes(source, next, isSwiftIdentifierByte)
 	}
 }
 
 func isSwiftPublic(source string, lineStart int) bool {
-	position := skipSwiftAttributes(source, skipIndentation(source, lineStart))
+	position := skipAtAttributes(source, skipIndentation(source, lineStart), isSwiftIdentifierByte)
 	for {
 		modifier, matched := matchModifier(source, position, swiftModifiers)
 		if !matched {
@@ -75,6 +64,6 @@ func isSwiftPublic(source string, lineStart int) bool {
 		if containsString(swiftPublicModifiers, modifier) {
 			return true
 		}
-		position = skipSwiftAttributes(source, skipIndentation(source, position+len(modifier)))
+		position = skipAtAttributes(source, skipIndentation(source, position+len(modifier)), isSwiftIdentifierByte)
 	}
 }

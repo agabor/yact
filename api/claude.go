@@ -21,7 +21,6 @@ const batchCostMultiplier = 0.5
 const batchEndedStatus = "ended"
 
 type BatchStatus struct {
-	ID               string
 	ProcessingStatus string
 	Ended            bool
 	Processing       int64
@@ -39,8 +38,7 @@ type BatchResult struct {
 	Failure      string
 }
 
-type ClaudeClient struct {
-	apiKey          string
+type claudeTier struct {
 	model           anthropic.Model
 	inputPrice      float64
 	outputPrice     float64
@@ -48,81 +46,38 @@ type ClaudeClient struct {
 	longOutputPrice float64
 }
 
+type ClaudeClient struct {
+	apiKey string
+	tier   claudeTier
+}
+
 func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.apiKey = cfg.AnthropicAPIKey
-	c.model = c.selectModel(cfg)
-	c.inputPrice = c.selectInputPrice(cfg)
-	c.outputPrice = c.selectOutputPrice(cfg)
-	c.longInputPrice = c.selectLongInputPrice(cfg)
-	c.longOutputPrice = c.selectLongOutputPrice(cfg)
+	c.tier = selectTier(cfg.ClaudeModel)
 }
 
-func (c *ClaudeClient) selectModel(cfg *config.Config) anthropic.Model {
-	switch strings.ToLower(cfg.ClaudeModel) {
+func selectTier(modelName string) claudeTier {
+	switch strings.ToLower(modelName) {
 	case "fable":
-		return anthropic.ModelClaudeFable5_1
+		return claudeTier{model: anthropic.ModelClaudeFable5_1, inputPrice: 10, outputPrice: 50, longInputPrice: 0, longOutputPrice: 0}
 	case "opus":
-		return anthropic.ModelClaudeOpus5_5
+		return claudeTier{model: anthropic.ModelClaudeOpus5_5, inputPrice: 4, outputPrice: 20, longInputPrice: 0, longOutputPrice: 0}
 	case "sonnet":
-		return anthropic.ModelClaudeSonnet5_5
+		return claudeTier{model: anthropic.ModelClaudeSonnet5_5, inputPrice: 2, outputPrice: 10, longInputPrice: 0, longOutputPrice: 0}
 	default:
-		return anthropic.ModelClaudeHaiku5_5
-	}
-}
-
-func (c *ClaudeClient) selectInputPrice(cfg *config.Config) float64 {
-	switch strings.ToLower(cfg.ClaudeModel) {
-	case "fable":
-		return 10
-	case "opus":
-		return 4
-	case "sonnet":
-		return 2
-	default:
-		return 0.10
-	}
-}
-
-func (c *ClaudeClient) selectOutputPrice(cfg *config.Config) float64 {
-	switch strings.ToLower(cfg.ClaudeModel) {
-	case "fable":
-		return 50
-	case "opus":
-		return 20
-	case "sonnet":
-		return 10
-	default:
-		return 0.50
-	}
-}
-
-func (c *ClaudeClient) selectLongInputPrice(cfg *config.Config) float64 {
-	switch strings.ToLower(cfg.ClaudeModel) {
-	case "fable", "opus", "sonnet":
-		return 0
-	default:
-		return 0.50
-	}
-}
-
-func (c *ClaudeClient) selectLongOutputPrice(cfg *config.Config) float64 {
-	switch strings.ToLower(cfg.ClaudeModel) {
-	case "fable", "opus", "sonnet":
-		return 0
-	default:
-		return 2.50
+		return claudeTier{model: anthropic.ModelClaudeHaiku5_5, inputPrice: 0.10, outputPrice: 0.50, longInputPrice: 0.50, longOutputPrice: 2.50}
 	}
 }
 
 func (c *ClaudeClient) GetModelName() string {
-	return string(c.model)
+	return string(c.tier.model)
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
-	if c.longInputPrice > 0 && inputTokens > haikuLongPromptThreshold {
-		return FormatCost(inputTokens, outputTokens, c.longInputPrice, c.longOutputPrice)
+	if c.tier.longInputPrice > 0 && inputTokens > haikuLongPromptThreshold {
+		return FormatCost(inputTokens, outputTokens, c.tier.longInputPrice, c.tier.longOutputPrice)
 	}
-	return FormatCost(inputTokens, outputTokens, c.inputPrice, c.outputPrice)
+	return FormatCost(inputTokens, outputTokens, c.tier.inputPrice, c.tier.outputPrice)
 }
 
 func (c *ClaudeClient) calculateBatchCost(inputTokens int64, outputTokens int64) float64 {
@@ -171,7 +126,7 @@ func (c *ClaudeClient) buildParams(transaction logic.Transaction, systemPrompt s
 	}
 
 	params := anthropic.MessageNewParams{
-		Model:     c.model,
+		Model:     c.tier.model,
 		MaxTokens: int64(config.MaxTokens),
 		Messages:  messageParams,
 	}
@@ -195,7 +150,7 @@ func joinTextBlocks(message anthropic.Message) string {
 	return responseText.String()
 }
 
-func (c *ClaudeClient) Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error) {
+func (c *ClaudeClient) Call(transaction logic.Transaction, systemPrompt string) (string, error) {
 	if err := c.requireAPIKey(); err != nil {
 		return "", err
 	}
@@ -288,7 +243,6 @@ func (c *ClaudeClient) GetBatchStatus(batchID string) (BatchStatus, error) {
 	processingStatus := string(batch.ProcessingStatus)
 
 	return BatchStatus{
-		ID:               batch.ID,
 		ProcessingStatus: processingStatus,
 		Ended:            processingStatus == batchEndedStatus,
 		Processing:       batch.RequestCounts.Processing,

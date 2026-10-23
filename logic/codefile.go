@@ -160,6 +160,13 @@ func (cf *CodeFile) Delete() error {
 	return nil
 }
 
+func (cf *CodeFile) Apply() error {
+	if cf.IsEmpty() {
+		return cf.Delete()
+	}
+	return cf.Write()
+}
+
 func processCodeBlock(lineBuffer []string) *ParsedElement {
 	if len(lineBuffer) == 0 {
 		return nil

@@ -1,12 +1,10 @@
 package commands
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"yact/config"
-	"yact/logic"
 )
 
 func HandleKeywordCommand(args []string) error {
@@ -42,21 +40,7 @@ func HandleKeywordCommand(args []string) error {
 			return nil
 		}
 
-		transaction, err := logic.LoadTransaction()
-		if err != nil {
-			return err
-		}
-
-		if hasFileWithPath(transaction, path) {
-			fmt.Printf("Skipping: %s\n", path)
-			return nil
-		}
-
-		fmt.Printf("Reading: %s\n", path)
-
-		transaction.Context = append(transaction.Context, path)
-
-		return transaction.Save()
+		return readFile(path)
 	})
 }
 

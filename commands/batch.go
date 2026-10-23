@@ -8,8 +8,6 @@ import (
 	"yact/logic"
 )
 
-const batchEndedStatus = "ended"
-
 func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
 	batchID, found, err := logic.ReadBatchJobID()
 	if err != nil {
@@ -27,7 +25,7 @@ func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
 		return err
 	}
 
-	if status.ProcessingStatus != batchEndedStatus {
+	if !status.Ended {
 		printBatchStatus(status)
 		return nil
 	}
