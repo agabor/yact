@@ -68,6 +68,17 @@ func skipIndentation(source string, lineStart int) int {
 	return position
 }
 
+func skipAtAttributes(source string, position int, isNameByte func(char byte) bool) int {
+	for position < len(source) && source[position] == '@' {
+		position++
+		for position < len(source) && isNameByte(source[position]) {
+			position++
+		}
+		position = skipIndentation(source, position)
+	}
+	return position
+}
+
 func skipModifiers(source string, position int, modifiers []string) int {
 	for {
 		next, matched := skipOneModifier(source, position, modifiers)
@@ -79,12 +90,11 @@ func skipModifiers(source string, position int, modifiers []string) int {
 }
 
 func skipOneModifier(source string, position int, modifiers []string) (int, bool) {
-	for _, modifier := range modifiers {
-		if strings.HasPrefix(source[position:], modifier+" ") {
-			return skipIndentation(source, position+len(modifier)), true
-		}
+	modifier, matched := matchModifier(source, position, modifiers)
+	if !matched {
+		return position, false
 	}
-	return position, false
+	return skipIndentation(source, position+len(modifier)), true
 }
 
 func startsWithKeyword(source string, position int, keywords []string, followers string) bool {

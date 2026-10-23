@@ -17,17 +17,6 @@ var kotlinContainerKeywords = []string{"class", "object", "interface"}
 
 var kotlinNonPublicModifiers = []string{"private", "protected", "internal"}
 
-func skipKotlinAnnotations(source string, position int) int {
-	for position < len(source) && source[position] == '@' {
-		position++
-		for position < len(source) && isKotlinNameByte(source[position]) {
-			position++
-		}
-		position = skipIndentation(source, position)
-	}
-	return position
-}
-
 func isKotlinNameByte(char byte) bool {
 	isLetter := (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
 	isDigit := char >= '0' && char <= '9'
@@ -35,7 +24,7 @@ func isKotlinNameByte(char byte) bool {
 }
 
 func skipToKotlinKeyword(source string, lineStart int) int {
-	position := skipKotlinAnnotations(source, skipIndentation(source, lineStart))
+	position := skipAtAttributes(source, skipIndentation(source, lineStart), isKotlinNameByte)
 	for {
 		if isKotlinDeclarationKeywordAt(source, position) {
 			return position
@@ -44,7 +33,7 @@ func skipToKotlinKeyword(source string, lineStart int) int {
 		if !matched {
 			return position
 		}
-		position = skipKotlinAnnotations(source, skipIndentation(source, position+len(modifier)))
+		position = skipAtAttributes(source, skipIndentation(source, position+len(modifier)), isKotlinNameByte)
 	}
 }
 
@@ -62,7 +51,7 @@ func isKotlinContainerStart(source string, lineStart int) bool {
 }
 
 func isKotlinPublic(source string, lineStart int) bool {
-	position := skipKotlinAnnotations(source, skipIndentation(source, lineStart))
+	position := skipAtAttributes(source, skipIndentation(source, lineStart), isKotlinNameByte)
 	for {
 		modifier, matched := matchModifier(source, position, kotlinModifiers)
 		if !matched {
@@ -71,6 +60,6 @@ func isKotlinPublic(source string, lineStart int) bool {
 		if containsString(kotlinNonPublicModifiers, modifier) {
 			return false
 		}
-		position = skipKotlinAnnotations(source, skipIndentation(source, position+len(modifier)))
+		position = skipAtAttributes(source, skipIndentation(source, position+len(modifier)), isKotlinNameByte)
 	}
 }
