@@ -11,6 +11,9 @@ type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
 	Call(transaction logic.Transaction, cfg *config.Config, systemPrompt string) (string, error)
+	SubmitBatch(transaction logic.Transaction, systemPrompt string) (string, error)
+	GetBatchStatus(batchID string) (BatchStatus, error)
+	GetBatchResult(batchID string) (BatchResult, error)
 }
 
 func Serialize(path string) (string, error) {

@@ -74,6 +74,10 @@ func GetProjectPlanPath() string {
 	return filepath.Join(GetProjectYactDir(), "plan.md")
 }
 
+func GetProjectBatchJobPath() string {
+	return filepath.Join(GetProjectYactDir(), "batch_job_id.txt")
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
