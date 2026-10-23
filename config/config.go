@@ -14,8 +14,8 @@ import (
 
 const (
 	ClaudeModel   = "haiku"
-	MaxTokens     = 16000
-	MaxInputLines = 1000
+	MaxTokens     = 128000
+	MaxInputLines = 2000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
