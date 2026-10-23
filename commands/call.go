@@ -171,7 +171,41 @@ func buildPromptModeTransaction(transaction logic.Transaction, prompt string) lo
 	return promptTransaction
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, stepsSelector string, prompt string) error {
+func checkNoPendingBatch() error {
+	_, found, err := logic.ReadBatchJobID()
+	if err != nil {
+		return err
+	}
+	if found {
+		return fmt.Errorf("a batch is already pending")
+	}
+	return nil
+}
+
+func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string) error {
+	client := newClient(cfg)
+
+	batchID, err := client.SubmitBatch(transaction, systemPrompt)
+	if err != nil {
+		return err
+	}
+
+	if err := logic.WriteBatchJobID(batchID); err != nil {
+		return err
+	}
+
+	fmt.Printf("Batch submitted: %s\n", batchID)
+	fmt.Println("Run `y batch` later to fetch the result.")
+	return nil
+}
+
+func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, batch bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, stepsSelector string, prompt string) error {
+	if batch {
+		if err := checkNoPendingBatch(); err != nil {
+			return err
+		}
+	}
+
 	if err := validateStepsOptions(stepsSelector, writePlan, prompt); err != nil {
 		return err
 	}
@@ -245,6 +279,10 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 	}
 
 	fmt.Printf("Input lines: %d\n", totalLength)
+
+	if batch {
+		return submitBatch(transactionForLLM, cfg, systemPrompt)
+	}
 
 	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
 	if err != nil {

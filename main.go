@@ -132,7 +132,7 @@ func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloa
 	}
 }
 
-func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag bool, claudeLevel, maxInputLines int, steps string, promptFile string) string {
+func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag, batchFlag bool, claudeLevel, maxInputLines int, steps string, promptFile string) string {
 	var flags []string
 
 	if noWriteFlag {
@@ -152,6 +152,9 @@ func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag
 	}
 	if planFlag {
 		flags = append(flags, "--plan")
+	}
+	if batchFlag {
+		flags = append(flags, "--batch")
 	}
 	if maxInputLines > 0 {
 		flags = append(flags, fmt.Sprintf("--max-input-lines %d", maxInputLines))
@@ -174,6 +177,7 @@ func main() {
 	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
 	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
 	planFlag := flag.BoolP("plan", "p", false, "Write the response to .yact/plan.md")
+	batchFlag := flag.BoolP("batch", "b", false, "Submit the request as a batch job instead of streaming it")
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
 	fileFlag := flag.StringP("file", "f", "", "Read the prompt from the given file instead of the command line argument")
@@ -238,14 +242,17 @@ func main() {
 			break
 		}
 		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
+		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
 	case "index":
 		requireArgCount("index", commandArgs, 0, 1)
 		commandErr = commands.HandleIndexCommand(getIndexVisibility(commandArgs))
+	case "batch":
+		requireNoArgs("batch", commandArgs)
+		commandErr = commands.HandleBatchCommand(*planFlag, cfg)
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag
@@ -280,11 +287,11 @@ func main() {
 		}
 
 		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
+		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
 		if flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, *planFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
+		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
 	}
 
 	if commandErr != nil {
