@@ -252,7 +252,7 @@ func main() {
 		commandErr = commands.HandleIndexCommand(getIndexVisibility(commandArgs))
 	case "batch":
 		requireNoArgs("batch", commandArgs)
-		commandErr = commands.HandleBatchCommand(*planFlag, cfg)
+		commandErr = commands.HandleBatchCommand(cfg)
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := *downloadFlag
