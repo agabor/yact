@@ -8,8 +8,8 @@ import (
 	"yact/logic"
 )
 
-func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
-	batchID, found, err := logic.ReadBatchJobID()
+func HandleBatchCommand(cfg *config.Config) error {
+	job, found, err := logic.ReadBatchJob()
 	if err != nil {
 		return err
 	}
@@ -20,7 +20,7 @@ func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
 
 	client := newClient(cfg)
 
-	status, err := client.GetBatchStatus(batchID)
+	status, err := client.GetBatchStatus(job.ID)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
 		return nil
 	}
 
-	result, err := client.GetBatchResult(batchID)
+	result, err := client.GetBatchResult(job.ID)
 	if err != nil {
 		return err
 	}
@@ -42,11 +42,12 @@ func HandleBatchCommand(usePlan bool, cfg *config.Config) error {
 
 	printBatchUsage(result)
 
-	if err := saveBatchContent(result.Text, usePlan); err != nil {
-		return err
+	outputErr := applyBatchOutput(job, result.Text)
+	deleteErr := logic.DeleteBatchJobID()
+	if outputErr != nil {
+		return outputErr
 	}
-
-	return logic.DeleteBatchJobID()
+	return deleteErr
 }
 
 func printBatchStatus(status api.BatchStatus) {
@@ -64,8 +65,12 @@ func printBatchUsage(result api.BatchResult) {
 	fmt.Printf("Cost (50%% batch discount applied): $%.4f\n", result.Cost)
 }
 
-func saveBatchContent(content string, usePlan bool) error {
-	if usePlan {
+func applyBatchOutput(job logic.BatchJob, content string) error {
+	if err := logic.PutBuffer(content); err != nil {
+		return err
+	}
+
+	if job.WritePlan {
 		if err := logic.WritePlan(content); err != nil {
 			return err
 		}
@@ -73,9 +78,15 @@ func saveBatchContent(content string, usePlan bool) error {
 		return nil
 	}
 
-	if err := logic.PutBuffer(content); err != nil {
-		return err
+	if job.ValidateCode {
+		return validateCodeOnlyResponse(content)
 	}
+
+	if job.NoWrite {
+		fmt.Println("\n" + content)
+		return nil
+	}
+
 	fmt.Println("Response written to buffer. Run 'y commit' to apply it.")
 	return nil
 }

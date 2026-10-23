@@ -157,7 +157,7 @@ func buildPromptModeTransaction(transaction logic.Transaction, prompt string) lo
 }
 
 func checkNoPendingBatch() error {
-	_, found, err := logic.ReadBatchJobID()
+	_, found, err := logic.ReadBatchJob()
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string) error {
+func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string, noWrite bool, validateCode bool, writePlan bool) error {
 	client := newClient(cfg)
 
 	batchID, err := client.SubmitBatch(transaction, systemPrompt)
@@ -175,7 +175,13 @@ func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt
 		return err
 	}
 
-	if err := logic.WriteBatchJobID(batchID); err != nil {
+	job := logic.BatchJob{
+		ID:           batchID,
+		NoWrite:      noWrite,
+		ValidateCode: validateCode,
+		WritePlan:    writePlan,
+	}
+	if err := logic.WriteBatchJob(job); err != nil {
 		return err
 	}
 
@@ -266,7 +272,7 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 	fmt.Printf("Input lines: %d\n", totalLength)
 
 	if batch {
-		return submitBatch(transactionForLLM, cfg, systemPrompt)
+		return submitBatch(transactionForLLM, cfg, systemPrompt, noWrite, validateCode, writePlan)
 	}
 
 	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
