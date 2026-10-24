@@ -23,7 +23,6 @@ Commands:
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
   batch                                Fetch the pending batch result and write it using the output flags it was submitted with (-n, -v, -p). Without them, the result goes to the buffer. Apply the buffer with commit
-  index [private|public]               Recursively scan Go, PHP and JS files in the current directory and write .yact/index.txt with the files and their functions. private (default) indexes all functions and types, public indexes only the public interface
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
 Prompt rules for query and <command>:
@@ -51,6 +50,7 @@ Global Flags:
   -h, --help                           Show help message
   -n, --no-write                       Do not write files, print response instead
   -c, --claude <level>                 Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
+  -i, --index <level>                  Index for this call: 0 sends no index, 1 generates a public index, 2 generates a private index. The index is written to .yact/index.txt and sent only in the call that sets the switch
   -b, --batch                          Submit the request as a batch job, allows one pending job at a time, skips post-processing. The output flags (-n, -v, -p) are saved with the job and applied when the result is fetched with 'y batch'
   -d, --download                       Download the system prompt for the command
   --no-progress                        Hide progress indicator

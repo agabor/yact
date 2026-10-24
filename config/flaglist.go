@@ -16,6 +16,7 @@ type Flaglist struct {
 	MaxInputLines int
 	Steps         string
 	PromptFile    string
+	IndexLevel    int
 }
 
 func (f Flaglist) ModelOverride() string {
@@ -36,6 +37,10 @@ func (f Flaglist) HasUserSetModel() bool {
 	return f.ClaudeLevel > 0
 }
 
+func (f Flaglist) HasIndex() bool {
+	return f.IndexLevel == 1 || f.IndexLevel == 2
+}
+
 func (f Flaglist) FlagString() string {
 	var parts []string
 
@@ -44,6 +49,9 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.ClaudeLevel > 0 {
 		parts = append(parts, fmt.Sprintf("--claude %d", f.ClaudeLevel))
+	}
+	if f.IndexLevel > 0 {
+		parts = append(parts, fmt.Sprintf("--index %d", f.IndexLevel))
 	}
 	if f.Download {
 		parts = append(parts, "--download")

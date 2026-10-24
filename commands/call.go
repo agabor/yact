@@ -39,6 +39,17 @@ func applyMaxInputLinesOverride(cfg *config.Config, maxInputLinesOverride int) {
 	}
 }
 
+func applyIndexOverride(flags config.Flaglist) error {
+	if !flags.HasIndex() {
+		return logic.RemoveIndexFile()
+	}
+	visibility, err := indexLevelToVisibility(flags.IndexLevel)
+	if err != nil {
+		return err
+	}
+	return WriteIndex(visibility)
+}
+
 func validateCodeOnlyResponse(content string) error {
 	elements, incomplete := logic.ParseCodeFilesDetailed(content)
 	if incomplete {
@@ -243,6 +254,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	if err := validateStepsOptions(flags.Steps, flags.WritePlan, prompt); err != nil {
+		return err
+	}
+
+	if err := applyIndexOverride(flags); err != nil {
 		return err
 	}
 

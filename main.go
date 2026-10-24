@@ -60,11 +60,12 @@ func resolvePrompt(args []string, promptFile string) (string, error) {
 	return readPromptFile(promptFile)
 }
 
-func getIndexVisibility(args []string) string {
-	if len(args) > 0 {
-		return args[0]
+func validateIndexLevel(level int) error {
+	switch level {
+	case 0, 1, 2:
+		return nil
 	}
-	return "private"
+	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
 }
 
 func promptNotFoundMessage(command string, downloaded bool) {
@@ -89,8 +90,14 @@ func main() {
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
 	fileFlag := flag.StringP("file", "f", "", "Read the prompt from the given file instead of the command line argument")
+	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
 
 	flag.Parse()
+
+	if err := validateIndexLevel(*indexFlag); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	args := flag.Args()
 
@@ -105,6 +112,7 @@ func main() {
 		MaxInputLines: *maxInputLinesFlag,
 		Steps:         *stepsFlag,
 		PromptFile:    *fileFlag,
+		IndexLevel:    *indexFlag,
 	}
 
 	if *helpFlag {
@@ -168,9 +176,6 @@ func main() {
 		queryFlags := flags
 		queryFlags.NoWrite = true
 		commandErr = commands.HandleCommand(queryFlags, cfg, "", prompt)
-	case "index":
-		requireArgCount("index", commandArgs, 0, 1)
-		commandErr = commands.HandleIndexCommand(getIndexVisibility(commandArgs))
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
