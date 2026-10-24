@@ -7,9 +7,9 @@ import (
 	"yact/config"
 )
 
-type Transaction struct {
+type RequestContent struct {
 	Prompt   string
-	Context  []string
+	Files    []string
 	Messages []string
 }
 
@@ -102,26 +102,26 @@ func AddOutput(content string) (string, error) {
 	return writeFixedFile(outputFileName, content)
 }
 
-func LoadTransaction() (Transaction, error) {
+func LoadRequestContent() (RequestContent, error) {
 	context, err := readPathList(config.GetProjectContextPath())
 	if err != nil {
-		return Transaction{}, err
+		return RequestContent{}, err
 	}
 
 	messages, err := existingMessageFiles()
 	if err != nil {
-		return Transaction{}, err
+		return RequestContent{}, err
 	}
 
-	return Transaction{
+	return RequestContent{
 		Prompt:   "",
-		Context:  context,
+		Files:    context,
 		Messages: messages,
 	}, nil
 }
 
-func (transaction *Transaction) Save() error {
-	return writePathList(config.GetProjectContextPath(), transaction.Context)
+func (requestContent *RequestContent) Save() error {
+	return writePathList(config.GetProjectContextPath(), requestContent.Files)
 }
 
 func RemoveMessages() error {

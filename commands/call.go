@@ -62,21 +62,21 @@ func printWarnings(warnings []string) {
 	}
 }
 
-func applyPromptLinks(transaction logic.Transaction, prompt string) logic.Transaction {
+func applyPromptLinks(requestContent logic.RequestContent, prompt string) logic.RequestContent {
 	if prompt == "" {
-		return transaction
+		return requestContent
 	}
 
 	links := logic.ResolvePromptLinks(prompt)
 	printWarnings(links.Warnings)
 
 	if !links.HasLinks {
-		return transaction
+		return requestContent
 	}
 
-	linkedTransaction := transaction
-	linkedTransaction.Context = append([]string{}, links.Paths...)
-	return linkedTransaction
+	linkedRequestContent := requestContent
+	linkedRequestContent.Files = append([]string{}, links.Paths...)
+	return linkedRequestContent
 }
 
 func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
@@ -143,17 +143,17 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 	return nil
 }
 
-func buildPlanModeTransaction(selectedPrompt string) logic.Transaction {
-	planTransaction := logic.Transaction{Prompt: selectedPrompt}
-	return applyPromptLinks(planTransaction, selectedPrompt)
+func buildPlanModeRequestContent(selectedPrompt string) logic.RequestContent {
+	planRequestContent := logic.RequestContent{Prompt: selectedPrompt}
+	return applyPromptLinks(planRequestContent, selectedPrompt)
 }
 
-func buildPromptModeTransaction(transaction logic.Transaction, prompt string) logic.Transaction {
-	promptTransaction := transaction
+func buildPromptModeRequestContent(requestContent logic.RequestContent, prompt string) logic.RequestContent {
+	promptRequestContent := requestContent
 	if prompt != "" {
-		promptTransaction.Prompt = prompt
+		promptRequestContent.Prompt = prompt
 	}
-	return promptTransaction
+	return promptRequestContent
 }
 
 func checkNoPendingBatch() error {
@@ -167,10 +167,10 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string, flags config.Flaglist) error {
+func submitBatch(requestContent logic.RequestContent, cfg *config.Config, systemPrompt string, flags config.Flaglist) error {
 	client := newClient(cfg)
 
-	batchID, err := client.SubmitBatch(transaction, systemPrompt)
+	batchID, err := client.SubmitBatch(requestContent, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -220,8 +220,8 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		planUsed = true
 	}
 
-	transaction := logic.Transaction{}
-	var transactionForLLM logic.Transaction
+	requestContent := logic.RequestContent{}
+	var requestContentForLLM logic.RequestContent
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
@@ -234,13 +234,13 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		}
 		prompt = selectedPrompt
 		sentSteps = selectedSteps
-		transactionForLLM = buildPlanModeTransaction(selectedPrompt)
+		requestContentForLLM = buildPlanModeRequestContent(selectedPrompt)
 	} else {
-		transaction, err = logic.LoadTransaction()
+		requestContent, err = logic.LoadRequestContent()
 		if err != nil {
 			return err
 		}
-		transactionForLLM = buildPromptModeTransaction(transaction, prompt)
+		requestContentForLLM = buildPromptModeRequestContent(requestContent, prompt)
 	}
 
 	totalLength := 0
@@ -249,7 +249,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		totalLength += len(strings.Split(prompt, "\n"))
 	}
 
-	for _, messagePath := range transactionForLLM.Messages {
+	for _, messagePath := range requestContentForLLM.Messages {
 		messageContent, err := os.ReadFile(messagePath)
 		if err != nil {
 			return err
@@ -257,7 +257,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		totalLength += len(strings.Split(string(messageContent), "\n"))
 	}
 
-	for _, contextPath := range transactionForLLM.Context {
+	for _, contextPath := range requestContentForLLM.Files {
 		codeFile, err := logic.ReadAsFile(contextPath)
 		if err != nil {
 			return err
@@ -272,10 +272,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	fmt.Printf("Input lines: %d\n", totalLength)
 
 	if flags.Batch {
-		return submitBatch(transactionForLLM, cfg, systemPrompt, flags)
+		return submitBatch(requestContentForLLM, cfg, systemPrompt, flags)
 	}
 
-	response, err := callLLM(transactionForLLM, flags.NoProgress, cfg, systemPrompt)
+	response, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return nil
 	}
 
-	transaction, err = processResponse(transaction, response)
+	requestContent, err = processResponse(requestContent, response)
 	if err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
@@ -313,7 +313,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return tickPlanSteps(planPrompt, sentSteps)
 	}
 
-	if err = transaction.Save(); err != nil {
+	if err = requestContent.Save(); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
@@ -327,11 +327,11 @@ func newClient(cfg *config.Config) api.Client {
 	return client
 }
 
-func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config, systemPrompt string) (string, error) {
+func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (string, error) {
 	client := newClient(cfg)
 
 	if noProgress {
-		return client.Call(transaction, systemPrompt)
+		return client.Call(requestContent, systemPrompt)
 	}
 
 	fmt.Printf("Sending request...\n")
@@ -340,7 +340,7 @@ func callLLM(transaction logic.Transaction, noProgress bool, cfg *config.Config,
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(transaction, systemPrompt)
+	response, err := client.Call(requestContent, systemPrompt)
 
 	done <- true
 	close(done)
@@ -365,12 +365,12 @@ func removeFromContext(context []string, path string) []string {
 	return result
 }
 
-func processResponse(transaction logic.Transaction, content string) (logic.Transaction, error) {
+func processResponse(requestContent logic.RequestContent, content string) (logic.RequestContent, error) {
 	var parseErrors []string
 	elements := logic.ParseCodeFiles(content)
 
 	seenPaths := make(map[string]bool)
-	for _, filePath := range transaction.Context {
+	for _, filePath := range requestContent.Files {
 		seenPaths[filePath] = true
 	}
 
@@ -382,10 +382,10 @@ func processResponse(transaction logic.Transaction, content string) (logic.Trans
 				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 			} else if v.IsEmpty() {
 				seenPaths[v.Path] = false
-				transaction.Context = removeFromContext(transaction.Context, v.Path)
+				requestContent.Files = removeFromContext(requestContent.Files, v.Path)
 			} else if !seenPaths[v.Path] {
 				seenPaths[v.Path] = true
-				transaction.Context = append(transaction.Context, v.Path)
+				requestContent.Files = append(requestContent.Files, v.Path)
 			}
 		} else {
 			if strings.TrimSpace(element.Text) != "" {
@@ -395,8 +395,8 @@ func processResponse(transaction logic.Transaction, content string) (logic.Trans
 	}
 
 	if len(parseErrors) > 0 {
-		return transaction, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
+		return requestContent, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 
-	return transaction, nil
+	return requestContent, nil
 }

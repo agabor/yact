@@ -8,7 +8,7 @@ import (
 )
 
 func HandleNewCommand() error {
-	tx := logic.Transaction{}
+	tx := logic.RequestContent{}
 	err := tx.Save()
 	fmt.Println("New context created")
 	if err != nil {
