@@ -149,11 +149,6 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 	return nil
 }
 
-func buildPlanModeRequestContent(selectedPrompt string) logic.RequestContent {
-	planRequestContent := logic.RequestContent{Prompt: selectedPrompt}
-	return applyPromptLinks(planRequestContent)
-}
-
 func combinePromptText(promptFileText string, cliPrompt string) string {
 	fileText := strings.TrimSpace(promptFileText)
 	cliText := strings.TrimSpace(cliPrompt)
@@ -164,26 +159,6 @@ func combinePromptText(promptFileText string, cliPrompt string) string {
 		return fileText
 	}
 	return fileText + "\n\n" + cliText
-}
-
-func buildPromptModeRequestContent(requestContent logic.RequestContent, combinedPrompt string) logic.RequestContent {
-	promptRequestContent := requestContent
-	promptRequestContent.Prompt = combinedPrompt
-	return applyPromptLinks(promptRequestContent)
-}
-
-func loadPromptModeRequestContent(prompt string) (logic.RequestContent, error) {
-	promptFileText, _, err := logic.ReadPlan()
-	if err != nil {
-		return logic.RequestContent{}, err
-	}
-
-	requestContent, err := logic.LoadRequestContent()
-	if err != nil {
-		return logic.RequestContent{}, err
-	}
-
-	return buildPromptModeRequestContent(requestContent, combinePromptText(promptFileText, prompt)), nil
 }
 
 func checkNoPendingBatch() error {
@@ -280,7 +255,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		planUsed = true
 	}
 
-	var requestContentForLLM logic.RequestContent
+	requestContentForLLM, err := logic.LoadRequestContent()
+	if err != nil {
+		return err
+	}
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
@@ -292,13 +270,16 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 			return nil
 		}
 		sentSteps = selectedSteps
-		requestContentForLLM = buildPlanModeRequestContent(selectedPrompt)
+		requestContentForLLM.Prompt = selectedPrompt
 	} else {
-		requestContentForLLM, err = loadPromptModeRequestContent(prompt)
+		promptFileText, _, err := logic.ReadPlan()
 		if err != nil {
 			return err
 		}
+
+		requestContentForLLM.Prompt = combinePromptText(promptFileText, prompt)
 	}
+	requestContentForLLM = applyPromptLinks(requestContentForLLM)
 
 	totalLength, err := countInputLines(requestContentForLLM)
 	if err != nil {
