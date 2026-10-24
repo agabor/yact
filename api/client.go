@@ -10,8 +10,8 @@ import (
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(transaction logic.Transaction, systemPrompt string) (string, error)
-	SubmitBatch(transaction logic.Transaction, systemPrompt string) (string, error)
+	Call(requestContent logic.RequestContent, systemPrompt string) (string, error)
+	SubmitBatch(requestContent logic.RequestContent, systemPrompt string) (string, error)
 	GetBatchStatus(batchID string) (BatchStatus, error)
 	GetBatchResult(batchID string) (BatchResult, error)
 }
@@ -32,11 +32,11 @@ func Serialize(path string) (string, error) {
 	return strings.Join([]string{logic.BlockDelimiter, headerLine, string(content), logic.BlockDelimiter}, "\n"), nil
 }
 
-func BuildUserBlocks(transaction logic.Transaction) ([]string, int, error) {
-	blocks := make([]string, 0, len(transaction.Messages)+len(transaction.Context)+1)
+func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error) {
+	blocks := make([]string, 0, len(requestContent.Messages)+len(requestContent.Files)+1)
 	fileCount := 0
 
-	for _, messagePath := range transaction.Messages {
+	for _, messagePath := range requestContent.Messages {
 		messageContent, err := os.ReadFile(messagePath)
 		if err != nil {
 			return nil, 0, err
@@ -44,7 +44,7 @@ func BuildUserBlocks(transaction logic.Transaction) ([]string, int, error) {
 		blocks = append(blocks, string(messageContent))
 	}
 
-	for _, filePath := range transaction.Context {
+	for _, filePath := range requestContent.Files {
 		fileContent, err := Serialize(filePath)
 		if err != nil {
 			return nil, 0, err
@@ -53,7 +53,7 @@ func BuildUserBlocks(transaction logic.Transaction) ([]string, int, error) {
 		fileCount++
 	}
 
-	blocks = append(blocks, transaction.Prompt)
+	blocks = append(blocks, requestContent.Prompt)
 
 	return blocks, fileCount, nil
 }

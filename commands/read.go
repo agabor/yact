@@ -47,25 +47,25 @@ func readFile(filePath string) error {
 		return nil
 	}
 
-	transaction, err := logic.LoadTransaction()
+	requestContent, err := logic.LoadRequestContent()
 	if err != nil {
 		return err
 	}
 
-	if hasFileWithPath(transaction, filePath) {
+	if hasFileWithPath(requestContent, filePath) {
 		fmt.Printf("Skipping: %s\n", filePath)
 		return nil
 	}
 
 	fmt.Printf("Reading: %s\n", filePath)
 
-	transaction.Context = append(transaction.Context, filePath)
+	requestContent.Files = append(requestContent.Files, filePath)
 
-	return transaction.Save()
+	return requestContent.Save()
 }
 
-func hasFileWithPath(transaction logic.Transaction, path string) bool {
-	for _, contextPath := range transaction.Context {
+func hasFileWithPath(requestContent logic.RequestContent, path string) bool {
+	for _, contextPath := range requestContent.Files {
 		if contextPath == path {
 			return true
 		}
