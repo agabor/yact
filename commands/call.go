@@ -144,14 +144,14 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 }
 
 func buildPlanModeTransaction(selectedPrompt string) logic.Transaction {
-	planTransaction := logic.Transaction{Request: []string{selectedPrompt}}
+	planTransaction := logic.Transaction{Prompt: selectedPrompt}
 	return applyPromptLinks(planTransaction, selectedPrompt)
 }
 
 func buildPromptModeTransaction(transaction logic.Transaction, prompt string) logic.Transaction {
 	promptTransaction := transaction
 	if prompt != "" {
-		promptTransaction.Request = []string{prompt}
+		promptTransaction.Prompt = prompt
 	}
 	return promptTransaction
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Transaction struct {
-	Request  []string
+	Prompt   string
 	Context  []string
 	Messages []string
 }
@@ -114,7 +114,7 @@ func LoadTransaction() (Transaction, error) {
 	}
 
 	return Transaction{
-		Request:  []string{},
+		Prompt:   "",
 		Context:  context,
 		Messages: messages,
 	}, nil
