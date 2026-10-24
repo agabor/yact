@@ -91,12 +91,12 @@ func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) e
 func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
 	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
+		if len(parsedPlan.Steps) == 0 {
+			return planText, parsedPlan.Steps, false, nil
+		}
 		if parsedPlan.AllChecked() {
 			fmt.Println("All plan steps are done.")
 			return "", nil, true, nil
-		}
-		if len(parsedPlan.Steps) == 0 {
-			return planText, parsedPlan.Steps, false, nil
 		}
 		remainingSteps := parsedPlan.UncheckedSteps()
 		fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(remainingSteps)))
@@ -143,12 +143,36 @@ func buildPlanModeRequestContent(selectedPrompt string) logic.RequestContent {
 	return applyPromptLinks(planRequestContent)
 }
 
-func buildPromptModeRequestContent(requestContent logic.RequestContent, prompt string) logic.RequestContent {
-	promptRequestContent := requestContent
-	if prompt != "" {
-		promptRequestContent.Prompt = prompt
+func combinePromptText(promptFileText string, cliPrompt string) string {
+	fileText := strings.TrimSpace(promptFileText)
+	cliText := strings.TrimSpace(cliPrompt)
+	if fileText == "" {
+		return cliText
 	}
-	return promptRequestContent
+	if cliText == "" {
+		return fileText
+	}
+	return fileText + "\n\n" + cliText
+}
+
+func buildPromptModeRequestContent(requestContent logic.RequestContent, combinedPrompt string) logic.RequestContent {
+	promptRequestContent := requestContent
+	promptRequestContent.Prompt = combinedPrompt
+	return applyPromptLinks(promptRequestContent)
+}
+
+func loadPromptModeRequestContent(prompt string) (logic.RequestContent, error) {
+	promptFileText, _, err := logic.ReadPlan()
+	if err != nil {
+		return logic.RequestContent{}, err
+	}
+
+	requestContent, err := logic.LoadRequestContent()
+	if err != nil {
+		return logic.RequestContent{}, err
+	}
+
+	return buildPromptModeRequestContent(requestContent, combinePromptText(promptFileText, prompt)), nil
 }
 
 func checkNoPendingBatch() error {
@@ -185,6 +209,32 @@ func submitBatch(requestContent logic.RequestContent, cfg *config.Config, system
 	return nil
 }
 
+func countInputLines(requestContent logic.RequestContent) (int, error) {
+	totalLength := 0
+
+	if requestContent.Prompt != "" {
+		totalLength += len(strings.Split(requestContent.Prompt, "\n"))
+	}
+
+	for _, messagePath := range requestContent.Messages {
+		messageContent, err := os.ReadFile(messagePath)
+		if err != nil {
+			return 0, err
+		}
+		totalLength += len(strings.Split(string(messageContent), "\n"))
+	}
+
+	for _, contextPath := range requestContent.Files {
+		codeFile, err := logic.ReadAsFile(contextPath)
+		if err != nil {
+			return 0, err
+		}
+		totalLength += len(strings.Split(codeFile.Content, "\n"))
+	}
+
+	return totalLength, nil
+}
+
 func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
 	if flags.Batch {
 		if err := checkNoPendingBatch(); err != nil {
@@ -210,12 +260,11 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 			return err
 		}
 		if !planFound {
-			return fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPlanPath())
+			return fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPromptPath())
 		}
 		planUsed = true
 	}
 
-	requestContent := logic.RequestContent{}
 	var requestContentForLLM logic.RequestContent
 	var sentSteps []logic.PlanStep
 
@@ -227,37 +276,18 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		if allDone {
 			return nil
 		}
-		prompt = selectedPrompt
 		sentSteps = selectedSteps
 		requestContentForLLM = buildPlanModeRequestContent(selectedPrompt)
 	} else {
-		requestContent, err = logic.LoadRequestContent()
+		requestContentForLLM, err = loadPromptModeRequestContent(prompt)
 		if err != nil {
 			return err
 		}
-		requestContentForLLM = buildPromptModeRequestContent(requestContent, prompt)
 	}
 
-	totalLength := 0
-
-	if prompt != "" {
-		totalLength += len(strings.Split(prompt, "\n"))
-	}
-
-	for _, messagePath := range requestContentForLLM.Messages {
-		messageContent, err := os.ReadFile(messagePath)
-		if err != nil {
-			return err
-		}
-		totalLength += len(strings.Split(string(messageContent), "\n"))
-	}
-
-	for _, contextPath := range requestContentForLLM.Files {
-		codeFile, err := logic.ReadAsFile(contextPath)
-		if err != nil {
-			return err
-		}
-		totalLength += len(strings.Split(codeFile.Content, "\n"))
+	totalLength, err := countInputLines(requestContentForLLM)
+	if err != nil {
+		return err
 	}
 
 	if totalLength > cfg.MaxInputLines {
@@ -283,7 +313,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		if err := logic.WritePlan(response); err != nil {
 			return err
 		}
-		fmt.Printf("Plan written to %s\n", config.GetProjectPlanPath())
+		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
 		return nil
 	}
 
@@ -298,19 +328,13 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return nil
 	}
 
-	requestContent, err = processResponse(requestContent, response)
-	if err != nil {
+	if err := processResponse(response); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
 
 	if planUsed {
 		return tickPlanSteps(planPrompt, sentSteps)
-	}
-
-	if err = requestContent.Save(); err != nil {
-		fmt.Printf("Input lines: %d\n", totalLength)
-		return err
 	}
 
 	return nil
@@ -350,37 +374,15 @@ func storeBuffer(response string) error {
 	return nil
 }
 
-func removeFromContext(context []string, path string) []string {
-	result := make([]string, 0, len(context))
-	for _, existingPath := range context {
-		if existingPath != path {
-			result = append(result, existingPath)
-		}
-	}
-	return result
-}
-
-func processResponse(requestContent logic.RequestContent, content string) (logic.RequestContent, error) {
+func processResponse(content string) error {
 	var parseErrors []string
 	elements := logic.ParseCodeFiles(content)
-
-	seenPaths := make(map[string]bool)
-	for _, filePath := range requestContent.Files {
-		seenPaths[filePath] = true
-	}
 
 	for _, element := range elements {
 		if element.IsCodeFile {
 			v := element.CodeFile
-			err := v.Apply()
-			if err != nil {
+			if err := v.Apply(); err != nil {
 				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
-			} else if v.IsEmpty() {
-				seenPaths[v.Path] = false
-				requestContent.Files = removeFromContext(requestContent.Files, v.Path)
-			} else if !seenPaths[v.Path] {
-				seenPaths[v.Path] = true
-				requestContent.Files = append(requestContent.Files, v.Path)
 			}
 		} else {
 			if strings.TrimSpace(element.Text) != "" {
@@ -390,8 +392,8 @@ func processResponse(requestContent logic.RequestContent, content string) (logic
 	}
 
 	if len(parseErrors) > 0 {
-		return requestContent, fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
+		return fmt.Errorf("error processing code blocks: %s", strings.Join(parseErrors, "; "))
 	}
 
-	return requestContent, nil
+	return nil
 }

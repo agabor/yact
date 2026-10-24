@@ -47,28 +47,16 @@ func readFile(filePath string) error {
 		return nil
 	}
 
-	requestContent, err := logic.LoadRequestContent()
+	added, err := logic.AppendPromptLink(filePath)
 	if err != nil {
 		return err
 	}
 
-	if hasFileWithPath(requestContent, filePath) {
+	if added {
+		fmt.Printf("Reading: %s\n", filePath)
+	} else {
 		fmt.Printf("Skipping: %s\n", filePath)
-		return nil
 	}
 
-	fmt.Printf("Reading: %s\n", filePath)
-
-	requestContent.Files = append(requestContent.Files, filePath)
-
-	return requestContent.Save()
-}
-
-func hasFileWithPath(requestContent logic.RequestContent, path string) bool {
-	for _, contextPath := range requestContent.Files {
-		if contextPath == path {
-			return true
-		}
-	}
-	return false
+	return nil
 }

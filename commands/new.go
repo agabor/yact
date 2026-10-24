@@ -8,20 +8,18 @@ import (
 )
 
 func HandleNewCommand() error {
-	tx := logic.RequestContent{}
-	err := tx.Save()
-	fmt.Println("New context created")
-	if err != nil {
-		return err
-	}
 	if err := logic.RemoveMessages(); err != nil {
 		return err
 	}
-	return removePlanFile()
+	if err := removePromptFile(); err != nil {
+		return err
+	}
+	fmt.Println("New context created")
+	return nil
 }
 
-func removePlanFile() error {
-	err := os.Remove(config.GetProjectPlanPath())
+func removePromptFile() error {
+	err := os.Remove(config.GetProjectPromptPath())
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
