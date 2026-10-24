@@ -67,20 +67,6 @@ func getIndexVisibility(args []string) string {
 	return "private"
 }
 
-func getModelOverride(claudeLevel int) string {
-	switch claudeLevel {
-	case 1:
-		return "haiku"
-	case 2:
-		return "sonnet"
-	case 3:
-		return "opus"
-	case 4:
-		return "fable"
-	}
-	return ""
-}
-
 func promptNotFoundMessage(command string, downloaded bool) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
 	if !downloaded {
@@ -89,84 +75,6 @@ func promptNotFoundMessage(command string, downloaded bool) {
 		fmt.Fprintf(os.Stderr, "Download failed or no prompt exists for '%s'.\n", command)
 	}
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
-}
-
-func hasUserSetModelFlag(claudeLevel int) bool {
-	return claudeLevel > 0
-}
-
-func claudeLevelFromFlag(flag string) int {
-	const fallbackClaudeLevel = 2
-	if len(flag) < 2 {
-		return fallbackClaudeLevel
-	}
-	digit := flag[1]
-	if digit < '1' || digit > '4' {
-		return fallbackClaudeLevel
-	}
-	return int(digit - '0')
-}
-
-func applyDefaultFlags(flags []string, skipModelFlags bool, noWriteFlag, downloadFlag, validateCodeFlag, planFlag *bool, claudeLevel *int) {
-	for _, f := range flags {
-		if strings.HasPrefix(f, "c") {
-			if !skipModelFlags {
-				*claudeLevel = claudeLevelFromFlag(f)
-			}
-			continue
-		}
-		switch f {
-		case "n":
-			if *validateCodeFlag == false {
-				*noWriteFlag = true
-			}
-		case "d":
-			*downloadFlag = true
-		case "v":
-			if *noWriteFlag == false {
-				*validateCodeFlag = true
-			}
-		case "p":
-			*planFlag = true
-		}
-	}
-}
-
-func buildFlagString(noWriteFlag, downloadFlag, noProgressFlag, validateCodeFlag, planFlag, batchFlag bool, claudeLevel, maxInputLines int, steps string, promptFile string) string {
-	var flags []string
-
-	if noWriteFlag {
-		flags = append(flags, "--no-write")
-	}
-	if claudeLevel > 0 {
-		flags = append(flags, fmt.Sprintf("--claude %d", claudeLevel))
-	}
-	if downloadFlag {
-		flags = append(flags, "--download")
-	}
-	if noProgressFlag {
-		flags = append(flags, "--no-progress")
-	}
-	if validateCodeFlag {
-		flags = append(flags, "--validate-code")
-	}
-	if planFlag {
-		flags = append(flags, "--plan")
-	}
-	if batchFlag {
-		flags = append(flags, "--batch")
-	}
-	if maxInputLines > 0 {
-		flags = append(flags, fmt.Sprintf("--max-input-lines %d", maxInputLines))
-	}
-	if steps != "" {
-		flags = append(flags, fmt.Sprintf("--steps %s", steps))
-	}
-	if promptFile != "" {
-		flags = append(flags, fmt.Sprintf("--file %s", promptFile))
-	}
-
-	return strings.Join(flags, " ")
 }
 
 func main() {
@@ -185,6 +93,19 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
+
+	flags := config.Flaglist{
+		NoWrite:       *noWriteFlag,
+		NoProgress:    *noProgressFlag,
+		ValidateCode:  *validateCodeFlag,
+		WritePlan:     *planFlag,
+		Batch:         *batchFlag,
+		Download:      *downloadFlag,
+		ClaudeLevel:   *claudeLevel,
+		MaxInputLines: *maxInputLinesFlag,
+		Steps:         *stepsFlag,
+		PromptFile:    *fileFlag,
+	}
 
 	if *helpFlag {
 		commands.ShowHelp()
@@ -233,20 +154,20 @@ func main() {
 		commandErr = commands.HandleNewCommand()
 	case "commit":
 		requireNoArgs("commit", commandArgs)
-		commandErr = commands.HandleCommitCommand(*validateCodeFlag)
+		commandErr = commands.HandleCommitCommand(flags.ValidateCode)
 	case "query":
 		requireArgCount("query", commandArgs, 0, 1)
-		prompt, promptErr := resolvePrompt(commandArgs, *fileFlag)
+		prompt, promptErr := resolvePrompt(commandArgs, flags.PromptFile)
 		if promptErr != nil {
 			commandErr = promptErr
 			break
 		}
-		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
-		if flagString != "" {
+		if flagString := flags.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(true, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, cfg, "", modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
+		queryFlags := flags
+		queryFlags.NoWrite = true
+		commandErr = commands.HandleCommand(queryFlags, cfg, "", prompt)
 	case "index":
 		requireArgCount("index", commandArgs, 0, 1)
 		commandErr = commands.HandleIndexCommand(getIndexVisibility(commandArgs))
@@ -255,7 +176,7 @@ func main() {
 		commandErr = commands.HandleBatchCommand(cfg)
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
-		downloaded := *downloadFlag
+		downloaded := flags.Download
 		if downloaded {
 			if err := config.DownloadPrompt(command); err != nil {
 				commandErr = err
@@ -269,10 +190,9 @@ func main() {
 			os.Exit(1)
 		}
 
-		skipModelFlags := hasUserSetModelFlag(*claudeLevel)
-		applyDefaultFlags(defaultFlags, skipModelFlags, noWriteFlag, downloadFlag, validateCodeFlag, planFlag, claudeLevel)
+		flags.ApplyDefaults(defaultFlags, flags.HasUserSetModel())
 
-		prompt, promptErr := resolvePrompt(commandArgs, *fileFlag)
+		prompt, promptErr := resolvePrompt(commandArgs, flags.PromptFile)
 		if promptErr != nil {
 			commandErr = promptErr
 			break
@@ -286,12 +206,10 @@ func main() {
 			}
 		}
 
-		modelOverride := getModelOverride(*claudeLevel)
-		flagString := buildFlagString(*noWriteFlag, *downloadFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, *claudeLevel, *maxInputLinesFlag, *stepsFlag, *fileFlag)
-		if flagString != "" {
+		if flagString := flags.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(*noWriteFlag, *noProgressFlag, *validateCodeFlag, *planFlag, *batchFlag, cfg, cleanedPrompt, modelOverride, *maxInputLinesFlag, *stepsFlag, prompt)
+		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, prompt)
 	}
 
 	if commandErr != nil {
