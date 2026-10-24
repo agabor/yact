@@ -167,7 +167,7 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string, noWrite bool, validateCode bool, writePlan bool) error {
+func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt string, flags config.Flaglist) error {
 	client := newClient(cfg)
 
 	batchID, err := client.SubmitBatch(transaction, systemPrompt)
@@ -177,9 +177,9 @@ func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt
 
 	job := logic.BatchJob{
 		ID:           batchID,
-		NoWrite:      noWrite,
-		ValidateCode: validateCode,
-		WritePlan:    writePlan,
+		NoWrite:      flags.NoWrite,
+		ValidateCode: flags.ValidateCode,
+		WritePlan:    flags.WritePlan,
 	}
 	if err := logic.WriteBatchJob(job); err != nil {
 		return err
@@ -190,19 +190,19 @@ func submitBatch(transaction logic.Transaction, cfg *config.Config, systemPrompt
 	return nil
 }
 
-func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan bool, batch bool, cfg *config.Config, systemPrompt string, modelOverride string, maxInputLinesOverride int, stepsSelector string, prompt string) error {
-	if batch {
+func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
+	if flags.Batch {
 		if err := checkNoPendingBatch(); err != nil {
 			return err
 		}
 	}
 
-	if err := validateStepsOptions(stepsSelector, writePlan, prompt); err != nil {
+	if err := validateStepsOptions(flags.Steps, flags.WritePlan, prompt); err != nil {
 		return err
 	}
 
-	applyModelOverride(cfg, modelOverride)
-	applyMaxInputLinesOverride(cfg, maxInputLinesOverride)
+	applyModelOverride(cfg, flags.ModelOverride())
+	applyMaxInputLinesOverride(cfg, flags.MaxInputLines)
 
 	var err error
 	planPrompt := ""
@@ -225,7 +225,7 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
-		selectedPrompt, selectedSteps, allDone, err := selectPlanSteps(planPrompt, stepsSelector)
+		selectedPrompt, selectedSteps, allDone, err := selectPlanSteps(planPrompt, flags.Steps)
 		if err != nil {
 			return err
 		}
@@ -271,11 +271,11 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 
 	fmt.Printf("Input lines: %d\n", totalLength)
 
-	if batch {
-		return submitBatch(transactionForLLM, cfg, systemPrompt, noWrite, validateCode, writePlan)
+	if flags.Batch {
+		return submitBatch(transactionForLLM, cfg, systemPrompt, flags)
 	}
 
-	response, err := callLLM(transactionForLLM, noProgress, cfg, systemPrompt)
+	response, err := callLLM(transactionForLLM, flags.NoProgress, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		return err
 	}
 
-	if writePlan {
+	if flags.WritePlan {
 		if err := logic.WritePlan(response); err != nil {
 			return err
 		}
@@ -292,13 +292,13 @@ func HandleCommand(noWrite bool, noProgress bool, validateCode bool, writePlan b
 		return nil
 	}
 
-	if validateCode {
+	if flags.ValidateCode {
 		if err := validateCodeOnlyResponse(response); err != nil {
 			return err
 		}
 	}
 
-	if noWrite {
+	if flags.NoWrite {
 		fmt.Println("\n" + response)
 		return nil
 	}
