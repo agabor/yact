@@ -74,7 +74,7 @@ func applyBatchOutput(job logic.BatchJob, content string) error {
 		if err := logic.WritePlan(content); err != nil {
 			return err
 		}
-		fmt.Printf("Plan written to %s\n", config.GetProjectPlanPath())
+		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
 		return nil
 	}
 

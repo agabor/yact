@@ -62,16 +62,12 @@ func GetProjectYactDir() string {
 	return ".yact"
 }
 
-func GetProjectContextPath() string {
-	return filepath.Join(GetProjectYactDir(), "context.txt")
-}
-
 func GetProjectExtensionsPath() string {
 	return filepath.Join(GetProjectYactDir(), "extensions.txt")
 }
 
-func GetProjectPlanPath() string {
-	return filepath.Join(GetProjectYactDir(), "plan.md")
+func GetProjectPromptPath() string {
+	return filepath.Join(GetProjectYactDir(), "prompt.md")
 }
 
 func GetProjectBatchJobPath() string {
