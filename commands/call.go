@@ -62,21 +62,16 @@ func printWarnings(warnings []string) {
 	}
 }
 
-func applyPromptLinks(requestContent logic.RequestContent, prompt string) logic.RequestContent {
-	if prompt == "" {
+func applyPromptLinks(requestContent logic.RequestContent) logic.RequestContent {
+	if requestContent.Prompt == "" {
 		return requestContent
 	}
 
-	links := logic.ResolvePromptLinks(prompt)
+	links := logic.ResolvePromptLinks(requestContent.Prompt)
 	printWarnings(links.Warnings)
 
-	if !links.HasLinks {
-		return requestContent
-	}
-
-	linkedRequestContent := requestContent
-	linkedRequestContent.Files = append([]string{}, links.Paths...)
-	return linkedRequestContent
+	requestContent.Files = append([]string{}, links.Paths...)
+	return requestContent
 }
 
 func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
@@ -145,7 +140,7 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 
 func buildPlanModeRequestContent(selectedPrompt string) logic.RequestContent {
 	planRequestContent := logic.RequestContent{Prompt: selectedPrompt}
-	return applyPromptLinks(planRequestContent, selectedPrompt)
+	return applyPromptLinks(planRequestContent)
 }
 
 func buildPromptModeRequestContent(requestContent logic.RequestContent, prompt string) logic.RequestContent {

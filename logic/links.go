@@ -8,7 +8,6 @@ import (
 )
 
 type PromptLinks struct {
-	HasLinks bool
 	Paths    []string
 	Warnings []string
 }
@@ -19,7 +18,7 @@ var urlSchemePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.\-]+:`)
 
 func ResolvePromptLinks(prompt string) PromptLinks {
 	targets := extractLinkTargets(prompt)
-	links := PromptLinks{HasLinks: len(targets) > 0}
+	links := PromptLinks{}
 	seenPaths := make(map[string]bool)
 
 	for _, target := range targets {
