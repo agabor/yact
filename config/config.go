@@ -153,7 +153,7 @@ func parseFlags(content string) []string {
 	runes := []rune(flagsStr)
 	for index := 0; index < len(runes); index++ {
 		ch := runes[index]
-		if ch == 'c' && index+1 < len(runes) && unicode.IsDigit(runes[index+1]) {
+		if (ch == 'c' || ch == 'i') && index+1 < len(runes) && unicode.IsDigit(runes[index+1]) {
 			flags = append(flags, string(runes[index:index+2]))
 			index++
 			continue

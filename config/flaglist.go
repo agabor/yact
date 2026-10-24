@@ -95,6 +95,13 @@ func (f *Flaglist) applyDefault(flag string, skipModelFlags bool) {
 		return
 	}
 
+	if strings.HasPrefix(flag, "i") {
+		if f.IndexLevel == 0 {
+			f.IndexLevel = indexLevelFromFlag(flag)
+		}
+		return
+	}
+
 	switch flag {
 	case "n":
 		if !f.ValidateCode {
@@ -119,6 +126,18 @@ func claudeLevelFromFlag(flag string) int {
 	digit := flag[1]
 	if digit < '1' || digit > '4' {
 		return fallbackClaudeLevel
+	}
+	return int(digit - '0')
+}
+
+func indexLevelFromFlag(flag string) int {
+	const fallbackIndexLevel = 1
+	if len(flag) < 2 {
+		return fallbackIndexLevel
+	}
+	digit := flag[1]
+	if digit != '1' && digit != '2' {
+		return fallbackIndexLevel
 	}
 	return int(digit - '0')
 }
