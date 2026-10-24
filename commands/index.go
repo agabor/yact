@@ -94,7 +94,7 @@ func hasLanguageExtension(name string, extensions []string) bool {
 	return false
 }
 
-func HandleIndexCommand(visibility string) error {
+func WriteIndex(visibility string) error {
 	languages, err := languagesForVisibility(visibility)
 	if err != nil {
 		return err
@@ -108,11 +108,17 @@ func HandleIndexCommand(visibility string) error {
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(indexPath, []byte(data), 0644); err != nil {
-		return err
+	return os.WriteFile(indexPath, []byte(data), 0644)
+}
+
+func indexLevelToVisibility(level int) (string, error) {
+	switch level {
+	case 1:
+		return "public", nil
+	case 2:
+		return "private", nil
 	}
-	fmt.Printf("Written: %s\n", indexPath)
-	return nil
+	return "", fmt.Errorf("invalid index level %d, expected 1 or 2", level)
 }
 
 func renderIndex(root *IndexNode, visibility string) string {

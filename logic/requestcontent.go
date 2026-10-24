@@ -28,6 +28,13 @@ func IndexFilePath() string {
 	return filepath.Join(yactDir(), indexFileName)
 }
 
+func RemoveIndexFile() error {
+	if err := os.Remove(IndexFilePath()); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
 func writeFixedFile(name string, content string) (string, error) {
 	if err := os.MkdirAll(yactDir(), 0755); err != nil {
 		return "", err
