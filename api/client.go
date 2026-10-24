@@ -33,7 +33,7 @@ func Serialize(path string) (string, error) {
 }
 
 func BuildUserBlocks(transaction logic.Transaction) ([]string, int, error) {
-	blocks := make([]string, 0, len(transaction.Messages)+len(transaction.Context)+len(transaction.Request))
+	blocks := make([]string, 0, len(transaction.Messages)+len(transaction.Context)+1)
 	fileCount := 0
 
 	for _, messagePath := range transaction.Messages {
@@ -53,9 +53,7 @@ func BuildUserBlocks(transaction logic.Transaction) ([]string, int, error) {
 		fileCount++
 	}
 
-	for _, prompt := range transaction.Request {
-		blocks = append(blocks, prompt)
-	}
+	blocks = append(blocks, transaction.Prompt)
 
 	return blocks, fileCount, nil
 }
