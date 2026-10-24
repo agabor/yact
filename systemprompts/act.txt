@@ -1,4 +1,4 @@
-flags: c1v
+flags: c1vi1
 CODE GENERATION ASSISTANT
 
 ====================
