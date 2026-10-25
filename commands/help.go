@@ -15,7 +15,6 @@ Usage:
 Commands:
   help                                 Show this help message
   read <file> [<file2> ...]            Add files to the task context (supports glob patterns)
-  message <text>                       Write the text to .yact/message.txt, sent before the index file, the output file and the context files
   output                               Read standard input into .yact/output.txt, sent after the index file and before the context files
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
