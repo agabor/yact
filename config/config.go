@@ -67,7 +67,7 @@ func GetProjectExtensionsPath() string {
 }
 
 func GetProjectPromptPath() string {
-	return filepath.Join(GetProjectYactDir(), "prompt.md")
+	return "yact-prompt.md"
 }
 
 func GetProjectBatchJobPath() string {
