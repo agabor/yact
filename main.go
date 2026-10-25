@@ -39,27 +39,6 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
-func readPromptFile(path string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("failed to read prompt file %s: %w", path, err)
-	}
-	if strings.TrimSpace(string(content)) == "" {
-		return "", fmt.Errorf("prompt file %s is empty", path)
-	}
-	return string(content), nil
-}
-
-func resolvePrompt(args []string, promptFile string) (string, error) {
-	if promptFile == "" {
-		return getOptionalPrompt(args), nil
-	}
-	if len(args) > 0 {
-		return "", fmt.Errorf("--file cannot be combined with a prompt argument")
-	}
-	return readPromptFile(promptFile)
-}
-
 func validateIndexLevel(level int) error {
 	switch level {
 	case 0, 1, 2:
@@ -89,7 +68,6 @@ func main() {
 	batchFlag := flag.BoolP("batch", "b", false, "Submit the request as a batch job instead of streaming it")
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
-	fileFlag := flag.StringP("file", "f", "", "Read the prompt from the given file instead of the command line argument")
 	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
 
 	flag.Parse()
@@ -111,7 +89,6 @@ func main() {
 		ClaudeLevel:   *claudeLevel,
 		MaxInputLines: *maxInputLinesFlag,
 		Steps:         *stepsFlag,
-		PromptFile:    *fileFlag,
 		IndexLevel:    *indexFlag,
 	}
 
@@ -165,17 +142,12 @@ func main() {
 		commandErr = commands.HandleCommitCommand(flags.ValidateCode)
 	case "query":
 		requireArgCount("query", commandArgs, 0, 1)
-		prompt, promptErr := resolvePrompt(commandArgs, flags.PromptFile)
-		if promptErr != nil {
-			commandErr = promptErr
-			break
-		}
 		if flagString := flags.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
 		queryFlags := flags
 		queryFlags.NoWrite = true
-		commandErr = commands.HandleCommand(queryFlags, cfg, "", prompt)
+		commandErr = commands.HandleCommand(queryFlags, cfg, "", getOptionalPrompt(commandArgs))
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
@@ -197,12 +169,6 @@ func main() {
 
 		flags.ApplyDefaults(defaultFlags, flags.HasUserSetModel())
 
-		prompt, promptErr := resolvePrompt(commandArgs, flags.PromptFile)
-		if promptErr != nil {
-			commandErr = promptErr
-			break
-		}
-
 		cleanedPrompt := systemPrompt
 		if strings.HasPrefix(cleanedPrompt, "flags: ") {
 			lines := strings.Split(cleanedPrompt, "\n")
@@ -214,7 +180,7 @@ func main() {
 		if flagString := flags.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, prompt)
+		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, getOptionalPrompt(commandArgs))
 	}
 
 	if commandErr != nil {

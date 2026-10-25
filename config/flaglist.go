@@ -15,7 +15,6 @@ type Flaglist struct {
 	ClaudeLevel   int
 	MaxInputLines int
 	Steps         string
-	PromptFile    string
 	IndexLevel    int
 }
 
@@ -73,9 +72,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Steps != "" {
 		parts = append(parts, fmt.Sprintf("--steps %s", f.Steps))
-	}
-	if f.PromptFile != "" {
-		parts = append(parts, fmt.Sprintf("--file %s", f.PromptFile))
 	}
 
 	return strings.Join(parts, " ")
