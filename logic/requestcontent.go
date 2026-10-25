@@ -7,18 +7,20 @@ import (
 )
 
 type RequestContent struct {
-	Prompt   string
-	Files    []string
-	Messages []string
+	Prompt string
+	Files  []string
+	Domain string
+	Index  string
+	Output string
 }
 
 const (
-	messageFileName = "message.txt"
-	indexFileName   = "index.txt"
-	outputFileName  = "output.txt"
+	domainFileName = "domain.txt"
+	indexFileName  = "index.txt"
+	outputFileName = "output.txt"
 )
 
-var messageFileNames = []string{messageFileName, indexFileName, outputFileName}
+var messageFileNames = []string{domainFileName, indexFileName, outputFileName}
 
 func yactDir() string {
 	return config.GetProjectYactDir()
@@ -48,24 +50,31 @@ func writeFixedFile(name string, content string) (string, error) {
 	return path, nil
 }
 
-func existingMessageFiles() ([]string, error) {
-	paths := []string{}
-	for _, name := range messageFileNames {
-		path := filepath.Join(yactDir(), name)
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return nil, err
+func existingFilePath(name string) (string, error) {
+	path := filepath.Join(yactDir(), name)
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
 		}
-		paths = append(paths, path)
+		return "", err
 	}
 
-	return paths, nil
+	return path, nil
+}
+
+func (r RequestContent) MessagePaths() []string {
+	paths := []string{}
+	for _, path := range []string{r.Domain, r.Index, r.Output} {
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+
+	return paths
 }
 
 func AddMessage(content string) (string, error) {
-	return writeFixedFile(messageFileName, content)
+	return writeFixedFile(domainFileName, content)
 }
 
 func AddOutput(content string) (string, error) {
@@ -73,15 +82,27 @@ func AddOutput(content string) (string, error) {
 }
 
 func LoadRequestContent() (RequestContent, error) {
-	messages, err := existingMessageFiles()
+	domain, err := existingFilePath(domainFileName)
+	if err != nil {
+		return RequestContent{}, err
+	}
+
+	index, err := existingFilePath(indexFileName)
+	if err != nil {
+		return RequestContent{}, err
+	}
+
+	output, err := existingFilePath(outputFileName)
 	if err != nil {
 		return RequestContent{}, err
 	}
 
 	return RequestContent{
-		Prompt:   "",
-		Files:    []string{},
-		Messages: messages,
+		Prompt: "",
+		Files:  []string{},
+		Domain: domain,
+		Index:  index,
+		Output: output,
 	}, nil
 }
 

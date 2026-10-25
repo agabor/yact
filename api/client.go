@@ -33,10 +33,11 @@ func Serialize(path string) (string, error) {
 }
 
 func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error) {
-	blocks := make([]string, 0, len(requestContent.Messages)+len(requestContent.Files)+1)
+	messagePaths := requestContent.MessagePaths()
+	blocks := make([]string, 0, len(messagePaths)+len(requestContent.Files)+1)
 	fileCount := 0
 
-	for _, messagePath := range requestContent.Messages {
+	for _, messagePath := range messagePaths {
 		messageContent, err := os.ReadFile(messagePath)
 		if err != nil {
 			return nil, 0, err
