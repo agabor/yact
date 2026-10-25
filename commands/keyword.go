@@ -2,9 +2,9 @@ package commands
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"yact/config"
+	"yact/logic"
 )
 
 func HandleKeywordCommand(args []string) error {
@@ -15,49 +15,27 @@ func HandleKeywordCommand(args []string) error {
 		return err
 	}
 
-	return filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	files, err := logic.EnumerateFiles(".", nil, func(name string) bool {
+		return logic.FileHasExtension(name, extensions)
+	})
+	if err != nil {
+		return err
+	}
 
-		if info.IsDir() {
-			if isHiddenDir(path) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		if !fileHasExtension(path, extensions) {
-			return nil
-		}
-
+	for _, path := range files {
 		content, err := os.ReadFile(path)
 		if err != nil {
-			return nil
+			continue
 		}
 
 		if !strings.Contains(string(content), keyword) {
-			return nil
+			continue
 		}
 
-		return readFile(path)
-	})
-}
-
-func isHiddenDir(path string) bool {
-	if path == "." {
-		return false
-	}
-	base := filepath.Base(path)
-	return strings.HasPrefix(base, ".")
-}
-
-func fileHasExtension(path string, extensions []string) bool {
-	ext := strings.TrimPrefix(filepath.Ext(path), ".")
-	for _, allowed := range extensions {
-		if ext == allowed {
-			return true
+		if err := readFile(path); err != nil {
+			return err
 		}
 	}
-	return false
+
+	return nil
 }

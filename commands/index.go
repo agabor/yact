@@ -99,7 +99,14 @@ func WriteIndex(visibility string) error {
 	if err != nil {
 		return err
 	}
-	root, err := buildIndexNode(".", languages)
+	files, err := logic.EnumerateFiles(".", shouldSkipIndexDir, func(name string) bool {
+		_, found := findLanguageForFile(name, languages)
+		return found
+	})
+	if err != nil {
+		return err
+	}
+	root, err := buildIndexTree(files, languages)
 	if err != nil {
 		return err
 	}
@@ -109,6 +116,56 @@ func WriteIndex(visibility string) error {
 		return err
 	}
 	return os.WriteFile(indexPath, []byte(data), 0644)
+}
+
+func shouldSkipIndexDir(name string) bool {
+	return name == "vendor" || name == "node_modules"
+}
+
+func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, error) {
+	root := &IndexNode{
+		Name: ".",
+		Type: "dir",
+	}
+	for _, path := range paths {
+		name := filepath.Base(path)
+		language, found := findLanguageForFile(name, languages)
+		if !found {
+			continue
+		}
+		fileNode, err := buildSourceFileNode(path, name, language)
+		if err != nil {
+			return nil, err
+		}
+		directory := ensureDirectoryNode(root, filepath.Dir(path))
+		directory.Children = append(directory.Children, fileNode)
+	}
+	return root, nil
+}
+
+func ensureDirectoryNode(root *IndexNode, dirPath string) *IndexNode {
+	if dirPath == "." {
+		return root
+	}
+	current := root
+	for _, name := range strings.Split(filepath.ToSlash(dirPath), "/") {
+		current = findOrAddChildDirectory(current, name)
+	}
+	return current
+}
+
+func findOrAddChildDirectory(parent *IndexNode, name string) *IndexNode {
+	for _, child := range parent.Children {
+		if child.Type == "dir" && child.Name == name {
+			return child
+		}
+	}
+	child := &IndexNode{
+		Name: name,
+		Type: "dir",
+	}
+	parent.Children = append(parent.Children, child)
+	return child
 }
 
 func indexLevelToVisibility(level int) (string, error) {
@@ -160,59 +217,6 @@ func renderFileSection(path string, signatures []IndexSignature) string {
 		builder.WriteString("\n")
 	}
 	return builder.String()
-}
-
-func buildIndexNode(dir string, languages []indexLanguage) (*IndexNode, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-	node := &IndexNode{
-		Name: filepath.Base(dir),
-		Type: "dir",
-	}
-	for _, entry := range entries {
-		if shouldSkipIndexEntry(entry.Name()) {
-			continue
-		}
-		childPath := filepath.Join(dir, entry.Name())
-		child, err := buildChildIndexNode(childPath, entry, languages)
-		if err != nil {
-			return nil, err
-		}
-		if child != nil {
-			node.Children = append(node.Children, child)
-		}
-	}
-	return node, nil
-}
-
-func shouldSkipIndexEntry(name string) bool {
-	return strings.HasPrefix(name, ".") ||
-		name == "vendor" ||
-		name == "node_modules"
-}
-
-func buildChildIndexNode(path string, entry os.DirEntry, languages []indexLanguage) (*IndexNode, error) {
-	if entry.IsDir() {
-		return buildNonEmptyDirNode(path, languages)
-	}
-	language, found := findLanguageForFile(entry.Name(), languages)
-	if !found {
-		return nil, nil
-	}
-	return buildSourceFileNode(path, entry.Name(), language)
-}
-
-func buildNonEmptyDirNode(path string, languages []indexLanguage) (*IndexNode, error) {
-	child, err := buildIndexNode(path, languages)
-	if err != nil {
-		return nil, err
-	}
-	if len(child.Children) == 0 {
-		return nil, nil
-	}
-	return child, nil
 }
 
 func buildSourceFileNode(path string, name string, language indexLanguage) (*IndexNode, error) {
