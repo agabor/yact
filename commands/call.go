@@ -204,7 +204,7 @@ func countInputLines(requestContent logic.RequestContent) (int, error) {
 		totalLength += len(strings.Split(requestContent.Prompt, "\n"))
 	}
 
-	for _, messagePath := range requestContent.Messages {
+	for _, messagePath := range requestContent.MessagePaths() {
 		messageContent, err := os.ReadFile(messagePath)
 		if err != nil {
 			return 0, err
