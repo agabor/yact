@@ -73,16 +73,18 @@ func printWarnings(warnings []string) {
 	}
 }
 
-func applyPromptLinks(requestContent logic.RequestContent) logic.RequestContent {
+func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
 	if requestContent.Prompt == "" {
-		return requestContent
+		return requestContent, nil
 	}
 
-	links := logic.ResolvePromptLinks(requestContent.Prompt)
-	printWarnings(links.Warnings)
+	links, err := logic.ResolvePromptLinks(requestContent.Prompt)
+	if err != nil {
+		return requestContent, err
+	}
 
 	requestContent.Files = append([]string{}, links.Paths...)
-	return requestContent
+	return requestContent, nil
 }
 
 func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
@@ -279,7 +281,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 		requestContentForLLM.Prompt = combinePromptText(promptFileText, prompt)
 	}
-	requestContentForLLM = applyPromptLinks(requestContentForLLM)
+	requestContentForLLM, err = applyPromptLinks(requestContentForLLM)
+	if err != nil {
+		return err
+	}
 
 	totalLength, err := countInputLines(requestContentForLLM)
 	if err != nil {
