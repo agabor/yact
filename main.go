@@ -70,6 +70,7 @@ func main() {
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
 	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
 	verboseFlag := flag.Bool("verbose", false, "Print all file paths sent to the LLM")
+	dryFlag := flag.Bool("dry", false, "Skip the LLM call, only build and check the request")
 
 	flag.Parse()
 
@@ -88,6 +89,7 @@ func main() {
 		Batch:         *batchFlag,
 		Download:      *downloadFlag,
 		Verbose:       *verboseFlag,
+		Dry:           *dryFlag,
 		ClaudeLevel:   *claudeLevel,
 		MaxInputLines: *maxInputLinesFlag,
 		Steps:         *stepsFlag,
