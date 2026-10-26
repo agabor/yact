@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	"yact/config"
 )
 
 func EnumerateFiles(root string, skipDir func(name string) bool, includeFile func(name string) bool) ([]string, error) {
@@ -29,6 +31,10 @@ func EnumerateFiles(root string, skipDir func(name string) bool, includeFile fun
 		}
 
 		if !entry.Type().IsRegular() {
+			return nil
+		}
+
+		if entry.Name() == config.GetProjectPromptPath() {
 			return nil
 		}
 
