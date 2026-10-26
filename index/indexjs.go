@@ -1,61 +1,52 @@
 package index
 
-var jsModifiers = []string{"export", "default", "async"}
+import "strings"
 
-var jsDeclarationKeywords = []string{"function", "class"}
+var jsModifiers = []string{"export", "default", "async"}
 
 var jsMethodModifiers = []string{"static", "async"}
 
-var jsSignatureRules = signatureRules{
-	IsDeclarationStart:  isJSDeclarationStart,
-	IsMemberStart:       isJSMemberStart,
-	IsContainerStart:    isJSContainerStart,
-	IsPublicDeclaration: isJSPublicDeclaration,
-	IsPublicMember:      isJSPublicMember,
-}
+var jsControlKeywords = []string{"if", "for", "while", "switch", "catch", "with", "else", "do", "try", "finally", "return"}
 
-func isJSDeclarationStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, jsModifiers)
-	return startsWithKeyword(source, position, jsDeclarationKeywords, " *")
-}
+var jsSignatureRules = signatureRules{IsFunction: isJSFunctionLabel, IsPublic: isJSPublicLabel, SplitsAtLineBreak: true}
 
-func isJSContainerStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, jsModifiers)
-	return startsWithKeyword(source, position, []string{"class"}, " *")
-}
-
-func isJSMemberStart(source string, lineStart int) bool {
-	return isJSDeclarationStart(source, lineStart) || isJSMethodStart(source, lineStart)
-}
-
-func isJSPublicDeclaration(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	return startsWithKeyword(source, position, []string{"export"}, " ")
-}
-
-func isJSPublicMember(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, jsMethodModifiers)
-	if position < len(source) && source[position] == '*' {
-		position = skipIndentation(source, position+1)
+func isJSFunctionLabel(label string) bool {
+	position := skipModifiers(label, 0, jsModifiers)
+	if startsWithKeyword(label, position, []string{"function"}, " *(") {
+		return true
 	}
-	return position >= len(source) || source[position] != '#'
+	return isJSMethodLabel(label) || isJSArrowBinding(label)
 }
 
-func isJSMethodStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, jsMethodModifiers)
-	if position < len(source) && source[position] == '*' {
-		position++
-	}
-	nameEnd := skipJSIdentifier(source, position)
-	if nameEnd == position {
+func isJSArrowBinding(label string) bool {
+	position := skipModifiers(label, 0, jsModifiers)
+	return startsWithKeyword(label, position, []string{"const", "let", "var"}, " ") &&
+		strings.Contains(label, "=") && strings.HasSuffix(label, "=>")
+}
+
+func isJSMethodLabel(label string) bool {
+	namePosition := jsMethodNamePosition(label)
+	nameEnd := skipJSIdentifier(label, namePosition)
+	if nameEnd == namePosition || containsString(jsControlKeywords, label[namePosition:nameEnd]) {
 		return false
 	}
-	position = skipIndentation(source, nameEnd)
-	return position < len(source) && source[position] == '('
+	position := skipIndentation(label, nameEnd)
+	return position < len(label) && label[position] == '('
+}
+
+func jsMethodNamePosition(label string) int {
+	position := skipModifiers(label, 0, jsMethodModifiers)
+	if position < len(label) && label[position] == '*' {
+		position++
+	}
+	return position
+}
+
+func isJSPublicLabel(label string) bool {
+	if isJSMethodLabel(label) {
+		return !strings.HasPrefix(label[jsMethodNamePosition(label):], "#")
+	}
+	return startsWithKeyword(label, 0, []string{"export"}, " ")
 }
 
 func skipJSIdentifier(source string, position int) int {

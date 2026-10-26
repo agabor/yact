@@ -6,40 +6,29 @@ var phpModifiers = []string{"public", "protected", "private", "static", "abstrac
 
 var phpNonPublicModifiers = []string{"private", "protected"}
 
-var phpDeclarationKeywords = []string{"function", "class", "interface", "trait"}
+var phpSignatureRules = signatureRules{IsFunction: isPHPFunctionLabel, IsPublic: isPHPPublicLabel, CleanLabel: cleanPHPLabel}
 
-var phpSignatureRules = signatureRules{
-	IsDeclarationStart:  isPHPDeclarationStart,
-	IsMemberStart:       isPHPDeclarationStart,
-	IsContainerStart:    isPHPContainerStart,
-	IsPublicDeclaration: isPHPPublic,
-	IsPublicMember:      isPHPPublic,
+func isPHPFunctionLabel(label string) bool {
+	position := skipModifiers(label, 0, phpModifiers)
+	return startsWithKeyword(label, position, []string{"function"}, " &(")
 }
 
-func isPHPDeclarationStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, phpModifiers)
-	return startsWithKeyword(source, position, phpDeclarationKeywords, " &")
-}
-
-func isPHPContainerStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	position = skipModifiers(source, position, phpModifiers)
-	return startsWithKeyword(source, position, []string{"class", "interface", "trait"}, " \t\r\n")
-}
-
-func isPHPPublic(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
+func isPHPPublicLabel(label string) bool {
+	position := 0
 	for {
-		modifier, matched := matchModifier(source, position, phpModifiers)
+		modifier, matched := matchModifier(label, position, phpModifiers)
 		if !matched {
 			return true
 		}
 		if containsString(phpNonPublicModifiers, modifier) {
 			return false
 		}
-		position = skipIndentation(source, position+len(modifier))
+		position = skipIndentation(label, position+len(modifier))
 	}
+}
+
+func cleanPHPLabel(label string) string {
+	return strings.TrimSpace(strings.TrimPrefix(label, "<?php"))
 }
 
 func matchModifier(source string, position int, modifiers []string) (string, bool) {
