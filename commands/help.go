@@ -22,6 +22,7 @@ Commands:
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with -v, fail on free text or incomplete code blocks)
   batch                                Fetch the pending batch result and write it using the output flags it was submitted with (-n, -v, -p). Without them, the result goes to the buffer. Apply the buffer with commit
+  index <level>                        Write the index to .yact/index.txt without calling the LLM, where 0 removes it, 1 is public and 2 is private
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
 Prompt rules for query and <command>:
