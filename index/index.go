@@ -126,6 +126,9 @@ func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, erro
 		if err != nil {
 			return nil, err
 		}
+		if len(fileNode.Functions) == 0 {
+			continue
+		}
 		directory := ensureDirectoryNode(root, filepath.Dir(path))
 		directory.Children = append(directory.Children, fileNode)
 	}
