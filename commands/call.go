@@ -132,14 +132,14 @@ func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) e
 func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
 	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
-		if len(parsedPlan.Steps) == 0 {
+		remainingSteps := parsedPlan.UncheckedSteps()
+		if len(parsedPlan.Steps) == len(remainingSteps) {
 			return planText, parsedPlan.Steps, false, nil
 		}
 		if parsedPlan.AllChecked() {
 			fmt.Println("All plan steps are done.")
 			return "", nil, true, nil
 		}
-		remainingSteps := parsedPlan.UncheckedSteps()
 		fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(remainingSteps)))
 		return logic.BuildStepsPrompt(parsedPlan, remainingSteps), remainingSteps, false, nil
 	}
