@@ -13,6 +13,7 @@ type Flaglist struct {
 	Batch         bool
 	Download      bool
 	Verbose       bool
+	Dry           bool
 	ClaudeLevel   int
 	MaxInputLines int
 	Steps         string
@@ -70,6 +71,9 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Verbose {
 		parts = append(parts, "--verbose")
+	}
+	if f.Dry {
+		parts = append(parts, "--dry")
 	}
 	if f.MaxInputLines > 0 {
 		parts = append(parts, fmt.Sprintf("--max-input-lines %d", f.MaxInputLines))

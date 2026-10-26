@@ -285,6 +285,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	if planUsed {
 		selectedPrompt, selectedSteps, allDone, err := selectPlanSteps(planPrompt, flags.Steps)
+
 		if err != nil {
 			return err
 		}
@@ -319,6 +320,11 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	if flags.Verbose {
 		printSentFiles(requestContentForLLM)
+	}
+
+	if flags.Dry {
+		fmt.Println("Dry run: LLM call skipped.")
+		return nil
 	}
 
 	if flags.Batch {
