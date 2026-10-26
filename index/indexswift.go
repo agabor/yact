@@ -1,4 +1,4 @@
-package commands
+package index
 
 var swiftModifiers = []string{"public", "open", "internal", "fileprivate", "private", "static", "class", "final", "override", "mutating", "nonmutating", "required", "convenience", "dynamic", "lazy", "weak", "unowned"}
 

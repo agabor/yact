@@ -1,4 +1,4 @@
-package commands
+package index
 
 var kotlinSignatureRules = signatureRules{
 	IsDeclarationStart:  isKotlinDeclarationStart,

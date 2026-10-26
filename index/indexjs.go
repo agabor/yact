@@ -1,4 +1,4 @@
-package commands
+package index
 
 var jsModifiers = []string{"export", "default", "async"}
 

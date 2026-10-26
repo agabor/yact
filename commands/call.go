@@ -8,6 +8,7 @@ import (
 
 	"yact/api"
 	"yact/config"
+	"yact/index"
 	"yact/logic"
 )
 
@@ -39,6 +40,16 @@ func applyMaxInputLinesOverride(cfg *config.Config, maxInputLinesOverride int) {
 	}
 }
 
+func indexLevelToVisibility(level int) (string, error) {
+	switch level {
+	case 1:
+		return "public", nil
+	case 2:
+		return "private", nil
+	}
+	return "", fmt.Errorf("invalid index level %d, expected 1 or 2", level)
+}
+
 func applyIndexOverride(flags config.Flaglist) error {
 	if !flags.HasIndex() {
 		return logic.RemoveIndexFile()
@@ -47,7 +58,7 @@ func applyIndexOverride(flags config.Flaglist) error {
 	if err != nil {
 		return err
 	}
-	return WriteIndex(visibility)
+	return index.WriteIndex(visibility)
 }
 
 func validateCodeOnlyResponse(content string) error {
