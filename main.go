@@ -148,6 +148,9 @@ func main() {
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
+	case "index":
+		requireArgCount("index", commandArgs, 1)
+		commandErr = commands.HandleIndexCommand(commandArgs)
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 		downloaded := flags.Download
