@@ -84,6 +84,15 @@ func printWarnings(warnings []string) {
 	}
 }
 
+func printSentFiles(requestContent logic.RequestContent) {
+	for _, messagePath := range requestContent.MessagePaths() {
+		fmt.Printf("Sending: %s\n", messagePath)
+	}
+	for _, contextPath := range requestContent.Files {
+		fmt.Printf("Sending: %s\n", contextPath)
+	}
+}
+
 func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
 	if requestContent.Prompt == "" {
 		return requestContent, nil
@@ -307,6 +316,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	fmt.Printf("Input lines: %d\n", totalLength)
+
+	if flags.Verbose {
+		printSentFiles(requestContentForLLM)
+	}
 
 	if flags.Batch {
 		return submitBatch(requestContentForLLM, cfg, systemPrompt, flags)
