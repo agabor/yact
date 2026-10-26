@@ -2,7 +2,6 @@ package logic
 
 import (
 	"strings"
-	"yact/config"
 )
 
 type PromptLinks struct {
@@ -10,13 +9,8 @@ type PromptLinks struct {
 }
 
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
-	extensions, err := config.LoadExtensions()
-	if err != nil {
-		return PromptLinks{}, err
-	}
-
 	files, err := EnumerateFiles(".", nil, func(name string) bool {
-		return FileHasExtension(name, extensions)
+		return true
 	})
 	if err != nil {
 		return PromptLinks{}, err
