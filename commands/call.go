@@ -93,6 +93,14 @@ func printSentFiles(requestContent logic.RequestContent) {
 	}
 }
 
+func printSentPrompt(prompt string) {
+	if prompt == "" {
+		return
+	}
+	fmt.Println("Sending prompt:")
+	fmt.Println(prompt)
+}
+
 func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
 	if requestContent.Prompt == "" {
 		return requestContent, nil
@@ -320,6 +328,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	if flags.Verbose {
 		printSentFiles(requestContentForLLM)
+		printSentPrompt(requestContentForLLM.Prompt)
 	}
 
 	if flags.Dry {
