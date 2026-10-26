@@ -69,6 +69,7 @@ func main() {
 	maxInputLinesFlag := flag.IntP("max-input-lines", "m", 0, "Set max input lines for the current command, without changing config")
 	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, or next")
 	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
+	verboseFlag := flag.Bool("verbose", false, "Print all file paths sent to the LLM")
 
 	flag.Parse()
 
@@ -86,6 +87,7 @@ func main() {
 		WritePlan:     *planFlag,
 		Batch:         *batchFlag,
 		Download:      *downloadFlag,
+		Verbose:       *verboseFlag,
 		ClaudeLevel:   *claudeLevel,
 		MaxInputLines: *maxInputLinesFlag,
 		Steps:         *stepsFlag,
