@@ -384,6 +384,16 @@
     return tl;
   }
 
+  // scene 2 has no prompt line: a second typed prompt would look like the loop restarting
+  function introTimeline(title, sc, y, fpc, endHold) {
+    var tl = [], i;
+    function add(p, cur) { tl.push([p, title, sc, y, cur]); }
+    for (i = 0; i < 10; i++) add('', false);
+    typed(title, fpc).forEach(function (p) { add(p, Math.floor(tl.length / 8) % 2 === 0); });
+    for (i = 0; i < endHold; i++) add(title, Math.floor(tl.length / 8) % 2 === 0);
+    return tl;
+  }
+
   var STATUS = ['Inspecting Context', 'Locating ball', 'Ensuring ball identity', 'Delivering ball'];
 
   function robotTimeline() {
@@ -473,7 +483,7 @@
 
   function buildScene2(bg) {
     var frames = [];
-    textTimeline(PROMPT, 1, 16, T2, 3, 6, 1.2, 16, 2.0, 6).forEach(function (e) {
+    introTimeline(T2, 3, 6, 2.0, 6).forEach(function (e) {
       frames.push(function (img) {
         groundBall(img);
         drawLine(img, e[0], e[1], e[2], e[3], 45, e[4]);
