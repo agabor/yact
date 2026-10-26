@@ -11,55 +11,51 @@ var csharpModifiers = []string{
 	"new", "const", "volatile", "required",
 }
 
-var csharpTypeKeywords = []string{"class", "struct", "interface", "record", "enum"}
-
-var csharpContainerKeywords = []string{"class", "struct", "interface", "record"}
-
 var csharpControlKeywords = []string{"if", "for", "foreach", "while", "switch", "using", "lock", "return", "catch", "else", "throw", "await", "yield", "new"}
 
-var csharpSignatureRules = signatureRules{
-	IsDeclarationStart:  isCSharpTypeStart,
-	IsMemberStart:       isCSharpMemberStart,
-	IsContainerStart:    isCSharpContainerStart,
-	IsPublicDeclaration: isCSharpPublic,
-	IsPublicMember:      isCSharpPublic,
-}
+var csharpSignatureRules = signatureRules{IsFunction: isCSharpFunctionLabel, IsPublic: isCSharpPublicLabel, CleanLabel: cleanCSharpLabel}
 
-func isCSharpTypeStart(source string, lineStart int) bool {
-	position := skipModifiers(source, skipIndentation(source, lineStart), csharpModifiers)
-	return startsWithKeyword(source, position, csharpTypeKeywords, " \t\r\n")
-}
-
-func isCSharpContainerStart(source string, lineStart int) bool {
-	position := skipModifiers(source, skipIndentation(source, lineStart), csharpModifiers)
-	return startsWithKeyword(source, position, csharpContainerKeywords, " \t\r\n")
-}
-
-func isCSharpMethodStart(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
-	if containsString(csharpControlKeywords, readIdentifier(source, position)) {
+func isCSharpFunctionLabel(label string) bool {
+	position := skipIndentation(label, 0)
+	if containsString(csharpControlKeywords, readIdentifier(label, position)) {
 		return false
 	}
-	position = skipModifiers(source, position, csharpModifiers)
-	return hasCSharpMethodShape(restOfLine(source, position))
+	afterModifiers := skipModifiers(label, position, csharpModifiers)
+	if hasCSharpMethodShape(label[afterModifiers:]) {
+		return true
+	}
+	return afterModifiers > position && isCSharpConstructorShape(label[afterModifiers:])
 }
 
-func isCSharpMemberStart(source string, lineStart int) bool {
-	return isCSharpTypeStart(source, lineStart) || isCSharpMethodStart(source, lineStart)
+func isCSharpConstructorShape(text string) bool {
+	name := readIdentifier(text, 0)
+	return name != "" && strings.HasPrefix(text[len(name):], "(")
 }
 
-func isCSharpPublic(source string, lineStart int) bool {
-	position := skipIndentation(source, lineStart)
+func isCSharpPublicLabel(label string) bool {
+	position := skipIndentation(label, 0)
 	for {
-		modifier, matched := matchModifier(source, position, csharpModifiers)
+		modifier, matched := matchModifier(label, position, csharpModifiers)
 		if !matched {
 			return false
 		}
 		if modifier == "public" {
 			return true
 		}
-		position = skipIndentation(source, position+len(modifier))
+		position = skipIndentation(label, position+len(modifier))
 	}
+}
+
+func cleanCSharpLabel(label string) string {
+	trimmed := strings.TrimSpace(label)
+	for strings.HasPrefix(trimmed, "[") {
+		closing := strings.IndexByte(trimmed, ']')
+		if closing < 0 {
+			break
+		}
+		trimmed = strings.TrimSpace(trimmed[closing+1:])
+	}
+	return trimmed
 }
 
 func hasCSharpMethodShape(line string) bool {
@@ -104,12 +100,4 @@ func readIdentifier(source string, position int) string {
 		end++
 	}
 	return source[position:end]
-}
-
-func restOfLine(source string, position int) string {
-	newline := strings.IndexByte(source[position:], '\n')
-	if newline < 0 {
-		return source[position:]
-	}
-	return source[position : position+newline]
 }

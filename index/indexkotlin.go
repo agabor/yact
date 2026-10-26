@@ -1,19 +1,12 @@
 package index
 
-var kotlinSignatureRules = signatureRules{
-	IsDeclarationStart:  isKotlinDeclarationStart,
-	IsMemberStart:       isKotlinDeclarationStart,
-	IsContainerStart:    isKotlinContainerStart,
-	IsPublicDeclaration: isKotlinPublic,
-	IsPublicMember:      isKotlinPublic,
-	EndsAtLineBreak:     true,
-}
+import "strings"
+
+var kotlinSignatureRules = signatureRules{IsFunction: isKotlinFunctionLabel, IsPublic: isKotlinPublicLabel, SplitsAtLineBreak: true}
 
 var kotlinModifiers = []string{"public", "private", "protected", "internal", "open", "final", "abstract", "override", "suspend", "inline", "infix", "operator", "tailrec", "external", "data", "sealed", "enum", "annotation", "companion", "lateinit", "const", "fun"}
 
 var kotlinDeclarationKeywords = []string{"fun", "class", "object", "interface"}
-
-var kotlinContainerKeywords = []string{"class", "object", "interface"}
 
 var kotlinNonPublicModifiers = []string{"private", "protected", "internal"}
 
@@ -41,25 +34,24 @@ func isKotlinDeclarationKeywordAt(source string, position int) bool {
 	return startsWithKeyword(source, position, kotlinDeclarationKeywords, " \t\r\n<(")
 }
 
-func isKotlinDeclarationStart(source string, lineStart int) bool {
-	return isKotlinDeclarationKeywordAt(source, skipToKotlinKeyword(source, lineStart))
+func isKotlinFunctionLabel(label string) bool {
+	position := skipToKotlinKeyword(label, 0)
+	if !startsWithKeyword(label, position, []string{"fun"}, " \t<(") {
+		return false
+	}
+	return !strings.HasPrefix(label[position:], "fun interface ")
 }
 
-func isKotlinContainerStart(source string, lineStart int) bool {
-	position := skipToKotlinKeyword(source, lineStart)
-	return startsWithKeyword(source, position, kotlinContainerKeywords, " \t\r\n<(")
-}
-
-func isKotlinPublic(source string, lineStart int) bool {
-	position := skipAtAttributes(source, skipIndentation(source, lineStart), isKotlinNameByte)
+func isKotlinPublicLabel(label string) bool {
+	position := skipAtAttributes(label, skipIndentation(label, 0), isKotlinNameByte)
 	for {
-		modifier, matched := matchModifier(source, position, kotlinModifiers)
+		modifier, matched := matchModifier(label, position, kotlinModifiers)
 		if !matched {
 			return true
 		}
 		if containsString(kotlinNonPublicModifiers, modifier) {
 			return false
 		}
-		position = skipAtAttributes(source, skipIndentation(source, position+len(modifier)), isKotlinNameByte)
+		position = skipAtAttributes(label, skipIndentation(label, position+len(modifier)), isKotlinNameByte)
 	}
 }
