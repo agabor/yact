@@ -1,6 +1,8 @@
 # YACT — Yet Another Coding Tool
 
-Minimal, responsive, transparent LLM coding assistant.
+Minimal, responsive, transparent LLM coding assistant. Not for vibe coding.
+
+Website and getting-started guide: [yact.dev](https://yact.dev) (sources in [`docs/`](docs/)).
 
 
 > **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party tool.
@@ -553,8 +555,12 @@ Per-project state lives in your project directory:
 - `.yact/batch_job_id.txt` — the pending batch job and its output flags
 - `.yact/extensions.txt` — file extensions scanned by the keyword command
 
-Add `.yact/` and `yact-prompt.md` to your `.gitignore` so task state and response logs are
-not committed.
+Add `.yact/` to your `.gitignore` so task state and response logs are not committed.
+
+`yact-prompt.md` is up to you. Ignore it if you treat it as a scratch file. Or keep it: a
+plan that has been reviewed and ticked off can be attached to a pull request (committed,
+pasted into the description, or kept elsewhere) to give reviewers more context. Each team
+can decide how.
 
 ## Help
 
@@ -662,3 +668,15 @@ Open an issue at
 [github.com/agabor/yact/issues](https://github.com/agabor/yact/issues). For anything
 security-sensitive, please report it privately through the repository's security advisory
 page rather than in a public issue.
+
+## Contributing
+
+The codebase is small and split into a few focused packages (`api`, `commands`, `config`,
+`index`, `logic`), so it is quick to read. Contributions are welcome: open an issue to
+discuss an idea, or send a pull request.
+
+You can also change what YACT does without touching the code: every `*.txt` file in
+`~/.yact/systemprompts/` becomes a command. See [Prompt commands](#prompt-commands).
+
+The website in `docs/` is plain HTML, CSS and JavaScript with no build step and no
+external requests. `docs/assets/yact-scene.js` draws the hero animation.

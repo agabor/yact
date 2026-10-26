@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>yact: one command, one API call, your files</title>
+  <meta name="description" content="YACT is a small command-line tool. You choose the files, it sends them to the model once and writes complete files back. No agent loop, no surprises.">
+  <link rel="canonical" href="https://yact.dev/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="yact: one command, one API call, your files">
+  <meta property="og:description" content="A small command-line tool for AI-assisted edits you can predict, script and review. Not for vibe coding.">
+  <meta property="og:url" content="https://yact.dev/">
+  <meta property="og:image" content="https://yact.dev/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/pixelify-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/ibm-plex-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="wordmark" href="./">yact</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="getting-started.html">Getting started</a></li>
+          <li><a href="https://github.com/agabor/yact#readme">README</a></li>
+          <li><a href="https://github.com/agabor/yact">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="headline">
+      <div class="wrap">
+        <figure class="scene">
+          <div class="scene-wrap" id="scene-wrap">
+            <div class="scene-frame">
+              <canvas id="scene" width="256" height="112" role="img" aria-describedby="scene-desc" aria-label="Pixel art animation"></canvas>
+              <noscript><img src="assets/poster.png" width="1024" height="448" alt="Pixel art title card: yact. Not for vibe coding."></noscript>
+            </div>
+          </div>
+          <figcaption id="scene-desc">
+            <span>A robot agent takes four steps to fetch a ball. A small truck goes straight to it.</span>
+            <button type="button" class="link-btn" id="scene-toggle" hidden>Pause animation</button>
+          </figcaption>
+        </figure>
+
+        <h1 id="headline"><span>One command.</span> <span>One API call.</span> <span>Your files.</span></h1>
+        <p class="lede">YACT is a small command-line tool. You choose the files, it sends them to the model once and writes complete files back. No agent loop, no surprises.</p>
+
+        <div class="actions">
+          <a class="btn btn-primary" href="getting-started.html">Get started</a>
+          <a class="btn" href="https://github.com/agabor/yact">View the source</a>
+        </div>
+
+        <pre data-copy><code>git clone https://github.com/agabor/yact.git
+cd yact
+go build -o y .</code></pre>
+
+        <ul class="jump" aria-label="Jump to your section">
+          <li><a href="#developers">For developers</a></li>
+          <li><a href="#learning">For people learning the job</a></li>
+          <li><a href="#mentors">For mentors and reviewers</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="idea" aria-labelledby="idea-h">
+      <div class="wrap">
+        <h2 id="idea-h">What it does</h2>
+        <p>Most coding tools decide for you: which files to read, which commands to run, when to stop. YACT does exactly what you ask, once. You pick the context, you read the plan, you review the diff.</p>
+        <p>Each command makes a single API call. Complete source files in the response are written to disk, and any prose is printed to your terminal.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">How it works</h2>
+        <ol class="steps">
+          <li>
+            <p><strong>Pick the files.</strong> <code>y read</code> adds links to a plain Markdown task file, <code>yact-prompt.md</code>. Every project file whose path appears in the task is sent along as context.</p>
+            <pre data-copy><code>y new
+y read "commands/*.go"</code></pre>
+          </li>
+          <li>
+            <p><strong>Plan, if you want one.</strong> The plan is saved as an editable Markdown file. Each step changes one file and lists the files it needs.</p>
+            <pre data-copy><code>y -p plan "add a --version flag"</code></pre>
+          </li>
+          <li>
+            <p><strong>Implement.</strong> One step, one API call. Complete files are written to your working tree and the step is ticked off in the plan.</p>
+            <pre data-copy><code>y -s next act</code></pre>
+          </li>
+          <li>
+            <p><strong>Review.</strong> Read the diff the way you would read anyone else's. Then run the next step.</p>
+            <pre data-copy><code>git diff</code></pre>
+          </li>
+        </ol>
+        <p>New here? <a href="getting-started.html">Getting started</a> walks through installing YACT and making a first change.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="why" aria-labelledby="why-h">
+      <div class="wrap">
+        <h2 id="why-h">Why you might like it</h2>
+        <dl class="defs">
+          <dt>Predictable</dt>
+          <dd>Exactly one API call per command. Every call prints the model, the token counts and an estimated cost, and an input-line limit stops you from sending more than you meant to.</dd>
+          <dt>Scriptable</dt>
+          <dd>There is no session to manage. Each command reads its context, makes one call and exits, so it fits a shell loop, a Makefile target or a CI job.</dd>
+          <dt>Transparent</dt>
+          <dd>The task is a Markdown file you can read and edit. Every raw response is logged. There is no telemetry and no background process.</dd>
+          <dt>Cheap to run</dt>
+          <dd>Haiku is the default model. Add <code>-b</code> to submit a batch at a 50% discount, or <code>-n</code> to read a response before <code>y commit</code> writes it.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="audiences" aria-labelledby="who-h">
+      <div class="wrap">
+        <h2 id="who-h">Who it's for</h2>
+        <p>Whether you are two weeks into your first job or twenty years in, the workflow is the same: you choose the context, you read the plan, you review every change.</p>
+
+        <h3 id="developers">For developers</h3>
+        <p>You know your codebase and you want edits you can predict, script and review. You keep source files small, and you would rather compose commands than chat with an agent.</p>
+
+        <h3 id="learning">For people learning the job</h3>
+        <p>Working with AI should not mean shipping code you don't understand. YACT's workflow keeps the decisions with you:</p>
+        <ul>
+          <li>You choose the files, so you have to find your way around the codebase.</li>
+          <li>Ask for a plan first and read it before any code is written: what changes, in which file, and why.</li>
+          <li>You review one small change at a time, one file per step.</li>
+          <li>You can ask without changing anything. <code class="long">y ask "why does this function return early?"</code> explains code and leaves your source files alone.</li>
+        </ul>
+        <p>YACT does not do the thinking for you.</p>
+
+        <h3 id="mentors">For mentors and reviewers</h3>
+        <p>Review the intent, not just the diff.</p>
+        <ul>
+          <li><strong>Read the plan first.</strong> Is the breakdown right? Is each step one file? Is the context sensible? Fixing a plan is cheaper than fixing code.</li>
+          <li><strong>Teach with plans.</strong> Share a plan as an example of how you would break a task down, and ask a junior to explain theirs.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="reviews" aria-labelledby="reviews-h">
+      <div class="wrap">
+        <h2 id="reviews-h">Plans make reviews better</h2>
+        <p>A pull request normally shows what changed. A YACT plan also shows what was meant to change, step by step.</p>
+        <pre><code># Goal
+Add a --version flag that prints the build version.
+
+## Steps
+### [x] 1. Add version constant
+**File:** config/config.go
+**Context:** none
+
+### [ ] 2. Wire the flag in main.go
+**File:** main.go
+**Context:** [config/config.go](config/config.go)</code></pre>
+        <p>Reviewers can check the diff against the plan, spot scope creep, and see exactly which files the model was given. Because each step touches one file, the history comes out as small, readable commits.</p>
+        <p>How the plan reaches the review is up to you. Commit it, paste it into the pull request description, link to it, or keep it local. YACT does not prescribe a way, so whoever leads the team can pick what fits.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="tradeoffs" aria-labelledby="tradeoffs-h">
+      <div class="wrap">
+        <h2 id="tradeoffs-h">Honest trade-offs</h2>
+        <ul>
+          <li>You choose the context. YACT will not go looking for files, so you need to know your codebase.</li>
+          <li>It rewrites whole files. Keep them to a few hundred lines, because every edited file has to fit in the model's output limit.</li>
+          <li>It never runs your tests or retries. You do that.</li>
+          <li>It works with Anthropic's API only, for now.</li>
+        </ul>
+        <div class="two-up">
+          <div>
+            <h3>A good fit</h3>
+            <p>You know your codebase, you want edits you can predict and script, and you keep files small.</p>
+          </div>
+          <div>
+            <h3>Not a fit</h3>
+            <p>You want a tool that finds the files itself, runs the tests and fixes what broke.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="privacy" aria-labelledby="privacy-h">
+      <div class="wrap">
+        <h2 id="privacy-h">Privacy and safety</h2>
+        <ul>
+          <li>Your API key is stored on your machine in <code>~/.yact/config</code> and sent only to Anthropic's API.</li>
+          <li>There is no telemetry. The only network calls are the API calls you trigger, and the system-prompt downloads you ask for with <code>-d</code>.</li>
+          <li>You choose what is sent: the files your task mentions, the message files in <code>.yact/</code>, and the task itself. <code>--verbose</code> lists every path.</li>
+          <li>YACT writes the files the model returns. Run it in a version-controlled working tree and read the result with <code>git diff</code>, or use <code>-n</code> to read a response first and <code>y commit</code> to apply it.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="faq" aria-labelledby="faq-h">
+      <div class="wrap">
+        <h2 id="faq-h">Questions</h2>
+        <details>
+          <summary>Does it send my whole repository?</summary>
+          <p>No. Only files whose paths appear in your task are sent, together with the message files in <code>.yact/</code>.</p>
+        </details>
+        <details>
+          <summary>Which models can I use?</summary>
+          <p>Anthropic's Claude models: Haiku (the default), Sonnet, Opus and Fable. Pick one with <code>-c 1</code> to <code>-c 4</code> or set it with <code>y config claude_model</code>. Availability depends on your Anthropic account.</p>
+        </details>
+        <details>
+          <summary>What does it cost?</summary>
+          <p>You use your own Anthropic API key and pay Anthropic for what you use. YACT prints the token counts and an estimated cost after every call.</p>
+        </details>
+        <details>
+          <summary>How is it different from aider, Claude Code or Cursor?</summary>
+          <p>Those tools are interactive and agentic: they explore, loop and often run commands. YACT is one-shot and stateless, and it does only what you ask.</p>
+        </details>
+        <details>
+          <summary>Is it made by Anthropic?</summary>
+          <p>No. YACT is an independent open-source project. It is not made, endorsed or supported by Anthropic PBC.</p>
+        </details>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="make-it-yours" aria-labelledby="yours-h">
+      <div class="wrap">
+        <h2 id="yours-h">Make it yours</h2>
+
+        <h3>Add a command without touching the code</h3>
+        <p>Every text file in <code>~/.yact/systemprompts/</code> becomes a command. Drop in <code>review.txt</code> and you have <code>y review</code>. Write an <code>explain.txt</code> that explains instead of editing and you have a command for onboarding. A <code>flags:</code> line at the top picks the model and turns writing off. No rebuild, no plugin API, no configuration language: a prompt is a file you can read and share.</p>
+        <pre data-copy><code>cat > ~/.yact/systemprompts/explain.txt &lt;&lt;'EOF'
+flags: c2n
+You are a patient mentor. Explain the code you are given in plain
+language: what it does, why it is written that way, and what to read next.
+Do not write or change any code.
+EOF
+
+y read "commands/*.go"
+y explain "how is a command dispatched?"</code></pre>
+
+        <h3>A codebase you can read in an afternoon</h3>
+        <p>YACT is a few thousand lines of Go, split into small packages (<code>api</code>, <code>commands</code>, <code>config</code>, <code>index</code> and <code>logic</code>) with one clear job per file. If you want a new feature, a new language for the code index, or a bug fixed, it is approachable.</p>
+
+        <h3>Contributors are welcome</h3>
+        <p>Open an issue, send a pull request, or share a prompt that worked well for your team. Start at <a href="https://github.com/agabor/yact">github.com/agabor/yact</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal. <a href="https://github.com/agabor/yact">Source</a>, <a href="https://github.com/agabor/yact/releases">releases</a> and <a href="https://github.com/agabor/yact/issues">issues</a> are on GitHub.</p>
+      <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls.</p>
+    </div>
+  </footer>
+
+  <script src="assets/yact-scene.js"></script>
+  <script src="assets/site.js"></script>
+</body>
+</html>
