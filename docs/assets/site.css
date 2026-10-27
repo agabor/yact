@@ -32,6 +32,8 @@
   --soft: #ececec;
   --display: "Pixelify Sans", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --night: #2d2d2d;
+  --night-ink: #f6f6f6;
   --measure: 64ch;
   color-scheme: light dark;
 }
@@ -43,7 +45,10 @@
     --mid: #a8a8a8;
     --rule: #444444;
     --soft: #262626;
+    --night: #0d0d0d;
   }
+  .art { filter: invert(1); }
+  .art.art-stars { filter: none; }
   /* the animation is grayscale, so inverting it matches the dark palette */
   .scene canvas,
   .scene img { filter: invert(1); }
@@ -150,6 +155,9 @@ h1, h2, h3 {
   letter-spacing: 0;
 }
 h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.1rem);
   line-height: 1.2;
   margin-bottom: 16px;
@@ -399,4 +407,67 @@ th, td {
   /* on narrow screens the copy button sits under the code instead of over it */
   .code pre[data-copy] { padding-right: 16px; }
   .copy { position: static; display: block; margin: 8px 0 0 auto; }
+}
+
+/* ---------------------------------------------------------------- icons and pixel-art sections */
+.icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+
+/* A section with a pixel-art strip along its bottom edge. The strip is decoration only and
+   sits below the text, which keeps its quiet background. Strips are drawn at 3x. */
+.section.has-art {
+  position: relative;
+  background: var(--soft);
+  padding-bottom: calc(40px + var(--art-h));
+}
+.art {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--art-h);
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: auto 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.art-road-section { --art-h: 72px; }
+.art-skyline-section { --art-h: 108px; }
+.art-hills-section { --art-h: 90px; }
+.art-road { background-image: url("art-road.png"); }
+.art-skyline { background-image: url("art-skyline.png"); }
+.art-hills { background-image: url("art-hills.png"); }
+
+/* closing call to action: a night sky, the one dark band on the page */
+.section.night {
+  position: relative;
+  padding: 56px 0 64px;
+  background: var(--night);
+  color: var(--night-ink);
+}
+.night .wrap { position: relative; }
+.art-stars {
+  inset: 0;
+  height: auto;
+  background-image: url("art-stars.png");
+  background-repeat: repeat;
+  background-position: left top;
+  background-size: 1024px 320px;
+}
+.night :focus-visible { outline-color: var(--night-ink); }
+.night .actions { margin-bottom: 0; }
+.night .btn { color: var(--night-ink); background: transparent; border-color: var(--night-ink); }
+.night .btn:hover { color: var(--night); background: var(--night-ink); }
+.night .btn-primary { color: var(--night); background: var(--night-ink); }
+.night .btn-primary:hover { color: var(--night-ink); background: transparent; }
+
+@media (max-width: 520px) {
+  .icon { width: 24px; height: 24px; }
+  h2 { gap: 10px; }
 }
