@@ -58,6 +58,14 @@ func getPromptFile(name string) (string, error) {
 	return filepath.Join(dir, name+".txt"), nil
 }
 
+func getIncludeFile(name string) (string, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, name), nil
+}
+
 func GetProjectYactDir() string {
 	return ".yact"
 }
@@ -163,6 +171,24 @@ func parseFlags(content string) []string {
 	return flags
 }
 
+func readInclude(name string) (string, error) {
+	if err := validateIncludeName(name); err != nil {
+		return "", err
+	}
+
+	includeFile, err := getIncludeFile(name)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(includeFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func LoadPromptWithFlags(name string) (string, []string, error) {
 	promptFile, err := getPromptFile(name)
 	if err != nil {
@@ -174,46 +200,81 @@ func LoadPromptWithFlags(name string) (string, []string, error) {
 		return "", nil, err
 	}
 
-	content := string(data)
+	content, err := ExpandIncludes(string(data), readInclude)
+	if err != nil {
+		return "", nil, fmt.Errorf("expanding includes for '%s': %w", name, err)
+	}
+
 	flags := parseFlags(content)
 	return content, flags, nil
 }
 
-func DownloadPrompt(name string) error {
-	promptFile, err := getPromptFile(name)
-	if err != nil {
-		return err
-	}
-
+func fetchPromptFile(fileName string) ([]byte, error) {
 	dir, err := getPromptsDir()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
+		return nil, err
 	}
 
-	url := promptDownloadBaseURL + name + ".txt"
-
-	fmt.Printf("Downloading system prompt for '%s'...\n", name)
+	url := promptDownloadBaseURL + fileName
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return &promptDownloadError{name: name, statusCode: resp.StatusCode}
+		return nil, &promptDownloadError{name: fileName, statusCode: resp.StatusCode}
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return nil, err
+	}
+
+	includeFile, err := getIncludeFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(includeFile, data, 0644); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func downloadPromptTree(fileName string, visited map[string]bool) error {
+	if visited[fileName] {
+		return nil
+	}
+	visited[fileName] = true
+
+	data, err := fetchPromptFile(fileName)
+	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(promptFile, data, 0644); err != nil {
+	for _, includeName := range ParseIncludeNames(string(data)) {
+		if err := validateIncludeName(includeName); err != nil {
+			return err
+		}
+		if err := downloadPromptTree(includeName, visited); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func DownloadPrompt(name string) error {
+	fmt.Printf("Downloading system prompt for '%s'...\n", name)
+
+	if err := downloadPromptTree(name+".txt", map[string]bool{}); err != nil {
 		return err
 	}
 
