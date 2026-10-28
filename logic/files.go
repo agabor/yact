@@ -8,9 +8,14 @@ import (
 	"yact/config"
 )
 
-func EnumerateFiles(root string, ignoredRootFolders []string, includeFile func(name string) bool) ([]string, error) {
+func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, error) {
+	ignoredRootFolders, err := config.LoadIgnoredFolders()
+	if err != nil {
+		return nil, err
+	}
+
 	var files []string
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

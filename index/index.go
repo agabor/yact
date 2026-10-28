@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"yact/config"
 	"yact/logic"
 )
 
@@ -89,11 +88,7 @@ func WriteIndex(visibility string) error {
 	if err != nil {
 		return err
 	}
-	ignoredFolders, err := config.LoadIgnoredFolders()
-	if err != nil {
-		return err
-	}
-	files, err := logic.EnumerateFiles(".", ignoredFolders, func(name string) bool {
+	files, err := logic.EnumerateFiles(".", func(name string) bool {
 		_, found := findLanguageForFile(name, languages)
 		return found
 	})

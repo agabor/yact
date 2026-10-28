@@ -15,7 +15,7 @@ func HandleKeywordCommand(args []string) error {
 		return err
 	}
 
-	files, err := logic.EnumerateFiles(".", nil, func(name string) bool {
+	files, err := logic.EnumerateFiles(".", func(name string) bool {
 		return logic.FileHasExtension(name, extensions)
 	})
 	if err != nil {
