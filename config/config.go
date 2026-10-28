@@ -50,12 +50,12 @@ func getPromptsDir() (string, error) {
 	return filepath.Join(dir, "systemprompts"), nil
 }
 
-func getPromptFile(name string) (string, error) {
+func getPromptFile(name PromptName) (string, error) {
 	dir, err := getPromptsDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, name+".txt"), nil
+	return filepath.Join(dir, string(name)+".txt"), nil
 }
 
 func getIncludeFile(name string) (string, error) {
@@ -189,7 +189,7 @@ func readInclude(name string) (string, error) {
 	return string(data), nil
 }
 
-func LoadPromptWithFlags(name string) (string, []string, error) {
+func LoadPromptWithFlags(name PromptName) (string, []string, error) {
 	promptFile, err := getPromptFile(name)
 	if err != nil {
 		return "", nil, err
@@ -271,10 +271,10 @@ func downloadPromptTree(fileName string, visited map[string]bool) error {
 	return nil
 }
 
-func DownloadPrompt(name string) error {
+func DownloadPrompt(name PromptName) error {
 	fmt.Printf("Downloading system prompt for '%s'...\n", name)
 
-	if err := downloadPromptTree(name+".txt", map[string]bool{}); err != nil {
+	if err := downloadPromptTree(string(name)+".txt", map[string]bool{}); err != nil {
 		return err
 	}
 

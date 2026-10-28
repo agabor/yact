@@ -9,6 +9,16 @@ import (
 
 var includePattern = regexp.MustCompile(`\[\[\s*([^\[\]\s]+)\s*\]\]`)
 
+// PromptName is validated so that it cannot escape the prompts directory or reach a download URL.
+type PromptName string
+
+func ParsePromptName(raw string) (PromptName, error) {
+	if err := validateIncludeName(raw); err != nil {
+		return "", err
+	}
+	return PromptName(raw), nil
+}
+
 func ParseIncludeNames(content string) []string {
 	var names []string
 	seen := make(map[string]bool)

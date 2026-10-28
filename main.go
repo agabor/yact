@@ -49,20 +49,20 @@ func validateIndexLevel(level int) error {
 	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
 }
 
-func promptNotFoundMessage(command string, err error) {
+func promptNotFoundMessage(command config.PromptName, err error) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
 	fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
-func downloadAndLoadSystemPrompt(command string) (string, []string, error) {
+func downloadAndLoadSystemPrompt(command config.PromptName) (string, []string, error) {
 	if err := config.DownloadPrompt(command); err != nil {
 		return "", nil, err
 	}
 	return config.LoadPromptWithFlags(command)
 }
 
-func loadSystemPrompt(command string, forceDownload bool) (string, []string, error) {
+func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, []string, error) {
 	if forceDownload {
 		return downloadAndLoadSystemPrompt(command)
 	}
@@ -174,9 +174,15 @@ func main() {
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 
-		systemPrompt, defaultFlags, err := loadSystemPrompt(command, flags.Download)
+		promptName, err := config.ParsePromptName(command)
 		if err != nil {
-			promptNotFoundMessage(command, err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		systemPrompt, defaultFlags, err := loadSystemPrompt(promptName, flags.Download)
+		if err != nil {
+			promptNotFoundMessage(promptName, err)
 			os.Exit(1)
 		}
 
