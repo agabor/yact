@@ -162,8 +162,8 @@ func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) e
 }
 
 func selectPlanSteps(planText string, selector string) (PlanSelection, error) {
-	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
+		parsedPlan := logic.ParsePlan(planText)
 		remainingSteps := parsedPlan.UncheckedSteps()
 		if len(parsedPlan.Steps) == len(remainingSteps) {
 			return PlanSelection{Prompt: planText, Steps: parsedPlan.Steps}, nil
@@ -181,7 +181,11 @@ func selectPlanSteps(planText string, selector string) (PlanSelection, error) {
 	if err != nil {
 		return PlanSelection{}, err
 	}
+	if stepSelector.Kind == logic.StepSelectorWholePlan {
+		return PlanSelection{Prompt: planText}, nil
+	}
 
+	parsedPlan := logic.ParsePlan(planText)
 	selection, err := logic.SelectSteps(parsedPlan, stepSelector)
 	if err != nil {
 		return PlanSelection{}, err

@@ -26,8 +26,16 @@ type StepRange struct {
 	End   int
 }
 
+type StepSelectorKind int
+
+const (
+	StepSelectorRanges StepSelectorKind = iota
+	StepSelectorNext
+	StepSelectorWholePlan
+)
+
 type StepSelector struct {
-	Next   bool
+	Kind   StepSelectorKind
 	Ranges []StepRange
 }
 
@@ -199,10 +207,14 @@ func ParseStepSelector(selector string) (StepSelector, error) {
 		return StepSelector{}, fmt.Errorf("steps selector is empty")
 	}
 
+	if strings.TrimSpace(selector) == "0" {
+		return StepSelector{Kind: StepSelectorWholePlan}, nil
+	}
+
 	items := strings.Split(selector, ",")
 
 	if len(items) == 1 && isNextKeyword(items[0]) {
-		return StepSelector{Next: true}, nil
+		return StepSelector{Kind: StepSelectorNext}, nil
 	}
 
 	stepSelector := StepSelector{}
@@ -293,6 +305,11 @@ func selectStepsInRanges(plan ParsedPlan, ranges []StepRange) StepSelection {
 }
 
 func SelectSteps(plan ParsedPlan, selector StepSelector) (StepSelection, error) {
+	if selector.Kind == StepSelectorWholePlan {
+		// The whole plan is sent as it is, so its step structure is not checked.
+		return StepSelection{}, nil
+	}
+
 	if err := plan.Validate(); err != nil {
 		return StepSelection{}, err
 	}
@@ -301,7 +318,7 @@ func SelectSteps(plan ParsedPlan, selector StepSelector) (StepSelection, error) 
 		return StepSelection{}, fmt.Errorf("the plan contains no steps")
 	}
 
-	if selector.Next {
+	if selector.Kind == StepSelectorNext {
 		return selectNextStep(plan), nil
 	}
 
