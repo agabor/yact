@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -47,14 +49,28 @@ func validateIndexLevel(level int) error {
 	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
 }
 
-func promptNotFoundMessage(command string, downloaded bool) {
+func promptNotFoundMessage(command string, err error) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
-	if !downloaded {
-		fmt.Fprintf(os.Stderr, "Try downloading it with: y -d %s\n", command)
-	} else {
-		fmt.Fprintf(os.Stderr, "Download failed or no prompt exists for '%s'.\n", command)
-	}
+	fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
+}
+
+func downloadAndLoadSystemPrompt(command string) (string, []string, error) {
+	if err := config.DownloadPrompt(command); err != nil {
+		return "", nil, err
+	}
+	return config.LoadPromptWithFlags(command)
+}
+
+func loadSystemPrompt(command string, forceDownload bool) (string, []string, error) {
+	if forceDownload {
+		return downloadAndLoadSystemPrompt(command)
+	}
+	systemPrompt, flags, err := config.LoadPromptWithFlags(command)
+	if errors.Is(err, fs.ErrNotExist) {
+		return downloadAndLoadSystemPrompt(command)
+	}
+	return systemPrompt, flags, err
 }
 
 func main() {
@@ -157,17 +173,10 @@ func main() {
 		commandErr = commands.HandleIndexCommand(commandArgs)
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
-		downloaded := flags.Download
-		if downloaded {
-			if err := config.DownloadPrompt(command); err != nil {
-				commandErr = err
-				break
-			}
-		}
 
-		systemPrompt, defaultFlags, err := config.LoadPromptWithFlags(command)
+		systemPrompt, defaultFlags, err := loadSystemPrompt(command, flags.Download)
 		if err != nil {
-			promptNotFoundMessage(command, downloaded)
+			promptNotFoundMessage(command, err)
 			os.Exit(1)
 		}
 
