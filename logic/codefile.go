@@ -12,27 +12,42 @@ const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	Path    string
+	Path    ProjectPath
 	Content string
 }
 
+type ParsedElementKind int
+
+const (
+	ElementText ParsedElementKind = iota
+	ElementCodeFile
+	ElementRejectedFile
+)
+
 type ParsedElement struct {
-	IsCodeFile bool
+	Kind       ParsedElementKind
 	CodeFile   CodeFile
 	Text       string
 }
 
 func NewCodeFileElement(cf CodeFile) ParsedElement {
 	return ParsedElement{
-		IsCodeFile: true,
-		CodeFile:   cf,
+		Kind:     ElementCodeFile,
+		CodeFile: cf,
 	}
 }
 
 func NewTextElement(text string) ParsedElement {
 	return ParsedElement{
-		IsCodeFile: false,
-		Text:       text,
+		Kind: ElementText,
+		Text: text,
+	}
+}
+
+func NewRejectedFileElement(reason error) ParsedElement {
+	return ParsedElement{
+		Kind: ElementRejectedFile,
+		Text: reason.Error(),
 	}
 }
 
@@ -85,34 +100,30 @@ func isValidCodeFile(lines []string) bool {
 	return path != ""
 }
 
-func linesToCodeFile(lines []string) CodeFile {
+func linesToCodeFile(lines []string) (CodeFile, error) {
 	filePath, lineIndex := detectFilePath(lines)
 
 	if filePath != "" {
 		lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
 	}
 
-	if strings.HasPrefix(filePath, "/") {
-		relPath := filePath[1:]
-		if _, err := os.Stat(relPath); err == nil {
-			filePath = relPath
-		} else if _, err := os.Stat(filePath); err != nil {
-			filePath = relPath
-		}
+	path, err := ParseProjectPath(filePath)
+	if err != nil {
+		return CodeFile{}, err
 	}
 
 	return CodeFile{
-		Path:    strings.TrimPrefix(strings.TrimSpace(filePath), "./"),
+		Path:    path,
 		Content: joinLines(lines),
-	}
+	}, nil
 }
 
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func ReadAsFile(filePath string) (CodeFile, error) {
-	content, err := os.ReadFile(filePath)
+func ReadAsFile(filePath ProjectPath) (CodeFile, error) {
+	content, err := os.ReadFile(string(filePath))
 	if err != nil {
 		return CodeFile{}, err
 	}
@@ -128,7 +139,7 @@ func (cf *CodeFile) IsEmpty() bool {
 }
 
 func (cf *CodeFile) Write() error {
-	filePath := cf.Path
+	filePath := string(cf.Path)
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)
@@ -147,7 +158,7 @@ func (cf *CodeFile) Delete() error {
 		return fmt.Errorf("cannot delete: empty path")
 	}
 
-	err := os.Remove(cf.Path)
+	err := os.Remove(string(cf.Path))
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("Not found (nothing to delete): %s\n", cf.Path)
@@ -172,7 +183,12 @@ func processCodeBlock(lineBuffer []string) *ParsedElement {
 		return nil
 	}
 	if isValidCodeFile(lineBuffer) {
-		element := NewCodeFileElement(linesToCodeFile(lineBuffer))
+		codeFile, err := linesToCodeFile(lineBuffer)
+		if err != nil {
+			element := NewRejectedFileElement(err)
+			return &element
+		}
+		element := NewCodeFileElement(codeFile)
 		return &element
 	}
 	element := NewTextElement(joinLines(lineBuffer))

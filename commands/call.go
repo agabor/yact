@@ -68,7 +68,10 @@ func validateCodeOnlyResponse(content string) error {
 	}
 
 	for _, element := range elements {
-		if !element.IsCodeFile {
+		switch element.Kind {
+		case logic.ElementRejectedFile:
+			return fmt.Errorf("response contains a rejected file path: %s", element.Text)
+		case logic.ElementText:
 			if strings.TrimSpace(element.Text) != "" {
 				return fmt.Errorf("response contains free text outside code blocks")
 			}
@@ -241,7 +244,11 @@ func countInputLines(requestContent logic.RequestContent) (int, error) {
 	}
 
 	for _, contextPath := range requestContent.Files {
-		codeFile, err := logic.ReadAsFile(contextPath)
+		projectPath, err := logic.ParseProjectPath(contextPath)
+		if err != nil {
+			return 0, err
+		}
+		codeFile, err := logic.ReadAsFile(projectPath)
 		if err != nil {
 			return 0, err
 		}
@@ -419,12 +426,15 @@ func processResponse(content string) error {
 	elements := logic.ParseCodeFiles(content)
 
 	for _, element := range elements {
-		if element.IsCodeFile {
+		switch element.Kind {
+		case logic.ElementCodeFile:
 			v := element.CodeFile
 			if err := v.Apply(); err != nil {
 				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
 			}
-		} else {
+		case logic.ElementRejectedFile:
+			parseErrors = append(parseErrors, element.Text)
+		case logic.ElementText:
 			if strings.TrimSpace(element.Text) != "" {
 				fmt.Println(element.Text)
 			}
