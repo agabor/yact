@@ -12,6 +12,13 @@ import (
 	"yact/logic"
 )
 
+type PlanSelection struct {
+	Prompt   string
+	Steps    []logic.PlanStep
+	AllDone  bool
+	Warnings []string
+}
+
 func showProgress(done chan bool) {
 	chars := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
 	idx := 0
@@ -104,6 +111,28 @@ func printSentPrompt(prompt string) {
 	fmt.Println(prompt)
 }
 
+func printCallResult(result api.CallResult) {
+	fmt.Printf("Claude API call took %.2f seconds\n", result.Duration.Seconds())
+	fmt.Printf("Files sent: %d\n", result.FileCount)
+	fmt.Printf("Token usage - Input: %d, Output: %d\n", result.InputTokens, result.OutputTokens)
+	fmt.Printf("Cost: $%.6f\n", result.Cost)
+
+	if result.Truncated {
+		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", config.MaxTokens)
+	}
+}
+
+func printApplyOutcome(path logic.ProjectPath, outcome logic.ApplyOutcome) {
+	switch outcome {
+	case logic.OutcomeWritten:
+		fmt.Printf("Written: %s\n", path)
+	case logic.OutcomeDeleted:
+		fmt.Printf("Deleted: %s\n", path)
+	case logic.OutcomeNothingToDelete:
+		fmt.Printf("Not found (nothing to delete): %s\n", path)
+	}
+}
+
 func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
 	if requestContent.Prompt == "" {
 		return requestContent, nil
@@ -132,41 +161,41 @@ func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) e
 	return err
 }
 
-func selectPlanSteps(planText string, selector string) (string, []logic.PlanStep, bool, error) {
+func selectPlanSteps(planText string, selector string) (PlanSelection, error) {
 	parsedPlan := logic.ParsePlan(planText)
 	if selector == "" {
 		remainingSteps := parsedPlan.UncheckedSteps()
 		if len(parsedPlan.Steps) == len(remainingSteps) {
-			return planText, parsedPlan.Steps, false, nil
+			return PlanSelection{Prompt: planText, Steps: parsedPlan.Steps}, nil
 		}
 		if parsedPlan.AllChecked() {
-			fmt.Println("All plan steps are done.")
-			return "", nil, true, nil
+			return PlanSelection{AllDone: true}, nil
 		}
-		fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(remainingSteps)))
-		return logic.BuildStepsPrompt(parsedPlan, remainingSteps), remainingSteps, false, nil
+		return PlanSelection{
+			Prompt: logic.BuildStepsPrompt(parsedPlan, remainingSteps),
+			Steps:  remainingSteps,
+		}, nil
 	}
 
 	stepSelector, err := logic.ParseStepSelector(selector)
 	if err != nil {
-		return "", nil, false, err
+		return PlanSelection{}, err
 	}
 
 	selection, err := logic.SelectSteps(parsedPlan, stepSelector)
 	if err != nil {
-		return "", nil, false, err
+		return PlanSelection{}, err
 	}
-
-	printWarnings(selection.Warnings)
 
 	if selection.AllDone {
-		fmt.Println("All plan steps are done.")
-		return "", nil, true, nil
+		return PlanSelection{AllDone: true, Warnings: selection.Warnings}, nil
 	}
 
-	fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(selection.Steps)))
-
-	return logic.BuildStepsPrompt(parsedPlan, selection.Steps), selection.Steps, false, nil
+	return PlanSelection{
+		Prompt:   logic.BuildStepsPrompt(parsedPlan, selection.Steps),
+		Steps:    selection.Steps,
+		Warnings: selection.Warnings,
+	}, nil
 }
 
 func tickPlanSteps(planText string, steps []logic.PlanStep) error {
@@ -301,16 +330,21 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
-		selectedPrompt, selectedSteps, allDone, err := selectPlanSteps(planPrompt, flags.Steps)
+		selection, err := selectPlanSteps(planPrompt, flags.Steps)
 
 		if err != nil {
 			return err
 		}
-		if allDone {
+		printWarnings(selection.Warnings)
+		if selection.AllDone {
+			fmt.Println("All plan steps are done.")
 			return nil
 		}
-		sentSteps = selectedSteps
-		requestContentForLLM.Prompt = selectedPrompt
+		if len(selection.Steps) > 0 {
+			fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(selection.Steps)))
+		}
+		sentSteps = selection.Steps
+		requestContentForLLM.Prompt = selection.Prompt
 	} else {
 		promptFileText, _, err := logic.ReadPlan()
 		if err != nil {
@@ -349,16 +383,18 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return submitBatch(requestContentForLLM, cfg, systemPrompt, mode)
 	}
 
-	response, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt)
+	result, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt)
 	if err != nil {
 		return err
 	}
 
-	if err := storeBuffer(response); err != nil {
+	printCallResult(result)
+
+	if err := storeBuffer(result.Text); err != nil {
 		return err
 	}
 
-	if err := deliverResponse(mode, response); err != nil {
+	if err := deliverResponse(mode, result.Text); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
@@ -377,7 +413,7 @@ func newClient(cfg *config.Config) api.Client {
 	return client
 }
 
-func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (string, error) {
+func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (api.CallResult, error) {
 	client := newClient(cfg)
 
 	if noProgress {
@@ -390,12 +426,12 @@ func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.C
 	done := make(chan bool)
 	go showProgress(done)
 
-	response, err := client.Call(requestContent, systemPrompt)
+	result, err := client.Call(requestContent, systemPrompt)
 
 	done <- true
 	close(done)
 
-	return response, err
+	return result, err
 }
 
 func storeBuffer(response string) error {
@@ -429,15 +465,21 @@ func deliverResponse(mode config.OutputMode, response string) error {
 
 func processResponse(content string) error {
 	var parseErrors []string
-	elements := logic.ParseCodeFiles(content)
+	elements, incomplete := logic.ParseCodeFilesDetailed(content)
+	if incomplete {
+		fmt.Println("Warning: Incomplete code block.")
+	}
 
 	for _, element := range elements {
 		switch element.Kind {
 		case logic.ElementCodeFile:
 			v := element.CodeFile
-			if err := v.Apply(); err != nil {
+			outcome, err := v.Apply()
+			if err != nil {
 				parseErrors = append(parseErrors, fmt.Sprintf("%v", err))
+				continue
 			}
+			printApplyOutcome(v.Path, outcome)
 		case logic.ElementRejectedFile:
 			parseErrors = append(parseErrors, element.Text)
 		case logic.ElementText:

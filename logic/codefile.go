@@ -30,6 +30,14 @@ type ParsedElement struct {
 	Text       string
 }
 
+type ApplyOutcome int
+
+const (
+	OutcomeWritten ApplyOutcome = iota
+	OutcomeDeleted
+	OutcomeNothingToDelete
+)
+
 func NewCodeFileElement(cf CodeFile) ParsedElement {
 	return ParsedElement{
 		Kind:     ElementCodeFile,
@@ -138,7 +146,7 @@ func (cf *CodeFile) IsEmpty() bool {
 	return strings.TrimSpace(cf.Content) == ""
 }
 
-func (cf *CodeFile) Write() error {
+func (cf *CodeFile) writeContent() error {
 	filePath := string(cf.Path)
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -149,33 +157,34 @@ func (cf *CodeFile) Write() error {
 		return fmt.Errorf("error writing file %s: %w", filePath, err)
 	}
 
-	fmt.Printf("Written: %s\n", filePath)
 	return nil
 }
 
-func (cf *CodeFile) Delete() error {
+func (cf *CodeFile) removeFile() (ApplyOutcome, error) {
 	if cf.Path == "" {
-		return fmt.Errorf("cannot delete: empty path")
+		return OutcomeNothingToDelete, fmt.Errorf("cannot delete: empty path")
 	}
 
 	err := os.Remove(string(cf.Path))
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Printf("Not found (nothing to delete): %s\n", cf.Path)
-			return nil
+			return OutcomeNothingToDelete, nil
 		}
-		return fmt.Errorf("error deleting file %s: %w", cf.Path, err)
+		return OutcomeNothingToDelete, fmt.Errorf("error deleting file %s: %w", cf.Path, err)
 	}
 
-	fmt.Printf("Deleted: %s\n", cf.Path)
-	return nil
+	return OutcomeDeleted, nil
 }
 
-func (cf *CodeFile) Apply() error {
+// Empty content is how the LLM asks for a file to be removed, so it is not written.
+func (cf *CodeFile) Apply() (ApplyOutcome, error) {
 	if cf.IsEmpty() {
-		return cf.Delete()
+		return cf.removeFile()
 	}
-	return cf.Write()
+	if err := cf.writeContent(); err != nil {
+		return OutcomeWritten, err
+	}
+	return OutcomeWritten, nil
 }
 
 func processCodeBlock(lineBuffer []string) *ParsedElement {
@@ -239,12 +248,4 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 	}
 
 	return result, incomplete
-}
-
-func ParseCodeFiles(response string) []ParsedElement {
-	result, incomplete := ParseCodeFilesDetailed(response)
-	if incomplete {
-		fmt.Println("Warning: Incomplete code block.")
-	}
-	return result
 }

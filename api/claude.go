@@ -38,6 +38,16 @@ type BatchResult struct {
 	Failure      string
 }
 
+type CallResult struct {
+	Text         string
+	InputTokens  int64
+	OutputTokens int64
+	Cost         float64
+	Truncated    bool
+	Duration     time.Duration
+	FileCount    int
+}
+
 type claudeTier struct {
 	model           anthropic.Model
 	inputPrice      float64
@@ -150,9 +160,9 @@ func joinTextBlocks(message anthropic.Message) string {
 	return responseText.String()
 }
 
-func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt string) (string, error) {
+func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt string) (CallResult, error) {
 	if err := c.requireAPIKey(); err != nil {
-		return "", err
+		return CallResult{}, err
 	}
 
 	startTime := time.Now()
@@ -161,35 +171,28 @@ func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt st
 
 	params, fileCount, err := c.buildParams(requestContent, systemPrompt)
 	if err != nil {
-		return "", err
+		return CallResult{}, err
 	}
-
-	fmt.Printf("Calling Claude with %d messages (%d files)\n", len(params.Messages), fileCount)
 
 	message, err := accumulateStream(client, params)
 
 	if err != nil {
-		return "", fmt.Errorf("error calling Claude API: %w", err)
+		return CallResult{}, fmt.Errorf("error calling Claude API: %w", err)
 	}
 
 	duration := time.Since(startTime)
-	fmt.Printf("Claude API call took %.2f seconds\n", duration.Seconds())
-	fmt.Printf("Token usage - Input: %d, Output: %d\n",
-		message.Usage.InputTokens,
-		message.Usage.OutputTokens)
 
 	responseText := joinTextBlocks(message)
 
-	cost := c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens)
-	fmt.Printf("Cost: $%.6f\n", cost)
-
-	if message.Usage.OutputTokens >= int64(config.MaxTokens) {
-		fmt.Printf("⚠️  WARNING: Maximum output tokens (%d) reached. Response may be incomplete.\n", config.MaxTokens)
-	}
-
-	trimmedResponse := strings.TrimSpace(responseText)
-
-	return trimmedResponse, nil
+	return CallResult{
+		Text:         strings.TrimSpace(responseText),
+		InputTokens:  message.Usage.InputTokens,
+		OutputTokens: message.Usage.OutputTokens,
+		Cost:         c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens),
+		Truncated:    message.Usage.OutputTokens >= int64(config.MaxTokens),
+		Duration:     duration,
+		FileCount:    fileCount,
+	}, nil
 }
 
 func (c *ClaudeClient) toBatchRequestParams(params anthropic.MessageNewParams) anthropic.MessageBatchNewParamsRequestParams {
