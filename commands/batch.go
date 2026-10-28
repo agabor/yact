@@ -36,8 +36,10 @@ func HandleBatchCommand(cfg *config.Config) error {
 	}
 
 	if result.Failure != "" {
-		fmt.Printf("Batch failed: %s\n", result.Failure)
-		return logic.DeleteBatchJobID()
+		if err := logic.DeleteBatchJobID(); err != nil {
+			return err
+		}
+		return fmt.Errorf("batch failed: %s", result.Failure)
 	}
 
 	printBatchUsage(result)
@@ -66,27 +68,8 @@ func printBatchUsage(result api.BatchResult) {
 }
 
 func applyBatchOutput(job logic.BatchJob, content string) error {
-	if err := logic.PutBuffer(content); err != nil {
+	if err := storeBuffer(content); err != nil {
 		return err
 	}
-
-	if job.WritePlan {
-		if err := logic.WritePlan(content); err != nil {
-			return err
-		}
-		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
-		return nil
-	}
-
-	if job.ValidateCode {
-		return validateCodeOnlyResponse(content)
-	}
-
-	if job.NoWrite {
-		fmt.Println("\n" + content)
-		return nil
-	}
-
-	fmt.Println("Response written to buffer. Run 'y commit' to apply it.")
-	return nil
+	return deliverResponse(job.Mode, content)
 }
