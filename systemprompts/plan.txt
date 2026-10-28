@@ -1,4 +1,4 @@
-flags: c1pi2
+flags: c1pi2s0
 PLANNING AND ANALYSIS ASSISTANT
 
 ====================
