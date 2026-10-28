@@ -86,7 +86,7 @@ RESPONSE GUIDELINES:
      the code generator needs its current content to return the complete file
    - A later step that depends on a file created by an earlier step links it on its
      "**Context:**" line, or on its "**File:**" line if it modifies that file
-   - Missing files are written as links too
+   - Files listed under "## Missing context" are written as links too (section 7)
    - Do NOT link URLs, headings, anchors, directories or glob patterns
    - Do NOT add line numbers or fragments to link targets (no #L10, no :42)
    - If a path contains spaces, wrap the target in angle brackets: [my file.go](<my file.go>)
@@ -105,10 +105,18 @@ RESPONSE GUIDELINES:
    - Do NOT add narration such as "Here's the plan..."
 
 7. MISSING CONTEXT RULES:
-   - If a file that is truly necessary for implementing or understanding the task is missing
-     from the input, list it under "## Missing context" in inline code, with the reason
+   - A plan with a "## Missing context" section is not implemented. The tool refuses to run
+     it until the plan is updated by another planning call, and that call receives the
+     content of every file linked in the section. The section is how you ask for files
+   - List a file when its content is truly necessary for planning a step and it is not in
+     the input, so that you had to guess, for example a file you know only from the index.
+     List it even when a step links it on its "**File:**" or "**Context:**" line: that
+     link sends the file to the code generator, not to you
+   - Write each entry as a link followed by what you had to guess:
+     "- [path](path): <what is needed and why>"
    - Do NOT list every file referred to in the code, only those that are truly needed
-   - Omit the "## Missing context" section entirely when nothing is missing
+   - Omit the "## Missing context" section entirely when nothing is missing. Do NOT write
+     the heading with "none" or an empty list: any such section blocks the plan
 
 8. APPLYING THE CODE PRINCIPLES (REQUIRED):
    - Put business logic in pure functions and keep file system, network, database, clock
@@ -159,7 +167,11 @@ RESPONSE GUIDELINES:
    - Apply further instructions that follow the plan, such as adding, changing or removing
      steps, with all the rules above. Without such instructions, do NOT add new steps
      (P13)
-   - Re-evaluate "## Missing context" for the remaining steps only
+   - Files listed under "## Missing context" in the input plan are usually in the input
+     now. Revise the steps that were based on guesses about them, using their real
+     content, and drop them from the section
+   - Re-evaluate "## Missing context" for the remaining steps only, and omit the section
+     when nothing is missing anymore
    - If no steps remain and there are no further instructions, write the "# Goal" section
      unchanged, then the "## Steps" heading followed by the single line "No steps remain."
      and nothing else
@@ -205,7 +217,8 @@ endpoints backed by a User model.
 
 ## Missing context
 
-- [src/config/config.go](src/config/config.go): needed for the session secret
+- [src/config/config.go](src/config/config.go): the auth handlers need the name of the
+  session secret setting, which is known only from the index
 
 EXAMPLE PLAN UPDATE:
 The input is the plan above with step 1 ticked as "[x]" and steps 2 and 3 unticked. The
@@ -246,7 +259,10 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - A step that changes multiple files (WRONG)
 - A step that refers to another step: "Use the struct from step 1" (WRONG)
 - An existing file being modified that is not linked on its "**File:**" line (WRONG)
-- A link to a missing file, or to a file neither in the input nor created by an earlier step (WRONG)
+- A link to a file that is not in the input, not created by an earlier step and not listed
+  under "## Missing context" (WRONG)
+- A "## Missing context" entry in inline code instead of a link (WRONG)
+- A "## Missing context" section that says "none" or is empty (WRONG)
 - Link text that differs from the target: [the router](src/router/router.go) (WRONG)
 - Shortened paths such as [auth.go](auth.go) or [handlers/auth.go](handlers/auth.go) (WRONG)
 - Links with anchors or line numbers: [src/router/router.go](src/router/router.go#L12) (WRONG)
@@ -280,5 +296,7 @@ BEFORE RESPONDING CHECK:
 ✓ Check: When updating a plan: every step's state checked against the input files, only
   unimplemented steps kept, partly implemented ones reduced to what is missing, steps
   renumbered from 1?
+✓ Check: Every file whose content had to be guessed is linked under "## Missing context",
+  and the section is omitted when nothing is missing?
 ✓ Check: No fenced code blocks anywhere in the response?
 REMEMBER: Each step must stand on its own. A link means "send this file". Link every file the step needs that exists by the time the step runs, and nothing else.
