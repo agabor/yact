@@ -74,6 +74,10 @@ func GetProjectExtensionsPath() string {
 	return filepath.Join(GetProjectYactDir(), "extensions.txt")
 }
 
+func GetProjectIgnorePath() string {
+	return filepath.Join(GetProjectYactDir(), "ignore.txt")
+}
+
 func GetProjectPromptPath() string {
 	return "yact-prompt.md"
 }
@@ -97,6 +101,10 @@ func DefaultExtensions() []string {
 		"c", "cpp", "h", "hpp", "rs",
 		"kt", "swift", "htm", "html",
 	}
+}
+
+func DefaultIgnoredFolders() []string {
+	return []string{"vendor", "node_modules"}
 }
 
 func Load() (*Config, error) {
@@ -361,4 +369,47 @@ func SaveExtensions(extensions []string) error {
 
 	content := strings.Join(extensions, "\n") + "\n"
 	return os.WriteFile(GetProjectExtensionsPath(), []byte(content), 0644)
+}
+
+func ParseIgnoredFolders(content string) ([]string, error) {
+	var folders []string
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.ContainsAny(trimmed, "/\\") {
+			return nil, fmt.Errorf("ignored folder %q must be a root folder name", trimmed)
+		}
+		folders = append(folders, trimmed)
+	}
+	return folders, nil
+}
+
+// An empty ignore file means no folder is ignored, unlike extensions where
+// an empty file falls back to the defaults.
+func LoadIgnoredFolders() ([]string, error) {
+	data, err := os.ReadFile(GetProjectIgnorePath())
+	if err != nil {
+		if os.IsNotExist(err) {
+			defaultFolders := DefaultIgnoredFolders()
+			if saveErr := SaveIgnoredFolders(defaultFolders); saveErr != nil {
+				return defaultFolders, saveErr
+			}
+			return defaultFolders, nil
+		}
+		return nil, err
+	}
+
+	return ParseIgnoredFolders(string(data))
+}
+
+func SaveIgnoredFolders(folders []string) error {
+	yactDir := GetProjectYactDir()
+	if err := os.MkdirAll(yactDir, 0755); err != nil {
+		return err
+	}
+
+	content := strings.Join(folders, "\n") + "\n"
+	return os.WriteFile(GetProjectIgnorePath(), []byte(content), 0644)
 }

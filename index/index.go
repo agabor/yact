@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"yact/config"
 	"yact/logic"
 )
 
@@ -88,7 +89,11 @@ func WriteIndex(visibility string) error {
 	if err != nil {
 		return err
 	}
-	files, err := logic.EnumerateFiles(".", shouldSkipIndexDir, func(name string) bool {
+	ignoredFolders, err := config.LoadIgnoredFolders()
+	if err != nil {
+		return err
+	}
+	files, err := logic.EnumerateFiles(".", ignoredFolders, func(name string) bool {
 		_, found := findLanguageForFile(name, languages)
 		return found
 	})
@@ -105,10 +110,6 @@ func WriteIndex(visibility string) error {
 		return err
 	}
 	return os.WriteFile(indexPath, []byte(data), 0644)
-}
-
-func shouldSkipIndexDir(name string) bool {
-	return name == "vendor" || name == "node_modules"
 }
 
 func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, error) {

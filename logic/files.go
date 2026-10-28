@@ -8,7 +8,7 @@ import (
 	"yact/config"
 )
 
-func EnumerateFiles(root string, skipDir func(name string) bool, includeFile func(name string) bool) ([]string, error) {
+func EnumerateFiles(root string, ignoredRootFolders []string, includeFile func(name string) bool) ([]string, error) {
 	var files []string
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -24,7 +24,14 @@ func EnumerateFiles(root string, skipDir func(name string) bool, includeFile fun
 		}
 
 		if entry.IsDir() {
-			if !isRoot && skipDir != nil && skipDir(entry.Name()) {
+			if isRoot {
+				return nil
+			}
+			relativePath, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				return relErr
+			}
+			if IsInIgnoredRootFolder(relativePath, ignoredRootFolders) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -46,6 +53,16 @@ func EnumerateFiles(root string, skipDir func(name string) bool, includeFile fun
 		return nil
 	})
 	return files, err
+}
+
+func IsInIgnoredRootFolder(relativePath string, ignoredRootFolders []string) bool {
+	firstSegment := strings.SplitN(filepath.ToSlash(relativePath), "/", 2)[0]
+	for _, folder := range ignoredRootFolders {
+		if folder == firstSegment {
+			return true
+		}
+	}
+	return false
 }
 
 func FileHasExtension(path string, extensions []string) bool {
