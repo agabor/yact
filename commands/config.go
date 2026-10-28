@@ -24,6 +24,14 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			return addExtension(value)
 		}
 
+		if key == "ignore" {
+			folder, err := parseIgnoredFolderArgument(value)
+			if err != nil {
+				return err
+			}
+			return addIgnoredFolder(folder)
+		}
+
 		switch key {
 		case "anthropic_api_key":
 			cfg.AnthropicAPIKey = value
@@ -53,6 +61,7 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 	fmt.Println("  y config                    # Show current config")
 	fmt.Println("  y config <key> <value>      # Set config value")
 	fmt.Println("  y config ext <extension>    # Add file extension to index")
+	fmt.Println("  y config ignore <folder>    # Add folder to ignore list")
 	return nil
 }
 
@@ -81,6 +90,45 @@ func addExtension(extension string) error {
 	}
 
 	fmt.Printf("Added extension '%s'\n", extension)
+	return nil
+}
+
+func parseIgnoredFolderArgument(value string) (string, error) {
+	folders, err := config.ParseIgnoredFolders(value)
+	if err != nil {
+		return "", err
+	}
+
+	switch len(folders) {
+	case 0:
+		return "", fmt.Errorf("ignored folder cannot be empty")
+	case 1:
+		return folders[0], nil
+	default:
+		return "", fmt.Errorf("expected exactly one ignored folder, got %d", len(folders))
+	}
+}
+
+func addIgnoredFolder(folder string) error {
+	folders, err := config.LoadIgnoredFolders()
+	if err != nil {
+		return fmt.Errorf("error loading ignored folders: %w", err)
+	}
+
+	for _, existing := range folders {
+		if existing == folder {
+			fmt.Printf("Ignored folder '%s' already exists\n", folder)
+			return nil
+		}
+	}
+
+	folders = append(folders, folder)
+
+	if err := config.SaveIgnoredFolders(folders); err != nil {
+		return fmt.Errorf("error saving ignored folders: %w", err)
+	}
+
+	fmt.Printf("Added ignored folder '%s'\n", folder)
 	return nil
 }
 
