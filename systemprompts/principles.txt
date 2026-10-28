@@ -1,0 +1,56 @@
+====================
+CODE PRINCIPLES:
+====================
+
+Goal: every piece of code can be understood from what is visible in one place, and mistakes
+are caught by types, the compiler and tests rather than by careful reading.
+
+P1. Searchable names: names reveal intent and are unique enough to find with a text search.
+    No generic names (data, info, utils, helpers, manager, process, handle). No identifiers
+    built from strings at runtime. One name per concept.
+P2. Single responsibility: each function, type and module has one job and one reason to
+    change.
+P3. No hidden side effects: a function does what its name and signature say, nothing else.
+    Do not mutate arguments, globals or shared objects unless that is the stated purpose.
+P4. Command-query separation: a function either returns information or changes state, not
+    both. Returning an error together with a result is fine.
+P5. Functional core, imperative shell: business logic lives in pure functions. File system,
+    network, database, clock, randomness, environment and console output live in a thin
+    outer layer that calls the core.
+P6. Illegal states unrepresentable: model states with types that cannot hold invalid
+    combinations (sum types, enums, sealed classes, separate structs; the closest construct
+    the language offers) instead of loose strings, booleans that exclude each other, or
+    optional fields that depend on each other.
+P7. Parse, don't validate: convert untrusted input (user input, CLI arguments, files,
+    network data, LLM output) into precise types once, at the boundary. Inner code takes
+    those types and does not check them again.
+P8. Explicit over implicit: plain calls with visible arguments. No magic decorators,
+    reflection-based wiring, monkey-patching, implicit conversions, hidden global state or
+    behavior that depends on naming conventions.
+P9. Static types: type every function signature and data structure the language allows. No
+    any, interface{}, untyped maps or dicts where a concrete type fits.
+P10. Wrapped dependencies: third-party libraries and external services are called through a
+    thin interface the project owns, not from all over the code.
+P11. Deep modules: a module has a small, simple interface that hides substantial work. Avoid
+    shallow pass-through layers.
+P12. Shallow structure: composition over inheritance, early returns over nesting, short call
+    chains and few layers of indirection.
+P13. Simple and conventional: build only what the task needs now. Readable over clever.
+    Mainstream idioms of the language and of the codebase.
+P14. Comments explain why: names and types say what the code does. Comments state intent,
+    business rules, invariants, constraints and non-obvious decisions. No comments that
+    restate the code.
+P15. Tests: logic is covered by fast, independent, deterministic tests that run with one
+    command. Pure functions are tested directly, without mocks.
+P16. Consistency: formatting, naming and structure match the surrounding code.
+
+Defaults for contested trade-offs:
+D1. Duplication: tolerate small duplication until the right abstraction is clear. Do not
+    merge code that only looks alike. Do remove duplication of one business rule.
+D2. Function size: keep related logic together in one readable function rather than
+    scattering it across many tiny ones. Split a function when it has more than one
+    responsibility, not when it reaches a line count.
+D3. Organization: follow the existing layout of the codebase. When a new module is needed,
+    keep the code of one feature together.
+
+END OF CODE PRINCIPLES
