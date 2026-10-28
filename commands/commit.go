@@ -9,7 +9,7 @@ import (
 
 func printFreeText(elements []logic.ParsedElement) {
 	for _, element := range elements {
-		if !element.IsCodeFile && strings.TrimSpace(element.Text) != "" {
+		if element.Kind == logic.ElementText && strings.TrimSpace(element.Text) != "" {
 			fmt.Println(element.Text)
 		}
 	}
@@ -41,11 +41,14 @@ func HandleCommitCommand(validateCode bool) error {
 	var writeErrors []string
 
 	for _, element := range elements {
-		if element.IsCodeFile {
+		switch element.Kind {
+		case logic.ElementCodeFile:
 			codeFile := element.CodeFile
 			if err := codeFile.Apply(); err != nil {
 				writeErrors = append(writeErrors, fmt.Sprintf("%v", err))
 			}
+		case logic.ElementRejectedFile:
+			writeErrors = append(writeErrors, element.Text)
 		}
 	}
 
