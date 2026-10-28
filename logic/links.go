@@ -40,7 +40,7 @@ func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 		return PromptLinks{}, nil
 	}
 
-	files, err := EnumerateFiles(".", nil, func(name string) bool {
+	files, err := EnumerateFiles(".", func(name string) bool {
 		return true
 	})
 	if err != nil {
