@@ -20,6 +20,38 @@ type Flaglist struct {
 	IndexLevel    int
 }
 
+// OutputApply is the zero value, so a batch job stored without a mode is applied.
+type OutputMode int
+
+const (
+	OutputApply OutputMode = iota
+	OutputWritePlan
+	OutputPrintOnly
+	OutputValidateAndApply
+)
+
+// Contradictory flags are rejected here so that the order of flags never decides the mode.
+func ParseOutputMode(flags Flaglist) (OutputMode, error) {
+	if flags.WritePlan && flags.NoWrite {
+		return 0, fmt.Errorf("--plan and --no-write cannot be combined")
+	}
+	if flags.WritePlan && flags.ValidateCode {
+		return 0, fmt.Errorf("--plan and --validate-code cannot be combined")
+	}
+	if flags.NoWrite && flags.ValidateCode {
+		return 0, fmt.Errorf("--no-write and --validate-code cannot be combined")
+	}
+	switch {
+	case flags.WritePlan:
+		return OutputWritePlan, nil
+	case flags.NoWrite:
+		return OutputPrintOnly, nil
+	case flags.ValidateCode:
+		return OutputValidateAndApply, nil
+	}
+	return OutputApply, nil
+}
+
 func (f Flaglist) ModelOverride() string {
 	switch f.ClaudeLevel {
 	case 1:
@@ -108,15 +140,11 @@ func (f *Flaglist) applyDefault(flag string, skipModelFlags bool) {
 
 	switch flag {
 	case "n":
-		if !f.ValidateCode {
-			f.NoWrite = true
-		}
+		f.NoWrite = true
 	case "d":
 		f.Download = true
 	case "v":
-		if !f.NoWrite {
-			f.ValidateCode = true
-		}
+		f.ValidateCode = true
 	case "p":
 		f.WritePlan = true
 	}

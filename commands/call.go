@@ -205,7 +205,7 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(requestContent logic.RequestContent, cfg *config.Config, systemPrompt string, flags config.Flaglist) error {
+func submitBatch(requestContent logic.RequestContent, cfg *config.Config, systemPrompt string, mode config.OutputMode) error {
 	client := newClient(cfg)
 
 	batchID, err := client.SubmitBatch(requestContent, systemPrompt)
@@ -214,10 +214,8 @@ func submitBatch(requestContent logic.RequestContent, cfg *config.Config, system
 	}
 
 	job := logic.BatchJob{
-		ID:           batchID,
-		NoWrite:      flags.NoWrite,
-		ValidateCode: flags.ValidateCode,
-		WritePlan:    flags.WritePlan,
+		ID:   batchID,
+		Mode: mode,
 	}
 	if err := logic.WriteBatchJob(job); err != nil {
 		return err
@@ -259,6 +257,11 @@ func countInputLines(requestContent logic.RequestContent) (int, error) {
 }
 
 func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
+	mode, err := config.ParseOutputMode(flags)
+	if err != nil {
+		return err
+	}
+
 	if flags.Batch {
 		if err := checkNoPendingBatch(); err != nil {
 			return err
@@ -276,7 +279,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	applyModelOverride(cfg, flags.ModelOverride())
 	applyMaxInputLinesOverride(cfg, flags.MaxInputLines)
 
-	var err error
 	planPrompt := ""
 	planUsed := false
 
@@ -344,7 +346,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	if flags.Batch {
-		return submitBatch(requestContentForLLM, cfg, systemPrompt, flags)
+		return submitBatch(requestContentForLLM, cfg, systemPrompt, mode)
 	}
 
 	response, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt)
@@ -356,31 +358,13 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	if flags.WritePlan {
-		if err := logic.WritePlan(response); err != nil {
-			return err
-		}
-		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
-		return nil
-	}
-
-	if flags.ValidateCode {
-		if err := validateCodeOnlyResponse(response); err != nil {
-			return err
-		}
-	}
-
-	if flags.NoWrite {
-		fmt.Println("\n" + response)
-		return nil
-	}
-
-	if err := processResponse(response); err != nil {
+	if err := deliverResponse(mode, response); err != nil {
 		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
 
-	if planUsed {
+	// A step whose output was only printed or written as a plan stays unchecked.
+	if planUsed && (mode == config.OutputApply || mode == config.OutputValidateAndApply) {
 		return tickPlanSteps(planPrompt, sentSteps)
 	}
 
@@ -419,6 +403,28 @@ func storeBuffer(response string) error {
 		return fmt.Errorf("error writing buffer: %w", err)
 	}
 	return nil
+}
+
+func deliverResponse(mode config.OutputMode, response string) error {
+	switch mode {
+	case config.OutputWritePlan:
+		if err := logic.WritePlan(response); err != nil {
+			return err
+		}
+		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
+		return nil
+	case config.OutputPrintOnly:
+		fmt.Println("\n" + response)
+		return nil
+	case config.OutputValidateAndApply:
+		if err := validateCodeOnlyResponse(response); err != nil {
+			return err
+		}
+		return processResponse(response)
+	case config.OutputApply:
+		return processResponse(response)
+	}
+	return fmt.Errorf("unknown output mode %d", mode)
 }
 
 func processResponse(content string) error {

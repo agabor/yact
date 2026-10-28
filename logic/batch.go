@@ -9,10 +9,8 @@ import (
 )
 
 type BatchJob struct {
-	ID           string `json:"id"`
-	NoWrite      bool   `json:"no_write"`
-	ValidateCode bool   `json:"validate_code"`
-	WritePlan    bool   `json:"write_plan"`
+	ID   string            `json:"id"`
+	Mode config.OutputMode `json:"mode"`
 }
 
 func ReadBatchJob() (BatchJob, bool, error) {
