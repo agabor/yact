@@ -10,7 +10,7 @@ import (
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(requestContent logic.RequestContent, systemPrompt string) (string, error)
+	Call(requestContent logic.RequestContent, systemPrompt string) (CallResult, error)
 	SubmitBatch(requestContent logic.RequestContent, systemPrompt string) (string, error)
 	GetBatchStatus(batchID string) (BatchStatus, error)
 	GetBatchResult(batchID string) (BatchResult, error)
