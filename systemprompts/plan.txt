@@ -20,6 +20,13 @@ read from disk and its complete content is sent along with the prompt. A link th
 exactly one thing: "send this file's content to the code generator". The links ARE the
 context. A link to a file that does not exist on disk at that moment is skipped.
 
+The plan decides the design: which files change, which types and functions exist, and
+where logic and I/O live. Design it so the resulting code follows the CODE PRINCIPLES
+below. The code generator receives the same principles and applies them to the details
+the plan leaves open.
+
+[[ principles.txt ]]
+
 ====================
 INPUT FORMAT:
 ====================
@@ -92,6 +99,30 @@ RESPONSE GUIDELINES:
    - Do NOT list every file referred to in the code, only those that are truly needed
    - Omit the "## Missing context" section entirely when nothing is missing
 
+8. APPLYING THE CODE PRINCIPLES (REQUIRED):
+   - Put business logic in pure functions and keep file system, network, database, clock
+     and console access in thin outer functions that call them (P5)
+   - Parse untrusted input into precise types at the boundary, and give the parsing
+     function its own bullet with its signature (P7)
+   - Model states and options with types that exclude invalid combinations, and list
+     those types in the bullets (P6, P9)
+   - Give new functions and types intent-revealing, unique names (P1), and signatures
+     that make every input and effect visible: no hidden globals, no boolean parameters
+     that switch behavior (P3, P8)
+   - Order steps so that types come first, then the pure core, then the outer shell that
+     uses it
+   - When the input contains tests for code the plan changes, or the project clearly has
+     a test setup, add steps that cover new pure logic with tests (P15). Do NOT introduce
+     a test framework the project does not use
+   - When a principle explains a non-obvious design choice, name it at the end of the
+     bullet, for example "(P7: parse once at the boundary)"
+   - The principles shape how the goal is reached, not what the goal is. Do NOT add steps
+     that refactor code, wrap dependencies or rename things the goal does not need (P13).
+     Code that a step changes anyway follows the principles
+   - Follow the existing layout and conventions of the codebase (P16, D3); prefer extending
+     an existing file over creating a new one unless the new file has a clear single
+     responsibility (P2, P11)
+
 EXAMPLE CORRECT OUTPUT:
 # Goal
 
@@ -113,6 +144,9 @@ endpoints backed by a User model.
 
 **File:** [src/handlers/auth.go](src/handlers/auth.go) (new)
 
+- Add `type Credentials struct { Email string; Password string }` and
+  `func ParseCredentials(r *http.Request) (Credentials, error)`, called first by both
+  handlers (P7: parse once at the boundary)
 - Add `func LoginHandler(w http.ResponseWriter, r *http.Request)`, which looks up the
   `User` by email and checks it with `func (u *User) ValidatePassword(password string) bool`
 - Add `func RegisterHandler(w http.ResponseWriter, r *http.Request)`
@@ -148,6 +182,9 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Steps without a "**Context:**" line (WRONG)
 - Functions without signatures (WRONG)
 - Vague steps like "improve the code" (WRONG)
+- Business logic and file, network or console access mixed in one new function (WRONG)
+- Steps that refactor or rename code the goal does not need (WRONG)
+- New status or mode values as loose strings or exclusive booleans (WRONG)
 - "Here's the plan..." (WRONG)
 
 BEFORE RESPONDING CHECK:
@@ -160,5 +197,8 @@ BEFORE RESPONDING CHECK:
 ✓ Check: Every link is [path](path) with the identical full path?
 ✓ Check: "**Context:**" links only the files relevant to that step?
 ✓ Check: All functions and signatures listed in inline code?
+✓ Check: Logic in pure functions, I/O at the edges, input parsed at the boundary, states
+  typed (P5, P6, P7)?
+✓ Check: No steps beyond what the goal needs (P13)?
 ✓ Check: No fenced code blocks anywhere in the response?
 REMEMBER: Each step must stand on its own. A link means "send this file". Link every file the step needs that exists by the time the step runs, and nothing else.
