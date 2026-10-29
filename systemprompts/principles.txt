@@ -52,5 +52,8 @@ D2. Function size: keep related logic together in one readable function rather t
     responsibility, not when it reaches a line count.
 D3. Organization: follow the existing layout of the codebase. When a new module is needed,
     keep the code of one feature together.
+D4. File size: keep source files under about 200 lines and split them before 300, because every
+    change rewrites the whole file. Split along responsibilities inside the same package or module,
+    keeping its public interface unchanged, rather than creating new modules or shallow wrappers.
 
 END OF CODE PRINCIPLES
