@@ -20,6 +20,8 @@ const (
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
 
+const includeDirName = "include"
+
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
 	ClaudeModel     string `json:"claude_model"`
@@ -58,8 +60,16 @@ func getPromptFile(name PromptName) (string, error) {
 	return filepath.Join(dir, string(name)+".txt"), nil
 }
 
-func getIncludeFile(name string) (string, error) {
+func getIncludeDir() (string, error) {
 	dir, err := getPromptsDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, includeDirName), nil
+}
+
+func getIncludeFile(name string) (string, error) {
+	dir, err := getIncludeDir()
 	if err != nil {
 		return "", err
 	}
@@ -217,17 +227,10 @@ func LoadPromptWithFlags(name PromptName) (string, []string, error) {
 	return content, flags, nil
 }
 
-func fetchPromptFile(fileName string) ([]byte, error) {
-	dir, err := getPromptsDir()
-	if err != nil {
+func downloadToFile(url string, localPath string) ([]byte, error) {
+	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
 		return nil, err
 	}
-
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, err
-	}
-
-	url := promptDownloadBaseURL + fileName
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -236,7 +239,7 @@ func fetchPromptFile(fileName string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &promptDownloadError{name: fileName, statusCode: resp.StatusCode}
+		return nil, &promptDownloadError{name: filepath.Base(localPath), statusCode: resp.StatusCode}
 	}
 
 	data, err := io.ReadAll(resp.Body)
@@ -244,25 +247,38 @@ func fetchPromptFile(fileName string) ([]byte, error) {
 		return nil, err
 	}
 
-	includeFile, err := getIncludeFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := os.WriteFile(includeFile, data, 0644); err != nil {
+	if err := os.WriteFile(localPath, data, 0644); err != nil {
 		return nil, err
 	}
 
 	return data, nil
 }
 
-func downloadPromptTree(fileName string, visited map[string]bool) error {
-	if visited[fileName] {
+func fetchPromptFile(fileName string) ([]byte, error) {
+	dir, err := getPromptsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	return downloadToFile(promptDownloadBaseURL+fileName, filepath.Join(dir, fileName))
+}
+
+func fetchIncludeFile(name string) ([]byte, error) {
+	includeFile, err := getIncludeFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return downloadToFile(promptDownloadBaseURL+includeDirName+"/"+name, includeFile)
+}
+
+func downloadIncludeTree(name string, visited map[string]bool) error {
+	if visited[name] {
 		return nil
 	}
-	visited[fileName] = true
+	visited[name] = true
 
-	data, err := fetchPromptFile(fileName)
+	data, err := fetchIncludeFile(name)
 	if err != nil {
 		return err
 	}
@@ -271,7 +287,26 @@ func downloadPromptTree(fileName string, visited map[string]bool) error {
 		if err := validateIncludeName(includeName); err != nil {
 			return err
 		}
-		if err := downloadPromptTree(includeName, visited); err != nil {
+		if err := downloadIncludeTree(includeName, visited); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func downloadPromptTree(name PromptName) error {
+	data, err := fetchPromptFile(string(name) + ".txt")
+	if err != nil {
+		return err
+	}
+
+	visited := map[string]bool{}
+	for _, includeName := range ParseIncludeNames(string(data)) {
+		if err := validateIncludeName(includeName); err != nil {
+			return err
+		}
+		if err := downloadIncludeTree(includeName, visited); err != nil {
 			return err
 		}
 	}
@@ -282,7 +317,7 @@ func downloadPromptTree(fileName string, visited map[string]bool) error {
 func DownloadPrompt(name PromptName) error {
 	fmt.Printf("Downloading system prompt for '%s'...\n", name)
 
-	if err := downloadPromptTree(string(name)+".txt", map[string]bool{}); err != nil {
+	if err := downloadPromptTree(name); err != nil {
 		return err
 	}
 
