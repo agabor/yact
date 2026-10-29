@@ -12,6 +12,14 @@ import (
 	"yact/logic"
 )
 
+// Files longer than this are easy to overlook in a request, so they are flagged before the call.
+const longFileLineThreshold = 300
+
+type fileLineCount struct {
+	Path  string
+	Lines int
+}
+
 type PlanSelection struct {
 	Prompt   string
 	Steps    []logic.PlanStep
@@ -259,8 +267,9 @@ func submitBatch(requestContent logic.RequestContent, cfg *config.Config, system
 	return nil
 }
 
-func countInputLines(requestContent logic.RequestContent) (int, error) {
+func countInputLines(requestContent logic.RequestContent) (int, []fileLineCount, error) {
 	totalLength := 0
+	var fileCounts []fileLineCount
 
 	if requestContent.Prompt != "" {
 		totalLength += len(strings.Split(requestContent.Prompt, "\n"))
@@ -269,24 +278,38 @@ func countInputLines(requestContent logic.RequestContent) (int, error) {
 	for _, messagePath := range requestContent.MessagePaths() {
 		messageContent, err := os.ReadFile(messagePath)
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
-		totalLength += len(strings.Split(string(messageContent), "\n"))
+		lines := len(strings.Split(string(messageContent), "\n"))
+		totalLength += lines
+		fileCounts = append(fileCounts, fileLineCount{Path: messagePath, Lines: lines})
 	}
 
 	for _, contextPath := range requestContent.Files {
 		projectPath, err := logic.ParseProjectPath(contextPath)
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 		codeFile, err := logic.ReadAsFile(projectPath)
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
-		totalLength += len(strings.Split(codeFile.Content, "\n"))
+		lines := len(strings.Split(codeFile.Content, "\n"))
+		totalLength += lines
+		fileCounts = append(fileCounts, fileLineCount{Path: contextPath, Lines: lines})
 	}
 
-	return totalLength, nil
+	return totalLength, fileCounts, nil
+}
+
+func longFileWarnings(counts []fileLineCount) []string {
+	var warnings []string
+	for _, count := range counts {
+		if count.Lines > longFileLineThreshold {
+			warnings = append(warnings, fmt.Sprintf("%s has %d lines, more than %d", count.Path, count.Lines, longFileLineThreshold))
+		}
+	}
+	return warnings
 }
 
 func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
@@ -362,7 +385,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	totalLength, err := countInputLines(requestContentForLLM)
+	totalLength, fileCounts, err := countInputLines(requestContentForLLM)
 	if err != nil {
 		return err
 	}
@@ -370,6 +393,8 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	if totalLength > cfg.MaxInputLines {
 		return fmt.Errorf("input exceeds maximum number allowed lines (%d), got %d. Increase max_input_lines to override.", cfg.MaxInputLines, totalLength)
 	}
+
+	printWarnings(longFileWarnings(fileCounts))
 
 	fmt.Printf("Input lines: %d\n", totalLength)
 
