@@ -110,6 +110,7 @@ func DefaultExtensions() []string {
 		"tsx", "py", "java", "rb", "php",
 		"c", "cpp", "h", "hpp", "rs",
 		"kt", "swift", "htm", "html",
+		"yml", "yaml",
 	}
 }
 

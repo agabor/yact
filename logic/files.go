@@ -20,8 +20,13 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 			return err
 		}
 
+		relativePath, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return relErr
+		}
+
 		isRoot := path == root
-		if !isRoot && strings.HasPrefix(entry.Name(), ".") {
+		if !isRoot && strings.HasPrefix(entry.Name(), ".") && !isIncludedHiddenPath(relativePath) {
 			if entry.IsDir() {
 				return filepath.SkipDir
 			}
@@ -31,10 +36,6 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 		if entry.IsDir() {
 			if isRoot {
 				return nil
-			}
-			relativePath, relErr := filepath.Rel(root, path)
-			if relErr != nil {
-				return relErr
 			}
 			if IsInIgnoredRootFolder(relativePath, ignoredRootFolders) {
 				return filepath.SkipDir
@@ -58,6 +59,13 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 		return nil
 	})
 	return files, err
+}
+
+// GitHub workflow and action files are part of the project source, unlike the
+// other hidden tool directories such as .yact, which stay excluded.
+func isIncludedHiddenPath(relativePath string) bool {
+	firstSegment := strings.SplitN(filepath.ToSlash(relativePath), "/", 2)[0]
+	return firstSegment == ".github"
 }
 
 func IsInIgnoredRootFolder(relativePath string, ignoredRootFolders []string) bool {
