@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
   issues: read
+  pull-requests: write
 
 jobs:
   implement:
@@ -92,3 +93,10 @@ jobs:
 
       - name: Run tests
         run: go test ./...
+
+      - name: Open pull request
+        run: |
+          gh pr create \
+            --head "yact/issue-$ISSUE_NUMBER" \
+            --title "Implement issue #$ISSUE_NUMBER" \
+            --body "Closes #$ISSUE_NUMBER"
