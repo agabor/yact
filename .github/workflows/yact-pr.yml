@@ -49,7 +49,7 @@ jobs:
 
       - name: Fetch comment
         run: |
-          gh pr view $PR_NUMBER --json comments --jq '.comments[-1].body' > yact-prompt.md
+          gh pr view $PR_NUMBER --json comments --jq '.comments[-1].body' >> yact-prompt.md
           cat yact-prompt.md
 
       - name: Create plan
