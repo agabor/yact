@@ -21,6 +21,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Checkout branch
         run: gh pr checkout $PR_NUMBER
 
