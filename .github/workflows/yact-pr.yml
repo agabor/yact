@@ -1,0 +1,93 @@
+name: yact issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to improve
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ inputs.pr }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout branch
+        run: gh pr checkout $PR_NUMBER
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install yact
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL -o "$HOME/bin/y" https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64
+          chmod +x "$HOME/bin/y"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          $HOME/bin/y config anthropic_api_key ${{ secrets.ANTHROPIC_API_KEY }} 
+
+
+      - name: Configure git identity
+        run: |
+          git config user.name "yact[bot]"
+          git config user.email "yact@users.noreply.github.com"
+
+      - name: Compact task context
+        run: y compact
+
+      - name: Fetch comment
+        run: |
+          gh pr view $PR_NUMBER --json comments --jq '.comments[-1].body' > yact-prompt.md
+          cat yact-prompt.md
+
+      - name: Create plan
+        run: |
+          y --no-progress -p plan
+
+      - name: Refine plan with missing context
+        run: |
+          if grep -qxF '## Missing context' yact-prompt.md; then
+            y --no-progress -p plan
+          fi
+
+      - name: Check plan has no missing context
+        run: |
+          if grep -qxF '## Missing context' yact-prompt.md; then
+            echo "Plan still has missing context" >&2
+            cat yact-prompt.md 
+            exit 1
+          fi
+
+      - name: Commit plan to branch
+        run: |
+          git checkout -b "yact/issue-$ISSUE_NUMBER"
+          git add yact-prompt.md
+          git commit -m "Add yact plan for issue #$ISSUE_NUMBER"
+          git push -u origin "yact/issue-$ISSUE_NUMBER"
+
+      - name: Implement plan
+        run: y --no-progress act
+
+      - name: Commit changes
+        run: |
+          git add -A -- . ':(exclude).yact'
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Implement yact plan for issue #$ISSUE_NUMBER"
+          fi
+          git push
+
+      - name: Run tests
+        run: go test ./...
+
