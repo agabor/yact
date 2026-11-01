@@ -33,39 +33,37 @@ jobs:
           curl -fsSL -o "$HOME/bin/y" https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64
           chmod +x "$HOME/bin/y"
           echo "$HOME/bin" >> "$GITHUB_PATH"
+          $HOME/bin/y config anthropic_api_key ${{ secrets.ANTHROPIC_API_KEY }} 
+
 
       - name: Configure git identity
         run: |
           git config user.name "yact[bot]"
           git config user.email "yact@users.noreply.github.com"
 
-      - name: Fetch issue
-        run: |
-          gh issue view "$ISSUE_NUMBER" --json title,body --jq '.title + "\n\n" + (.body // "")' > issue.md
-
       - name: Create task context
         run: y new
 
-      - name: Create plan
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Fetch issue
         run: |
-          y --no-progress -p plan "$(cat issue.md)"
-          cp .yact/plan.md yact-prompt.md
+          gh issue view "$ISSUE_NUMBER" --json title,body --jq '.title + "\n\n" + (.body // "")' > yact-prompt.md
+          cat yact-prompt.md
+
+      - name: Create plan
+        run: |
+          y --no-progress -p plan
 
       - name: Refine plan with missing context
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if grep -qxF '## Missing context' yact-prompt.md; then
-            y --no-progress -p plan "$(cat issue.md yact-prompt.md)"
-            cp .yact/plan.md yact-prompt.md
+            y --no-progress -p plan
           fi
 
       - name: Check plan has no missing context
         run: |
           if grep -qxF '## Missing context' yact-prompt.md; then
             echo "Plan still has missing context" >&2
+            cat yact-prompt.md 
             exit 1
           fi
 
@@ -77,8 +75,6 @@ jobs:
           git push -u origin "yact/issue-$ISSUE_NUMBER"
 
       - name: Implement plan
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: y --no-progress act
 
       - name: Commit changes
