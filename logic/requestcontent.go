@@ -27,7 +27,7 @@ func yactDir() string {
 }
 
 func IndexFilePath() string {
-	return filepath.Join(yactDir(), indexFileName)
+	return filepath.Join(yactDir(), "temp", indexFileName)
 }
 
 func RemoveIndexFile() error {

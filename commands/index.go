@@ -7,7 +7,7 @@ import (
 	"yact/config"
 )
 
-const indexFilePath = ".yact/index.txt"
+const indexFilePath = ".yact/temp/index.txt"
 
 func parseIndexLevel(arg string) (int, error) {
 	level, err := strconv.Atoi(arg)

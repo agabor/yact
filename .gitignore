@@ -19,5 +19,5 @@ vendor/
 go.work
 
 .idea
-**/.yact
+**/.yact/temp
 **/yact-prompt.md
