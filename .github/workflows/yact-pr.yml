@@ -72,10 +72,9 @@ jobs:
 
       - name: Commit plan to branch
         run: |
-          git checkout -b "yact/issue-$ISSUE_NUMBER"
           git add yact-prompt.md
-          git commit -m "Add yact plan for issue #$ISSUE_NUMBER"
-          git push -u origin "yact/issue-$ISSUE_NUMBER"
+          git commit -m "Update yact plan for pull request #$PR_NUMBER"
+          git push
 
       - name: Implement plan
         run: y --no-progress act
@@ -86,7 +85,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Implement yact plan for issue #$ISSUE_NUMBER"
+            git commit -m "Implement yact plan for pull request #$PR_NUMBER"
           fi
           git push
 
