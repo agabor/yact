@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"yact/config"
 	"yact/logic"
@@ -31,6 +32,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	applyMaxInputLinesOverride(cfg, flags.MaxInputLines)
 
 	planPrompt := ""
+	combinedPrompt := ""
 	planUsed := false
 
 	if prompt == "" {
@@ -73,7 +75,8 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 			return err
 		}
 
-		requestContentForLLM.Prompt = combinePromptText(promptFileText, prompt)
+		combinedPrompt = combinePromptText(promptFileText, prompt)
+		requestContentForLLM.Prompt = combinedPrompt
 	}
 	requestContentForLLM, err = applyPromptLinks(requestContentForLLM)
 	if err != nil {
@@ -101,6 +104,13 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	if flags.Dry {
 		fmt.Println("Dry run: LLM call skipped.")
 		return nil
+	}
+
+	// Later calls with a prompt read this file back, so it must hold the prompt that was sent.
+	if !planUsed {
+		if err := os.WriteFile(config.GetProjectPromptPath(), []byte(combinedPrompt), 0644); err != nil {
+			return err
+		}
 	}
 
 	if flags.Batch {
