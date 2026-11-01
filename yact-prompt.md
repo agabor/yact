@@ -4,7 +4,7 @@ When a command is called with a prompt argument, write the combined text of `yac
 
 ## Steps
 
-### [ ] 1. Add the function that writes the project prompt file
+### [x] 1. Add the function that writes the project prompt file
 
 **File:** [logic/project_prompt.go](logic/project_prompt.go) (new)
 
@@ -13,7 +13,7 @@ When a command is called with a prompt argument, write the combined text of `yac
 
 **Context:** none
 
-### [ ] 2. Write the combined prompt before the LLM call
+### [x] 2. Write the combined prompt before the LLM call
 
 **File:** [commands/call.go](commands/call.go)
 
