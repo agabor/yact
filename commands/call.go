@@ -52,7 +52,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	var sentSteps []logic.PlanStep
 
 	if planUsed {
-		selection, err := selectPlanSteps(planPrompt, flags.Steps)
+		selection, err := selectPlanSteps(planPrompt, flags.StepsSelector())
 
 		if err != nil {
 			return err

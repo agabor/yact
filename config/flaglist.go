@@ -74,6 +74,14 @@ func (f Flaglist) HasIndex() bool {
 	return f.IndexLevel == 1 || f.IndexLevel == 2
 }
 
+// --plan sends the plan whole, so it implies selector 0 unless --steps is given explicitly.
+func (f Flaglist) StepsSelector() string {
+	if f.WritePlan && f.Steps == "" {
+		return "0"
+	}
+	return f.Steps
+}
+
 func (f Flaglist) FlagString() string {
 	var parts []string
 
