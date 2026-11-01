@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"yact/config"
 	"yact/logic"
@@ -107,7 +108,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	// Later calls with a prompt read this file back, so it must hold the prompt that was sent.
 	if !planUsed {
-		if err := logic.WriteProjectPrompt(combinedPrompt); err != nil {
+		if err := os.WriteFile(config.GetProjectPromptPath(), []byte(combinedPrompt), 0644); err != nil {
 			return err
 		}
 	}

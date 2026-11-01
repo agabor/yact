@@ -4,7 +4,7 @@ Inline the `WriteProjectPrompt` helper from `logic/project_prompt.go` into the `
 
 ## Steps
 
-### [ ] 1. Write the project prompt directly in the command handler
+### [x] 1. Write the project prompt directly in the command handler
 
 **File:** [commands/call.go](commands/call.go)
 
@@ -14,7 +14,7 @@ Inline the `WriteProjectPrompt` helper from `logic/project_prompt.go` into the `
 
 **Context:** [logic/project_prompt.go](logic/project_prompt.go)
 
-### [ ] 2. Delete the project prompt helper file
+### [x] 2. Delete the project prompt helper file
 
 **File:** [logic/project_prompt.go](logic/project_prompt.go)
 
