@@ -1,4 +1,4 @@
-name: yact issue
+name: yact pull request
 
 on:
   workflow_dispatch:
