@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-const bufferFilePath = ".yact/buffer.txt"
+const bufferFilePath = ".yact/temp/buffer.txt"
 const bufferDirPath = ".yact"
 
 func ensureBufferDir() error {
