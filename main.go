@@ -171,6 +171,9 @@ func main() {
 	case "index":
 		requireArgCount("index", commandArgs, 1)
 		commandErr = commands.HandleIndexCommand(commandArgs)
+	case "compact":
+		requireNoArgs("compact", commandArgs)
+		commandErr = commands.HandleCompactCommand()
 	default:
 		requireArgCount(command, commandArgs, 0, 1)
 

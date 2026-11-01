@@ -3,6 +3,7 @@ package logic
 import (
 	"regexp"
 	"slices"
+	"strings"
 )
 
 var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)\s]+))\)`)
@@ -11,16 +12,34 @@ type PromptLinks struct {
 	Paths []string
 }
 
+func linkTarget(match []string) string {
+	if match[1] != "" {
+		return match[1]
+	}
+	return match[2]
+}
+
 func ParsePromptLinkTargets(prompt string) []string {
 	var targets []string
 	for _, match := range promptLinkPattern.FindAllStringSubmatch(prompt, -1) {
-		if match[1] != "" {
-			targets = append(targets, match[1])
-		} else {
-			targets = append(targets, match[2])
-		}
+		targets = append(targets, linkTarget(match))
 	}
 	return targets
+}
+
+// Links are compared by target only, so <a> and a are the same link even though they are written differently.
+func CompactPromptLinks(prompt string) string {
+	seen := map[string]bool{}
+	var compacted strings.Builder
+	for _, match := range promptLinkPattern.FindAllStringSubmatch(prompt, -1) {
+		target := linkTarget(match)
+		if seen[target] {
+			continue
+		}
+		seen[target] = true
+		compacted.WriteString(match[0] + "\n")
+	}
+	return compacted.String()
 }
 
 func selectLinkedFiles(files []string, targets []string) []string {
