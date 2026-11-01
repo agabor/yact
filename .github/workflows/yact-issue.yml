@@ -1,0 +1,94 @@
+name: yact issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to implement
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install yact
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL -o "$HOME/bin/y" https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64
+          chmod +x "$HOME/bin/y"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "yact[bot]"
+          git config user.email "yact@users.noreply.github.com"
+
+      - name: Fetch issue
+        run: |
+          gh issue view "$ISSUE_NUMBER" --json title,body --jq '.title + "\n\n" + (.body // "")' > issue.md
+
+      - name: Create task context
+        run: y new
+
+      - name: Create plan
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          y --no-progress -p plan "$(cat issue.md)"
+          cp .yact/plan.md yact-prompt.txt
+
+      - name: Refine plan with missing context
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if grep -qxF '## Missing context' yact-prompt.txt; then
+            y --no-progress -p plan "$(cat issue.md yact-prompt.txt)"
+            cp .yact/plan.md yact-prompt.txt
+          fi
+
+      - name: Check plan has no missing context
+        run: |
+          if grep -qxF '## Missing context' yact-prompt.txt; then
+            echo "Plan still has missing context" >&2
+            exit 1
+          fi
+
+      - name: Commit plan to branch
+        run: |
+          git checkout -b "yact/issue-$ISSUE_NUMBER"
+          git add yact-prompt.txt
+          git commit -m "Add yact plan for issue #$ISSUE_NUMBER"
+          git push -u origin "yact/issue-$ISSUE_NUMBER"
+
+      - name: Implement plan
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: y --no-progress act
+
+      - name: Commit changes
+        run: |
+          git add -A -- . ':(exclude).yact'
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Implement yact plan for issue #$ISSUE_NUMBER"
+          fi
+          git push
+
+      - name: Run tests
+        run: go test ./...
