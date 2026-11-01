@@ -51,20 +51,20 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           y --no-progress -p plan "$(cat issue.md)"
-          cp .yact/plan.md yact-prompt.txt
+          cp .yact/plan.md yact-prompt.md
 
       - name: Refine plan with missing context
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if grep -qxF '## Missing context' yact-prompt.txt; then
-            y --no-progress -p plan "$(cat issue.md yact-prompt.txt)"
-            cp .yact/plan.md yact-prompt.txt
+          if grep -qxF '## Missing context' yact-prompt.md; then
+            y --no-progress -p plan "$(cat issue.md yact-prompt.md)"
+            cp .yact/plan.md yact-prompt.md
           fi
 
       - name: Check plan has no missing context
         run: |
-          if grep -qxF '## Missing context' yact-prompt.txt; then
+          if grep -qxF '## Missing context' yact-prompt.md; then
             echo "Plan still has missing context" >&2
             exit 1
           fi
@@ -72,7 +72,7 @@ jobs:
       - name: Commit plan to branch
         run: |
           git checkout -b "yact/issue-$ISSUE_NUMBER"
-          git add yact-prompt.txt
+          git add yact-prompt.md
           git commit -m "Add yact plan for issue #$ISSUE_NUMBER"
           git push -u origin "yact/issue-$ISSUE_NUMBER"
 
