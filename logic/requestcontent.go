@@ -20,7 +20,7 @@ const (
 	outputFileName = "output.txt"
 )
 
-var messageFileNames = []string{domainFileName, indexFileName, outputFileName}
+var messageFileNames = []string{indexFileName, outputFileName}
 
 func yactDir() string {
 	return config.GetProjectYactDir()
