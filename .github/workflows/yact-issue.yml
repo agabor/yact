@@ -28,9 +28,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -63,11 +63,13 @@ jobs:
       - name: Create plan
         run: |
           y --no-progress -p plan
+          cat yact-prompt.md
 
       - name: Refine plan with missing context
         run: |
           if grep -qxF '## Missing context' yact-prompt.md; then
             y --no-progress -p plan
+            cat yact-prompt.md
           fi
 
       - name: Check plan has no missing context
@@ -82,7 +84,16 @@ jobs:
         run: git checkout -b "yact/issue-$ISSUE_NUMBER"
 
       - name: Implement plan
+        id: implement
         run: y --no-progress act
+
+      - name: Upload buffer
+        if: always() && steps.implement.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: yact-buffer-issue-${{ inputs.issue }}
+          path: .yact/temp/buffer.txt
+          if-no-files-found: ignore
 
       - name: Commit changes
         run: |
