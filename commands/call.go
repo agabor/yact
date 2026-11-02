@@ -47,6 +47,17 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		planUsed = true
 	}
 
+	// Writing the plan is how a blocked prompt gets unblocked, so it is never gated.
+	if !flags.WritePlan {
+		gateText := prompt
+		if planUsed {
+			gateText = planPrompt
+		}
+		if err := checkPromptGate(gateText); err != nil {
+			return err
+		}
+	}
+
 	requestContentForLLM, err := logic.LoadRequestContent()
 	if err != nil {
 		return err
@@ -139,4 +150,8 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	return nil
+}
+
+func checkPromptGate(promptText string) error {
+	return logic.PromptGateError(logic.DecidePromptGate(promptText))
 }
