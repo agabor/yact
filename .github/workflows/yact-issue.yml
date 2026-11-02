@@ -67,32 +67,33 @@ jobs:
             exit 1
           fi
 
-      - name: Commit plan to branch
-        run: |
-          git checkout -b "yact/issue-$ISSUE_NUMBER"
-          git add yact-prompt.md
-          git commit -m "Add yact plan for issue #$ISSUE_NUMBER"
-          git push -u origin "yact/issue-$ISSUE_NUMBER"
+      - name: Create branch
+        run: git checkout -b "yact/issue-$ISSUE_NUMBER"
 
       - name: Implement plan
         run: y --no-progress act
 
       - name: Commit changes
         run: |
-          git add -A -- . ':(exclude).yact'
+          git add -A -- . ':(exclude).yact' ':(exclude)yact-prompt.md'
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Implement yact plan for issue #$ISSUE_NUMBER"
           fi
-          git push
+          git push -u origin "yact/issue-$ISSUE_NUMBER"
 
       - name: Run tests
         run: go test ./...
 
       - name: Open pull request
         run: |
+          {
+            cat yact-prompt.md
+            echo
+            echo "Closes #$ISSUE_NUMBER"
+          } > yact-pr-body.md
           gh pr create \
             --head "yact/issue-$ISSUE_NUMBER" \
             --title "Implement issue #$ISSUE_NUMBER" \
-            --body "Closes #$ISSUE_NUMBER"
+            --body-file yact-pr-body.md

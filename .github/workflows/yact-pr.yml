@@ -47,8 +47,10 @@ jobs:
       - name: Compact task context
         run: y compact
 
-      - name: Fetch comment
+      - name: Fetch plan and comment
         run: |
+          gh pr view $PR_NUMBER --json body --jq '.body' > yact-prompt.md
+          echo >> yact-prompt.md
           gh pr view $PR_NUMBER --json comments --jq '.comments[-1].body' >> yact-prompt.md
           cat yact-prompt.md
 
@@ -70,18 +72,12 @@ jobs:
             exit 1
           fi
 
-      - name: Commit plan to branch
-        run: |
-          git add yact-prompt.md
-          git commit -m "Update yact plan for pull request #$PR_NUMBER"
-          git push
-
       - name: Implement plan
         run: y --no-progress act
 
       - name: Commit changes
         run: |
-          git add -A -- . ':(exclude).yact'
+          git add -A -- . ':(exclude).yact' ':(exclude)yact-prompt.md'
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
