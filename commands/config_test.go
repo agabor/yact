@@ -2,37 +2,6 @@ package commands
 
 import "testing"
 
-func TestSetIntValue(t *testing.T) {
-	tests := []struct {
-		name       string
-		value      string
-		wantTarget int
-		wantErr    bool
-	}{
-		{name: "valid number sets the target", value: "42", wantTarget: 42},
-		{name: "non-numeric value leaves the target unchanged", value: "abc", wantTarget: 7, wantErr: true},
-		// fmt.Sscanf stops at the first non-digit, so trailing text is accepted.
-		// This documents the current leniency, not a requirement.
-		{name: "trailing text is read up to the first non-digit", value: "12abc", wantTarget: 12},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			target := 7
-			err := setIntValue(&target, tc.value)
-			if tc.wantErr && err == nil {
-				t.Fatalf("setIntValue(%q) error = nil, want error", tc.value)
-			}
-			if !tc.wantErr && err != nil {
-				t.Fatalf("setIntValue(%q) unexpected error: %v", tc.value, err)
-			}
-			if target != tc.wantTarget {
-				t.Errorf("setIntValue(%q) target = %d, want %d", tc.value, target, tc.wantTarget)
-			}
-		})
-	}
-}
-
 func TestParseIgnoredFolderArgument(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -6,18 +6,17 @@ import (
 )
 
 type Flaglist struct {
-	NoWrite       bool
-	NoProgress    bool
-	ValidateCode  bool
-	WritePlan     bool
-	Batch         bool
-	Download      bool
-	Verbose       bool
-	Dry           bool
-	ClaudeLevel   int
-	MaxInputLines int
-	Steps         string
-	IndexLevel    int
+	NoWrite      bool
+	NoProgress   bool
+	ValidateCode bool
+	WritePlan    bool
+	Batch        bool
+	Download     bool
+	Verbose      bool
+	Dry          bool
+	ClaudeLevel  int
+	Steps        string
+	IndexLevel   int
 }
 
 // OutputApply is the zero value, so a batch job stored without a mode is applied.
@@ -114,9 +113,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Dry {
 		parts = append(parts, "--dry")
-	}
-	if f.MaxInputLines > 0 {
-		parts = append(parts, fmt.Sprintf("--max-input-lines %d", f.MaxInputLines))
 	}
 	if f.Steps != "" {
 		parts = append(parts, fmt.Sprintf("--steps %s", f.Steps))

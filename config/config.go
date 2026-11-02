@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	ClaudeModel   = "haiku"
-	MaxTokens     = 128000
-	MaxInputLines = 2000
+	ClaudeModel = "haiku"
+	MaxTokens   = 128000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
@@ -25,7 +24,6 @@ const includeDirName = "include"
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
 	ClaudeModel     string `json:"claude_model"`
-	MaxInputLines   int    `json:"max_input_lines"`
 }
 
 func getConfigDir() (string, error) {
@@ -100,7 +98,6 @@ func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
 		ClaudeModel:     ClaudeModel,
-		MaxInputLines:   MaxInputLines,
 	}
 }
 
@@ -136,10 +133,6 @@ func Load() (*Config, error) {
 
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return cfg, err
-	}
-
-	if cfg.MaxInputLines == 0 {
-		cfg.MaxInputLines = MaxInputLines
 	}
 
 	return cfg, nil
