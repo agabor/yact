@@ -90,6 +90,13 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 		return requestContent, err
 	}
 
-	requestContent.Files = append([]string{}, links.Paths...)
+	keywordPaths, err := resolvePromptKeywordFiles(requestContent.Prompt)
+	if err != nil {
+		return requestContent, err
+	}
+
+	paths := append([]string{}, links.Paths...)
+	paths = append(paths, keywordPaths...)
+	requestContent.Files = logic.UniquePaths(paths)
 	return requestContent, nil
 }
