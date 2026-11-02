@@ -20,4 +20,4 @@ go.work
 
 .idea
 **/.yact/temp
-**/.yact-prompt.md
+**/yact-prompt.md

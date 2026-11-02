@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ISSUE_NUMBER: ${{ inputs.issue }}
+      TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
@@ -38,8 +39,10 @@ jobs:
 
       - name: Configure git identity
         run: |
-          git config user.name "yact[bot]"
-          git config user.email "yact@users.noreply.github.com"
+          # The noreply address is tied to the numeric user id, which the token's actor cannot supply, so it is looked up from the public user API.
+          user_id=$(gh api "users/$TRIGGERING_ACTOR" --jq '.id')
+          git config user.name "$TRIGGERING_ACTOR"
+          git config user.email "$user_id+$TRIGGERING_ACTOR@users.noreply.github.com"
 
       - name: Create task context
         run: y new
