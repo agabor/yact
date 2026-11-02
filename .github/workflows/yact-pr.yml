@@ -28,12 +28,12 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Checkout branch
         run: gh pr checkout $PR_NUMBER
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -84,7 +84,16 @@ jobs:
           fi
 
       - name: Implement plan
+        id: implement
         run: y --no-progress act
+
+      - name: Upload buffer
+        if: always() && steps.implement.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: yact-buffer-pr-${{ inputs.pr }}
+          path: .yact/temp/buffer.txt
+          if-no-files-found: ignore
 
       - name: Commit changes
         run: |
