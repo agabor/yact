@@ -97,11 +97,11 @@ jobs:
 
       - name: Commit changes
         run: |
-          git add -A -- . ':(exclude).yact' ':(exclude)yact-prompt.md'
+          git add .
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Implement yact plan for issue #$ISSUE_NUMBER"
+            git commit -am "Implement yact plan for issue #$ISSUE_NUMBER"
           fi
           git push -u origin "yact/issue-$ISSUE_NUMBER"
 
