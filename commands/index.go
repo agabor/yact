@@ -5,9 +5,8 @@ import (
 	"strconv"
 
 	"yact/config"
+	"yact/logic"
 )
-
-const indexFilePath = ".yact/temp/index.txt"
 
 func parseIndexLevel(arg string) (int, error) {
 	level, err := strconv.Atoi(arg)
@@ -33,9 +32,9 @@ func HandleIndexCommand(args []string) error {
 	}
 
 	if level == 0 {
-		fmt.Printf("Index file removed: %s\n", indexFilePath)
+		fmt.Printf("Index file removed: %s\n", logic.IndexFilePath())
 		return nil
 	}
-	fmt.Printf("Index written to %s\n", indexFilePath)
+	fmt.Printf("Index written to %s\n", logic.IndexFilePath())
 	return nil
 }

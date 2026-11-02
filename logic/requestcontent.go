@@ -18,16 +18,23 @@ const (
 	domainFileName = "domain.txt"
 	indexFileName  = "index.txt"
 	outputFileName = "output.txt"
+	bufferFileName = "buffer.txt"
 )
-
-var messageFileNames = []string{indexFileName, outputFileName}
 
 func yactDir() string {
 	return config.GetProjectYactDir()
 }
 
+func tempDir() string {
+	return filepath.Join(yactDir(), "temp")
+}
+
 func IndexFilePath() string {
-	return filepath.Join(yactDir(), "temp", indexFileName)
+	return filepath.Join(tempDir(), indexFileName)
+}
+
+func BufferFilePath() string {
+	return filepath.Join(tempDir(), bufferFileName)
 }
 
 func RemoveIndexFile() error {
@@ -50,8 +57,7 @@ func writeFixedFile(name string, content string) (string, error) {
 	return path, nil
 }
 
-func existingFilePath(name string) (string, error) {
-	path := filepath.Join(yactDir(), name)
+func existingFilePath(path string) (string, error) {
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -82,17 +88,17 @@ func AddOutput(content string) (string, error) {
 }
 
 func LoadRequestContent() (RequestContent, error) {
-	domain, err := existingFilePath(domainFileName)
+	domain, err := existingFilePath(filepath.Join(yactDir(), domainFileName))
 	if err != nil {
 		return RequestContent{}, err
 	}
 
-	index, err := existingFilePath(indexFileName)
+	index, err := existingFilePath(IndexFilePath())
 	if err != nil {
 		return RequestContent{}, err
 	}
 
-	output, err := existingFilePath(outputFileName)
+	output, err := existingFilePath(filepath.Join(yactDir(), outputFileName))
 	if err != nil {
 		return RequestContent{}, err
 	}
@@ -106,9 +112,16 @@ func LoadRequestContent() (RequestContent, error) {
 	}, nil
 }
 
+func messageFilePaths() []string {
+	return []string{
+		IndexFilePath(),
+		filepath.Join(yactDir(), outputFileName),
+	}
+}
+
 func RemoveMessages() error {
-	for _, name := range messageFileNames {
-		if err := os.Remove(filepath.Join(yactDir(), name)); err != nil && !os.IsNotExist(err) {
+	for _, path := range messageFilePaths() {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}
