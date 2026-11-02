@@ -8,6 +8,9 @@ import (
 
 var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)\s]+))\)`)
 
+// A double-bracket link is a shorthand for a Markdown link with the same target, so [[main.go]] sends the same file as [main.go](main.go).
+var promptDoubleBracketPattern = regexp.MustCompile(`\[\[([^\[\]\n]+)\]\]`)
+
 type PromptLinks struct {
 	Paths []string
 }
@@ -19,12 +22,20 @@ func linkTarget(match []string) string {
 	return match[2]
 }
 
+func doubleBracketTargets(prompt string) []string {
+	var targets []string
+	for _, match := range promptDoubleBracketPattern.FindAllStringSubmatch(prompt, -1) {
+		targets = append(targets, match[1])
+	}
+	return targets
+}
+
 func ParsePromptLinkTargets(prompt string) []string {
 	var targets []string
 	for _, match := range promptLinkPattern.FindAllStringSubmatch(prompt, -1) {
 		targets = append(targets, linkTarget(match))
 	}
-	return targets
+	return append(targets, doubleBracketTargets(prompt)...)
 }
 
 // Links are compared by target only, so <a> and a are the same link even though they are written differently.
@@ -53,7 +64,7 @@ func selectLinkedFiles(files []string, targets []string) []string {
 }
 
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
-	// Only Markdown link targets count, because a plain mention of a path must not send that file to the LLM.
+	// Only link targets count, because a plain mention of a path must not send that file to the LLM.
 	targets := ParsePromptLinkTargets(prompt)
 	if len(targets) == 0 {
 		return PromptLinks{}, nil
