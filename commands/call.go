@@ -29,7 +29,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	applyModelOverride(cfg, flags.ModelOverride())
-	applyMaxInputLinesOverride(cfg, flags.MaxInputLines)
 
 	planPrompt := ""
 	combinedPrompt := ""
@@ -97,10 +96,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	totalLength, fileCounts, err := countInputLines(requestContentForLLM)
 	if err != nil {
 		return err
-	}
-
-	if totalLength > cfg.MaxInputLines {
-		return fmt.Errorf("input exceeds maximum number allowed lines (%d), got %d. Increase max_input_lines to override.", cfg.MaxInputLines, totalLength)
 	}
 
 	printWarnings(longFileWarnings(fileCounts))

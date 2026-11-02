@@ -12,7 +12,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		fmt.Println("Current configuration:")
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
 		printConfigValue("claude_model", cfg.ClaudeModel, false)
-		printConfigValue("max_input_lines", fmt.Sprintf("%d", cfg.MaxInputLines), false)
 		return nil
 	}
 
@@ -37,10 +36,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 			cfg.AnthropicAPIKey = value
 		case "claude_model":
 			cfg.ClaudeModel = value
-		case "max_input_lines":
-			if err := setIntValue(&cfg.MaxInputLines, value); err != nil {
-				return err
-			}
 		default:
 			return fmt.Errorf("unknown config key '%s'", key)
 		}
@@ -138,14 +133,4 @@ func printConfigValue(key, value string, isSensitive bool) {
 	} else {
 		fmt.Printf("  %s: %s\n", key, value)
 	}
-}
-
-func setIntValue(target *int, value string) error {
-	var intVal int
-	_, err := fmt.Sscanf(value, "%d", &intVal)
-	if err != nil {
-		return fmt.Errorf("invalid integer value '%s'", value)
-	}
-	*target = intVal
-	return nil
 }
