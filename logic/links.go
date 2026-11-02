@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -14,6 +15,9 @@ var promptDoubleBracketPattern = regexp.MustCompile(`\[\[([^\[\]\n]+)\]\]`)
 type PromptLinks struct {
 	Paths []string
 }
+
+// A glob pattern is only created by ParseGlobPattern, so every GlobPattern is valid for filepath.Match.
+type GlobPattern string
 
 func linkTarget(match []string) string {
 	if match[1] != "" {
@@ -38,6 +42,40 @@ func ParsePromptLinkTargets(prompt string) []string {
 	return append(targets, doubleBracketTargets(prompt)...)
 }
 
+// Markdown link targets are exact paths, so a glob in them is never expanded.
+func ParseMarkdownLinkTargets(prompt string) []string {
+	var targets []string
+	for _, match := range promptLinkPattern.FindAllStringSubmatch(prompt, -1) {
+		targets = append(targets, linkTarget(match))
+	}
+	return targets
+}
+
+func ParseGlobPattern(raw string) (GlobPattern, error) {
+	if _, err := filepath.Match(raw, ""); err != nil {
+		return "", err
+	}
+	return GlobPattern(raw), nil
+}
+
+func parseGlobPatterns(raws []string) ([]GlobPattern, error) {
+	var patterns []GlobPattern
+	for _, raw := range raws {
+		pattern, err := ParseGlobPattern(raw)
+		if err != nil {
+			return nil, err
+		}
+		patterns = append(patterns, pattern)
+	}
+	return patterns, nil
+}
+
+// The pattern was validated by ParseGlobPattern, so filepath.Match cannot return an error here.
+func (g GlobPattern) Matches(path string) bool {
+	matched, _ := filepath.Match(string(g), path)
+	return matched
+}
+
 // Links are compared by target only, so <a> and a are the same link even though they are written differently.
 func CompactPromptLinks(prompt string) string {
 	seen := map[string]bool{}
@@ -53,10 +91,12 @@ func CompactPromptLinks(prompt string) string {
 	return compacted.String()
 }
 
-func selectLinkedFiles(files []string, targets []string) []string {
+func selectLinkedFiles(files []string, exactPaths []string, patterns []GlobPattern) []string {
 	var selected []string
 	for _, path := range files {
-		if slices.Contains(targets, path) {
+		if slices.Contains(exactPaths, path) || slices.ContainsFunc(patterns, func(pattern GlobPattern) bool {
+			return pattern.Matches(path)
+		}) {
 			selected = append(selected, path)
 		}
 	}
@@ -65,9 +105,15 @@ func selectLinkedFiles(files []string, targets []string) []string {
 
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 	// Only link targets count, because a plain mention of a path must not send that file to the LLM.
-	targets := ParsePromptLinkTargets(prompt)
-	if len(targets) == 0 {
+	exactPaths := ParseMarkdownLinkTargets(prompt)
+	patternRaws := doubleBracketTargets(prompt)
+	if len(exactPaths) == 0 && len(patternRaws) == 0 {
 		return PromptLinks{}, nil
+	}
+
+	patterns, err := parseGlobPatterns(patternRaws)
+	if err != nil {
+		return PromptLinks{}, err
 	}
 
 	files, err := EnumerateFiles(".", func(name string) bool {
@@ -77,5 +123,5 @@ func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 		return PromptLinks{}, err
 	}
 
-	return PromptLinks{Paths: selectLinkedFiles(files, targets)}, nil
+	return PromptLinks{Paths: selectLinkedFiles(files, exactPaths, patterns)}, nil
 }
