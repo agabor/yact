@@ -88,25 +88,3 @@ func TestApplyModelOverride(t *testing.T) {
 		})
 	}
 }
-
-func TestApplyMaxInputLinesOverride(t *testing.T) {
-	tests := []struct {
-		name     string
-		override int
-		want     int
-	}{
-		{name: "zero keeps the configured limit", override: 0, want: config.MaxInputLines},
-		{name: "negative keeps the configured limit", override: -5, want: config.MaxInputLines},
-		{name: "positive value replaces the limit", override: 500, want: 500},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := config.DefaultConfig()
-			applyMaxInputLinesOverride(cfg, tc.override)
-			if cfg.MaxInputLines != tc.want {
-				t.Errorf("applyMaxInputLinesOverride(%d) MaxInputLines = %d, want %d", tc.override, cfg.MaxInputLines, tc.want)
-			}
-		})
-	}
-}

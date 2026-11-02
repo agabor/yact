@@ -14,12 +14,6 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 	}
 }
 
-func applyMaxInputLinesOverride(cfg *config.Config, maxInputLinesOverride int) {
-	if maxInputLinesOverride > 0 {
-		cfg.MaxInputLines = maxInputLinesOverride
-	}
-}
-
 func indexLevelToVisibility(level int) (string, error) {
 	switch level {
 	case 1:
