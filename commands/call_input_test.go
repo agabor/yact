@@ -54,3 +54,42 @@ func TestLongFileWarnings(t *testing.T) {
 		})
 	}
 }
+
+func TestLongFileWarningsSkipsYactFolder(t *testing.T) {
+	tests := []struct {
+		name   string
+		counts []fileLineCount
+		want   []string
+	}{
+		{
+			name:   "long output file in yact folder returns no warning",
+			counts: []fileLineCount{{Path: ".yact/output.txt", Lines: longFileLineThreshold + 1}},
+			want:   nil,
+		},
+		{
+			name:   "long index file in nested yact folder returns no warning",
+			counts: []fileLineCount{{Path: ".yact/temp/index.txt", Lines: longFileLineThreshold + 1}},
+			want:   nil,
+		},
+		{
+			name: "long file outside yact folder still returns a warning",
+			counts: []fileLineCount{
+				{Path: "a.go", Lines: longFileLineThreshold + 1},
+				{Path: ".yact-notes/a.md", Lines: longFileLineThreshold + 1},
+			},
+			want: []string{
+				longWarningText("a.go", longFileLineThreshold+1),
+				longWarningText(".yact-notes/a.md", longFileLineThreshold+1),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := longFileWarnings(tc.counts)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("longFileWarnings() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
