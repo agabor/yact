@@ -42,3 +42,22 @@ func TestBufferFilePath(t *testing.T) {
 		})
 	}
 }
+
+func TestOutputFilePath(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{
+			name: "output file is in temp dir",
+			want: filepath.Join(".yact", "temp", "output.txt"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := outputFilePath(); got != tt.want {
+				t.Errorf("outputFilePath() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

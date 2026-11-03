@@ -6,7 +6,7 @@ import (
 )
 
 const bufferFilePath = ".yact/temp/buffer.txt"
-const bufferDirPath = ".yact"
+const bufferDirPath = ".yact/temp"
 
 func ensureBufferDir() error {
 	return os.MkdirAll(bufferDirPath, 0755)

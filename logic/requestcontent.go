@@ -37,6 +37,10 @@ func BufferFilePath() string {
 	return filepath.Join(tempDir(), bufferFileName)
 }
 
+func outputFilePath() string {
+	return filepath.Join(tempDir(), outputFileName)
+}
+
 func RemoveIndexFile() error {
 	if err := os.Remove(IndexFilePath()); err != nil && !os.IsNotExist(err) {
 		return err
@@ -44,12 +48,11 @@ func RemoveIndexFile() error {
 	return nil
 }
 
-func writeFixedFile(name string, content string) (string, error) {
-	if err := os.MkdirAll(yactDir(), 0755); err != nil {
+func writeFixedFile(path string, content string) (string, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return "", err
 	}
 
-	path := filepath.Join(yactDir(), name)
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		return "", err
 	}
@@ -80,11 +83,11 @@ func (r RequestContent) MessagePaths() []string {
 }
 
 func AddMessage(content string) (string, error) {
-	return writeFixedFile(domainFileName, content)
+	return writeFixedFile(filepath.Join(yactDir(), domainFileName), content)
 }
 
 func AddOutput(content string) (string, error) {
-	return writeFixedFile(outputFileName, content)
+	return writeFixedFile(outputFilePath(), content)
 }
 
 func LoadRequestContent() (RequestContent, error) {
@@ -98,7 +101,7 @@ func LoadRequestContent() (RequestContent, error) {
 		return RequestContent{}, err
 	}
 
-	output, err := existingFilePath(filepath.Join(yactDir(), outputFileName))
+	output, err := existingFilePath(outputFilePath())
 	if err != nil {
 		return RequestContent{}, err
 	}
@@ -115,7 +118,7 @@ func LoadRequestContent() (RequestContent, error) {
 func messageFilePaths() []string {
 	return []string{
 		IndexFilePath(),
-		filepath.Join(yactDir(), outputFileName),
+		outputFilePath(),
 	}
 }
 
