@@ -25,9 +25,9 @@ const (
 )
 
 type ParsedElement struct {
-	Kind       ParsedElementKind
-	CodeFile   CodeFile
-	Text       string
+	Kind     ParsedElementKind
+	CodeFile CodeFile
+	Text     string
 }
 
 type ApplyOutcome int

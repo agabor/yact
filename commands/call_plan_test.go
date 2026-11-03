@@ -32,10 +32,10 @@ const promptStepTwo = "# Plan\n\n### [x] 2. Second\nbody two\n\n"
 
 func TestCombinePromptText(t *testing.T) {
 	tests := []struct {
-		name          string
-		promptFile    string
-		cliPrompt     string
-		want          string
+		name       string
+		promptFile string
+		cliPrompt  string
+		want       string
 	}{
 		{name: "both inputs empty returns empty", promptFile: "", cliPrompt: "", want: ""},
 		{name: "file text only", promptFile: "  file text \n", cliPrompt: "", want: "file text"},

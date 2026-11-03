@@ -47,10 +47,10 @@ func TestParseBraceTreeNesting(t *testing.T) {
 
 func TestParseBraceTreeLineBreakSplitting(t *testing.T) {
 	tests := []struct {
-		name               string
-		source             string
-		splitsAtLineBreak  bool
-		want               []string
+		name              string
+		source            string
+		splitsAtLineBreak bool
+		want              []string
 	}{
 		{
 			name:              "label on its own line is cut off when splitting",
