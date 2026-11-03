@@ -52,7 +52,8 @@ Global Flags:
   -c, --claude <level>                 Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
   -i, --index <level>                  Index for this call: 0 sends no index, 1 generates a public index, 2 generates a private index. The index is written to .yact/temp/index.txt and sent only in the call that sets the switch
   -b, --batch                          Submit the request as a batch job, allows one pending job at a time, skips post-processing. The output flags (-n, -v, -p) are saved with the job and applied when the result is fetched with 'y batch'
-  -d, --download                       Download the system prompt for the command
+  -d, --download                       Download the system prompt for the command and the skills given with --skill
+  --skill <name>                     Attach the skill file ~/.yact/skills/<name>.md verbatim to the messages sent to the LLM. Can be repeated
   --no-progress                        Hide progress indicator
   -v, --validate-code                  Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks
   -p, --plan                           Write the response to .yact/plan.md. A plan sent as the prompt is sent whole, the same as --steps 0, and no step is ticked off

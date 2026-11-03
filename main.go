@@ -9,6 +9,7 @@ import (
 
 	"yact/commands"
 	"yact/config"
+	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -49,6 +50,18 @@ func validateIndexLevel(level int) error {
 	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
 }
 
+func parseSkillNames(raws []string) ([]config.SkillName, error) {
+	names := make([]config.SkillName, 0, len(raws))
+	for _, raw := range raws {
+		name, err := config.ParseSkillName(raw)
+		if err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
 func promptNotFoundMessage(command config.PromptName, err error) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
 	fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
@@ -73,6 +86,37 @@ func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, []
 	return systemPrompt, flags, err
 }
 
+func loadSkill(name config.SkillName, forceDownload bool) (logic.Skill, error) {
+	if forceDownload {
+		if err := config.DownloadSkill(name); err != nil {
+			return logic.Skill{}, err
+		}
+	}
+	content, err := config.LoadSkill(name)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := config.DownloadSkill(name); err != nil {
+			return logic.Skill{}, err
+		}
+		content, err = config.LoadSkill(name)
+	}
+	if err != nil {
+		return logic.Skill{}, err
+	}
+	return logic.Skill{Name: string(name), Content: content}, nil
+}
+
+func loadSkills(names []config.SkillName, forceDownload bool) ([]logic.Skill, error) {
+	skills := make([]logic.Skill, 0, len(names))
+	for _, name := range names {
+		skill, err := loadSkill(name, forceDownload)
+		if err != nil {
+			return nil, err
+		}
+		skills = append(skills, skill)
+	}
+	return skills, nil
+}
+
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
@@ -86,10 +130,17 @@ func main() {
 	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
 	verboseFlag := flag.Bool("verbose", false, "Print all file paths and the prompt sent to the LLM")
 	dryFlag := flag.Bool("dry", false, "Skip the LLM call, only build and check the request")
+	skillFlag := flag.StringArray("skill", nil, "Attach a skill file to the messages sent to the LLM. Can be repeated")
 
 	flag.Parse()
 
 	if err := validateIndexLevel(*indexFlag); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	skillNames, err := parseSkillNames(*skillFlag)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -108,6 +159,7 @@ func main() {
 		ClaudeLevel:  *claudeLevel,
 		Steps:        *stepsFlag,
 		IndexLevel:   *indexFlag,
+		Skills:       skillNames,
 	}
 
 	if *helpFlag {
@@ -162,7 +214,12 @@ func main() {
 		}
 		queryFlags := flags
 		queryFlags.NoWrite = true
-		commandErr = commands.HandleCommand(queryFlags, cfg, "", getOptionalPrompt(commandArgs))
+		skills, err := loadSkills(flags.Skills, flags.Download)
+		if err != nil {
+			commandErr = err
+			break
+		}
+		commandErr = commands.HandleCommand(queryFlags, cfg, "", getOptionalPrompt(commandArgs), skills)
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
@@ -197,10 +254,16 @@ func main() {
 			}
 		}
 
+		skills, err := loadSkills(flags.Skills, flags.Download)
+		if err != nil {
+			commandErr = err
+			break
+		}
+
 		if flagString := flags.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, getOptionalPrompt(commandArgs))
+		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, getOptionalPrompt(commandArgs), skills)
 	}
 
 	if commandErr != nil {
