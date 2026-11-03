@@ -1,0 +1,90 @@
+name: yact review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to review
+        required: true
+        type: string
+      model:
+        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "4"
+        default: "2"
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ inputs.pr }}
+      CLAUDE_LEVEL: ${{ inputs.model }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Checkout branch
+        run: gh pr checkout "$PR_NUMBER"
+
+      - name: Install yact
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL -o "$HOME/bin/y" https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64
+          chmod +x "$HOME/bin/y"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          "$HOME/bin/y" config anthropic_api_key "$ANTHROPIC_API_KEY"
+
+      - name: Fetch plan
+        run: |
+          gh pr view "$PR_NUMBER" --json body --jq '.body // ""' > yact-prompt.md
+          cat yact-prompt.md
+
+      - name: Fetch original request
+        run: |
+          # Issue and pull request text is untrusted: it only travels through files and quoted variables.
+          issues=$(gh pr view "$PR_NUMBER" --json closingIssuesReferences --jq '.closingIssuesReferences[].number')
+          if [ -z "$issues" ]; then
+            gh pr view "$PR_NUMBER" --json title --jq '"Original request (pull request title): " + .title' > "$RUNNER_TEMP/request.txt"
+          else
+            : > "$RUNNER_TEMP/request.txt"
+            for issue in $issues; do
+              {
+                echo "Original request (issue #$issue):"
+                gh issue view "$issue" --json title,body --jq '.title + "\n\n" + (.body // "")'
+                echo
+              } >> "$RUNNER_TEMP/request.txt"
+            done
+          fi
+          cat "$RUNNER_TEMP/request.txt"
+
+      - name: Add changeset
+        run: |
+          gh pr diff "$PR_NUMBER" > "$RUNNER_TEMP/pr.diff"
+          y output < "$RUNNER_TEMP/pr.diff"
+
+      - name: Add changed files
+        run: |
+          gh pr diff "$PR_NUMBER" --name-only | while IFS= read -r file; do
+            # Deleted files no longer exist, and binary files cannot be reviewed as text.
+            if [ -f "$file" ] && grep -Iq . "$file"; then
+              y read "$file"
+            fi
+          done
+
+      - name: Review
+        run: y -c "$CLAUDE_LEVEL" --no-progress review "$(cat "$RUNNER_TEMP/request.txt")"
+
+      - name: Post review
+        run: gh pr comment "$PR_NUMBER" --body-file .yact/temp/buffer.txt
