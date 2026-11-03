@@ -52,7 +52,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		if planUsed {
 			gateText = planPrompt
 		}
-		if err := checkPromptGate(gateText); err != nil {
+		if err := logic.PromptGateError(logic.DecidePromptGate(gateText)); err != nil {
 			return err
 		}
 	}
@@ -145,8 +145,4 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	return nil
-}
-
-func checkPromptGate(promptText string) error {
-	return logic.PromptGateError(logic.DecidePromptGate(promptText))
 }
