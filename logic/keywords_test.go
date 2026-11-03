@@ -31,16 +31,57 @@ func TestParsePromptKeywords(t *testing.T) {
 }
 
 func TestContainsKeyword(t *testing.T) {
-	content := "func HandleError() error"
+	tests := []struct {
+		name    string
+		content string
+		keyword string
+		want    bool
+	}{
+		{"exact match", "func HandleError() error", "HandleError", true},
+		{"different case", "func HandleError() error", "handleerror", true},
+		{"absent keyword", "func HandleError() error", "missing", false},
+		{"plan matches PlanStep", "type PlanStep struct", "plan", true},
+		{"plan matches plan_gate", "plan_gate.go", "plan", true},
+		{"plan not inside explanation", "explanation of the design", "plan", false},
+		{"words in order", "countInputLines", "input lines", true},
+		{"words out of order", "lines input", "input lines", false},
+		{"keyword with underscores", "max_input_lines", "max_input_lines", true},
+		{"separator style differs", "max_input_lines", "input-lines", true},
+		{"empty keyword", "anything", "", false},
+		{"punctuation only keyword", "anything", "--", false},
+	}
 
-	if !ContainsKeyword(content, "HandleError") {
-		t.Error("expected match for present keyword")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ContainsKeyword(tt.content, tt.keyword); got != tt.want {
+				t.Errorf("ContainsKeyword(%q, %q) = %v, want %v", tt.content, tt.keyword, got, tt.want)
+			}
+		})
 	}
-	if ContainsKeyword(content, "handleerror") {
-		t.Error("expected no match for different case")
+}
+
+func TestSplitWords(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		want []string
+	}{
+		{"camelCase", "handleError", []string{"handle", "error"}},
+		{"acronym followed by word", "HTTPServer", []string{"http", "server"}},
+		{"snake_case", "max_input_lines", []string{"max", "input", "lines"}},
+		{"kebab-case", "input-lines", []string{"input", "lines"}},
+		{"digits stay with their word", "v2Server", []string{"v2", "server"}},
+		{"mixed separators", "  Plan--Step_v2.go ", []string{"plan", "step", "v2", "go"}},
+		{"empty", "", nil},
+		{"only separators", "__--", nil},
 	}
-	if ContainsKeyword(content, "missing") {
-		t.Error("expected no match for absent keyword")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := splitWords(tt.text); !slices.Equal(got, tt.want) {
+				t.Errorf("splitWords(%q) = %v, want %v", tt.text, got, tt.want)
+			}
+		})
 	}
 }
 
