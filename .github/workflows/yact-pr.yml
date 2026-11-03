@@ -6,7 +6,7 @@ on:
       pr:
         description: Pull request number to improve
         required: true
-        type: szring
+        type: string
 
 permissions:
   contents: write
