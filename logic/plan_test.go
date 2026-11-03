@@ -13,7 +13,7 @@ func TestAppendPromptLinkToFooter(t *testing.T) {
 			name:       "no separator appends the link to the body",
 			promptText: "# Plan\nbody\n",
 			path:       "a.go",
-			want:       "# Plan\nbody\n[a.go](a.go)\n",
+			want:       "# Plan\nbody\n=====\n[a.go](a.go)\n",
 		},
 		{
 			name:       "separator with footer appends the link to the footer",
