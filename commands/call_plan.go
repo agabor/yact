@@ -69,7 +69,13 @@ func tickPlanSteps(planText string, steps []logic.PlanStep) error {
 }
 
 func combinePromptText(promptFileText string, cliPrompt string) string {
-	fileText := strings.TrimSpace(promptFileText)
+	sections := logic.SplitPromptFooter(promptFileText)
+	sections.Body = joinPromptBody(sections.Body, cliPrompt)
+	return logic.JoinPromptSections(sections)
+}
+
+func joinPromptBody(fileBody string, cliPrompt string) string {
+	fileText := strings.TrimSpace(fileBody)
 	cliText := strings.TrimSpace(cliPrompt)
 	if fileText == "" {
 		return cliText
@@ -78,6 +84,11 @@ func combinePromptText(promptFileText string, cliPrompt string) string {
 		return fileText
 	}
 	return fileText + "\n\n" + cliText
+}
+
+// The footer is never sent to the LLM, and keyword markers are removed only from the sent body.
+func sentPromptText(promptText string) string {
+	return logic.StripKeywordMarkers(logic.SplitPromptFooter(promptText).Body)
 }
 
 func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
@@ -98,5 +109,6 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 	paths := append([]string{}, links.Paths...)
 	paths = append(paths, keywordPaths...)
 	requestContent.Files = logic.UniquePaths(paths)
+	requestContent.Prompt = sentPromptText(requestContent.Prompt)
 	return requestContent, nil
 }

@@ -22,6 +22,11 @@ func ParsePromptKeywords(prompt string) []string {
 	return keywords
 }
 
+// The LLM must not see the markers, but the keyword text itself is still useful.
+func StripKeywordMarkers(prompt string) string {
+	return promptKeywordPattern.ReplaceAllString(prompt, "$1")
+}
+
 // The match is case-sensitive, the same rule the keyword command has always used.
 func ContainsKeyword(content string, keyword string) bool {
 	return strings.Contains(content, keyword)

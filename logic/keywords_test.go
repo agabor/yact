@@ -56,3 +56,24 @@ func TestUniquePaths(t *testing.T) {
 		t.Errorf("UniquePaths mutated its argument: %v", input)
 	}
 }
+
+func TestStripKeywordMarkers(t *testing.T) {
+	tests := []struct {
+		name   string
+		prompt string
+		want   string
+	}{
+		{"single marker", "find ((error handling)) now", "find error handling now"},
+		{"several markers in one line", "((a)) and ((b))", "a and b"},
+		{"text without markers", "plain text", "plain text"},
+		{"single parentheses stay", "f(x) and (y)", "f(x) and (y)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StripKeywordMarkers(tt.prompt); got != tt.want {
+				t.Errorf("StripKeywordMarkers(%q) = %q, want %q", tt.prompt, got, tt.want)
+			}
+		})
+	}
+}
