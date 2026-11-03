@@ -96,6 +96,9 @@ jobs:
           path: .yact/temp/buffer.txt
           if-no-files-found: ignore
 
+      - name: Format code
+        run: go fmt ./...
+
       - name: Commit changes
         run: |
           git add .
@@ -105,6 +108,9 @@ jobs:
             git commit -am "Implement yact plan for issue #$ISSUE_NUMBER"
           fi
           git push -u origin "yact/issue-$ISSUE_NUMBER"
+
+      - name: Vet code
+        run: go vet ./...
 
       - name: Run tests
         run: go test ./...
