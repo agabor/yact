@@ -7,6 +7,15 @@ on:
         description: Issue number to implement
         required: true
         type: string
+      model:
+        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "4"
+        default: "1"
 
 permissions:
   contents: write
@@ -18,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ISSUE_NUMBER: ${{ inputs.issue }}
+      CLAUDE_LEVEL: ${{ inputs.model }}
       TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -53,13 +63,13 @@ jobs:
 
       - name: Create plan
         run: |
-          y --no-progress -p plan
+          y -c "$CLAUDE_LEVEL" --no-progress -p plan
           cat yact-prompt.md
 
       - name: Refine plan with missing context
         run: |
           if grep -qxF '## Missing context' yact-prompt.md; then
-            y --no-progress -p plan
+            y -c "$CLAUDE_LEVEL" --no-progress -p plan
             cat yact-prompt.md
           fi
 
@@ -76,7 +86,7 @@ jobs:
 
       - name: Implement plan
         id: implement
-        run: y --no-progress act
+        run: y -c "$CLAUDE_LEVEL" --no-progress act
 
       - name: Upload buffer
         if: always() && steps.implement.outcome == 'failure'
