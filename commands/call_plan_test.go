@@ -41,12 +41,41 @@ func TestCombinePromptText(t *testing.T) {
 		{name: "file text only", promptFile: "  file text \n", cliPrompt: "", want: "file text"},
 		{name: "CLI text only", promptFile: " \n", cliPrompt: "cli text", want: "cli text"},
 		{name: "both joined with a blank line after trimming", promptFile: " file \n", cliPrompt: "  cli  ", want: "file\n\ncli"},
+		{name: "CLI text goes before the footer separator", promptFile: "plan body\n=====\n[a](a.go) ((kw))\n", cliPrompt: "cli text", want: "plan body\n\ncli text\n=====\n[a](a.go) ((kw))\n"},
+		{name: "footer kept when there is no CLI text", promptFile: "plan body\n=====\nfooter\n", cliPrompt: "", want: "plan body\n=====\nfooter\n"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := combinePromptText(tc.promptFile, tc.cliPrompt); got != tc.want {
 				t.Errorf("combinePromptText(%q, %q) = %q, want %q", tc.promptFile, tc.cliPrompt, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSentPromptText(t *testing.T) {
+	tests := []struct {
+		name       string
+		promptText string
+		want       string
+	}{
+		{
+			name:       "footer is absent and keyword markers are removed from the body",
+			promptText: "do ((x))\n=====\nsecret [a](a.go) ((kw))\n",
+			want:       "do x\n",
+		},
+		{
+			name:       "prompt without separator has markers removed",
+			promptText: "use ((error handling)) and (parens)",
+			want:       "use error handling and (parens)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sentPromptText(tc.promptText); got != tc.want {
+				t.Errorf("sentPromptText(%q) = %q, want %q", tc.promptText, got, tc.want)
 			}
 		})
 	}

@@ -75,7 +75,9 @@ func AppendPromptLink(path string) (bool, error) {
 		return false, nil
 	}
 
-	updatedContent := withTrailingNewline(existingContent) + FormatPromptLink(path) + "\n"
+	sections := SplitPromptFooter(existingContent)
+	sections.Body = withTrailingNewline(sections.Body) + FormatPromptLink(path) + "\n"
+	updatedContent := JoinPromptSections(sections)
 	if err := os.WriteFile(config.GetProjectPromptPath(), []byte(updatedContent), 0644); err != nil {
 		return false, err
 	}
