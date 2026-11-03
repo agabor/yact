@@ -94,14 +94,12 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 	requestContentForLLM.Skills = skills
 
-	totalLength, fileCounts, err := countInputLines(requestContentForLLM)
+	fileCounts, err := countFileLines(requestContentForLLM)
 	if err != nil {
 		return err
 	}
 
 	printWarnings(longFileWarnings(fileCounts))
-
-	fmt.Printf("Input lines: %d\n", totalLength)
 
 	if flags.Verbose {
 		printSentFiles(requestContentForLLM)
@@ -136,7 +134,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	if err := deliverResponse(mode, result.Text); err != nil {
-		fmt.Printf("Input lines: %d\n", totalLength)
 		return err
 	}
 
