@@ -64,7 +64,7 @@ func withTrailingNewline(content string) string {
 // Links are added to the footer when one exists so that they stay out of the body the user writes.
 func appendPromptLinkToFooter(promptText string, path string) string {
 	sections := SplitPromptFooter(promptText)
-	sections.Separator = "====="
+	sections.Separator = "-----"
 	sections.Footer = withTrailingNewline(sections.Footer) + withTrailingNewline(FormatPromptLink(path))
 	return JoinPromptSections(sections)
 }
