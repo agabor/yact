@@ -69,6 +69,22 @@ jobs:
             y -c "$CLAUDE_LEVEL" --no-progress act
           fi
 
+      - name: Fix Tests
+        run: |
+          if ! go test ./... > "$RUNNER_TEMP/test.txt" 2>&1; then
+            cat "$RUNNER_TEMP/test.txt"
+            y output < "$RUNNER_TEMP/test.txt"
+            y -c "$CLAUDE_LEVEL" --no-progress act
+          fi
+
+      - name: Fix Vet
+        run: |
+          if ! go vet ./... > "$RUNNER_TEMP/vet.txt" 2>&1; then
+            cat "$RUNNER_TEMP/vet.txt"
+            y output < "$RUNNER_TEMP/vet.txt"
+            y -c "$CLAUDE_LEVEL" --no-progress act
+          fi
+
       - name: Format code
         run: go fmt ./...
 
