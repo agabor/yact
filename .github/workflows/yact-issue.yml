@@ -105,7 +105,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -am "Implement yact plan for issue #$ISSUE_NUMBER"
+            git diff --cached > "$RUNNER_TEMP/changes.diff"
+            y output < "$RUNNER_TEMP/changes.diff"
+            y -c "$CLAUDE_LEVEL" --no-progress -i 0 -n query "The output contains a git diff that implements issue #$ISSUE_NUMBER. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that describes the behavior added or changed, not the issue number. Then a blank line and a short body that explains why the change was made. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
+            # A failed or empty model reply must not block the push.
+            if [ ! -s "$RUNNER_TEMP/commit-message.txt" ]; then
+              gh issue view "$ISSUE_NUMBER" --json title --jq '.title' > "$RUNNER_TEMP/commit-message.txt"
+            fi
+            git commit -F "$RUNNER_TEMP/commit-message.txt"
           fi
           git push -u origin "yact/issue-$ISSUE_NUMBER"
 
@@ -118,5 +125,5 @@ jobs:
           } > yact-pr-body.md
           gh pr create \
             --head "yact/issue-$ISSUE_NUMBER" \
-            --title "Implement issue #$ISSUE_NUMBER" \
+            --title "$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')" \
             --body-file yact-pr-body.md

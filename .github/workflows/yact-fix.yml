@@ -104,6 +104,13 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -am "Implement yact plan for pull request #$PR_NUMBER"
+            git diff --cached > "$RUNNER_TEMP/changes.diff"
+            y output < "$RUNNER_TEMP/changes.diff"
+            y -c "$CLAUDE_LEVEL" --no-progress -i 0 -n query "The output contains a git diff that fixes build, test or vet failures of pull request #$PR_NUMBER. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that names what was fixed. Then a blank line and a short body that explains why the change was needed. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
+            # A failed or empty model reply must not block the push.
+            if [ ! -s "$RUNNER_TEMP/commit-message.txt" ]; then
+              echo "Fix build, test and vet failures for pull request #$PR_NUMBER" > "$RUNNER_TEMP/commit-message.txt"
+            fi
+            git commit -F "$RUNNER_TEMP/commit-message.txt"
           fi
           git push
