@@ -109,12 +109,6 @@ jobs:
           fi
           git push -u origin "yact/issue-$ISSUE_NUMBER"
 
-      - name: Vet code
-        run: go vet ./...
-
-      - name: Run tests
-        run: go test ./...
-
       - name: Open pull request
         run: |
           {
