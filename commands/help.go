@@ -59,6 +59,7 @@ Global Flags:
   -p, --plan                           Write the response to .yact/plan.md. A plan sent as the prompt is sent whole, the same as --steps 0, and no step is ticked off
   -s, --steps <selector>               Implement only the selected steps of .yact/plan.md. Requires .yact/plan.md and cannot be combined with a prompt argument or with --plan. The selector is N, N-M, a comma separated list such as 1,3,5-6, or next. The selector 0 sends the whole plan without step selection and ticks off no step. Finished steps are ticked off in the plan after a successful write
   --verbose                            Print all file paths and the prompt sent to the LLM
+  --version                            Print the version and exit
 
 For more information, visit: https://github.com/agabor/yact`)
 }

@@ -77,7 +77,8 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
-        run: go build -o yact-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} -ldflags "-s -w"
+          TAG_NAME: ${{ needs.create-release.outputs.tag_name }}
+        run: go build -o yact-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} -ldflags "-s -w -X main.version=$TAG_NAME"
 
       - name: Upload Release Asset
         env:

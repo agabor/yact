@@ -14,6 +14,9 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// Set at build time with -ldflags "-X main.version=<tag>"; local builds keep "dev".
+var version = "dev"
+
 func requireArgCount(command string, args []string, validCounts ...int) {
 	for _, count := range validCounts {
 		if len(args) == count {
@@ -127,6 +130,7 @@ func loadSkills(names []config.SkillName, forceDownload bool) ([]logic.Skill, er
 
 func main() {
 	helpFlag := flag.BoolP("help", "h", false, "Show help message")
+	versionFlag := flag.Bool("version", false, "Print the version and exit")
 	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
 	claudeLevel := flag.IntP("claude", "c", 0, "Claude model level (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)")
 	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
@@ -175,6 +179,11 @@ func main() {
 
 	if *helpFlag {
 		commands.ShowHelp()
+		return
+	}
+
+	if *versionFlag {
+		fmt.Printf("yact %s\n", version)
 		return
 	}
 
