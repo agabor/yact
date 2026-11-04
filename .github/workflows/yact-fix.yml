@@ -1,0 +1,83 @@
+name: yact pull request
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to improve
+        required: true
+        type: string
+      model:
+        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "4"
+        default: "1"
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ inputs.pr }}
+      CLAUDE_LEVEL: ${{ inputs.model }}
+      TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      
+      - name: Checkout branch
+        run: gh pr checkout $PR_NUMBER
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install yact
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL -o "$HOME/bin/y" https://github.com/agabor/yact/releases/latest/download/yact-linux-amd64
+          chmod +x "$HOME/bin/y"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          $HOME/bin/y config anthropic_api_key ${{ secrets.ANTHROPIC_API_KEY }} 
+
+      - name: Configure git identity
+        run: |
+          # The noreply address is tied to the numeric user id, which the token's actor cannot supply, so it is looked up from the public user API.
+          user_id=$(gh api "users/$TRIGGERING_ACTOR" --jq '.id')
+          git config user.name "$TRIGGERING_ACTOR"
+          git config user.email "$user_id+$TRIGGERING_ACTOR@users.noreply.github.com"
+
+      - name: Fetch Context
+        run: |
+          gh pr view $PR_NUMBER --json body --jq '.body' > yact-prompt.md
+          y compact
+
+      - name: Fix Build
+        run: |
+          if ! go build ./... > "$RUNNER_TEMP/build.txt" 2>&1; then
+            cat "$RUNNER_TEMP/build.txt"
+            y output < "$RUNNER_TEMP/build.txt"
+            y -c "$CLAUDE_LEVEL" --no-progress act
+          fi
+
+      - name: Format code
+        run: go fmt ./...
+
+      - name: Commit changes
+        run: |
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -am "Implement yact plan for pull request #$PR_NUMBER"
+          fi
+          git push
