@@ -28,7 +28,7 @@ func applyIndexOverride(flags config.Flaglist) error {
 	if !flags.HasIndex() {
 		return logic.RemoveIndexFile()
 	}
-	visibility, err := indexLevelToVisibility(flags.IndexLevel)
+	visibility, err := indexLevelToVisibility(*flags.IndexLevel)
 	if err != nil {
 		return err
 	}

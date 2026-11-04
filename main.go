@@ -50,6 +50,14 @@ func validateIndexLevel(level int) error {
 	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
 }
 
+// A nil level tells the flag list that --index was not given, so a system prompt default may apply.
+func indexLevelFromFlag(value int, given bool) *int {
+	if !given {
+		return nil
+	}
+	return &value
+}
+
 func parseSkillNames(raws []string) ([]config.SkillName, error) {
 	names := make([]config.SkillName, 0, len(raws))
 	for _, raw := range raws {
@@ -134,9 +142,12 @@ func main() {
 
 	flag.Parse()
 
-	if err := validateIndexLevel(*indexFlag); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+	indexGiven := flag.CommandLine.Changed("index")
+	if indexGiven {
+		if err := validateIndexLevel(*indexFlag); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	skillNames, err := parseSkillNames(*skillFlag)
@@ -158,7 +169,7 @@ func main() {
 		Dry:          *dryFlag,
 		ClaudeLevel:  *claudeLevel,
 		Steps:        *stepsFlag,
-		IndexLevel:   *indexFlag,
+		IndexLevel:   indexLevelFromFlag(*indexFlag, indexGiven),
 		Skills:       skillNames,
 	}
 

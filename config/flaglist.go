@@ -16,7 +16,7 @@ type Flaglist struct {
 	Dry          bool
 	ClaudeLevel  int
 	Steps        string
-	IndexLevel   int
+	IndexLevel   *int
 	Skills       []SkillName
 }
 
@@ -71,7 +71,7 @@ func (f Flaglist) HasUserSetModel() bool {
 }
 
 func (f Flaglist) HasIndex() bool {
-	return f.IndexLevel == 1 || f.IndexLevel == 2
+	return f.IndexLevel != nil && (*f.IndexLevel == 1 || *f.IndexLevel == 2)
 }
 
 // --plan sends the plan whole, so it implies selector 0 unless --steps is given explicitly.
@@ -91,8 +91,8 @@ func (f Flaglist) FlagString() string {
 	if f.ClaudeLevel > 0 {
 		parts = append(parts, fmt.Sprintf("--claude %d", f.ClaudeLevel))
 	}
-	if f.IndexLevel > 0 {
-		parts = append(parts, fmt.Sprintf("--index %d", f.IndexLevel))
+	if f.IndexLevel != nil {
+		parts = append(parts, fmt.Sprintf("--index %d", *f.IndexLevel))
 	}
 	if f.Download {
 		parts = append(parts, "--download")
@@ -140,8 +140,9 @@ func (f *Flaglist) applyDefault(flag string, skipModelFlags bool) {
 	}
 
 	if strings.HasPrefix(flag, "i") {
-		if f.IndexLevel == 0 {
-			f.IndexLevel = indexLevelFromFlag(flag)
+		if f.IndexLevel == nil {
+			level := indexLevelFromFlag(flag)
+			f.IndexLevel = &level
 		}
 		return
 	}

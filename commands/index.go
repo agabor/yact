@@ -26,7 +26,7 @@ func HandleIndexCommand(args []string) error {
 		return err
 	}
 
-	flags := config.Flaglist{IndexLevel: level}
+	flags := config.Flaglist{IndexLevel: &level}
 	if err := applyIndexOverride(flags); err != nil {
 		return err
 	}
