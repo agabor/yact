@@ -38,7 +38,7 @@ func TestContainsKeyword(t *testing.T) {
 		want    bool
 	}{
 		{"exact match", "func HandleError() error", "HandleError", true},
-		{"different case", "func HandleError() error", "handleerror", true},
+		{"different case", "func HandleError() error", "handle ERROR", true},
 		{"absent keyword", "func HandleError() error", "missing", false},
 		{"plan matches PlanStep", "type PlanStep struct", "plan", true},
 		{"plan matches plan_gate", "plan_gate.go", "plan", true},
