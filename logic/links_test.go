@@ -138,3 +138,46 @@ func TestSelectLinkedFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestCompactPromptLinks(t *testing.T) {
+	tests := []struct {
+		name   string
+		prompt string
+		want   string
+	}{
+		{
+			name:   "body links stay and footer lists unique links",
+			prompt: "body [a](a.go)\n-----\n[[logic/links.go]]\n",
+			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n[[logic/links.go]]\n",
+		},
+		{
+			name:   "same target in body and footer is listed once",
+			prompt: "body [a](a.go)\n-----\n[[a.go]]\n",
+			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n",
+		},
+		{
+			name:   "missing separator gets one when links exist",
+			prompt: "body [a](a.go)\n",
+			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n",
+		},
+		{
+			name:   "prompt without links is unchanged",
+			prompt: "plain text\n",
+			want:   "plain text\n",
+		},
+		{
+			name:   "footer keeps only links in order of first appearance",
+			prompt: "intro\n-----\nSome note\n[[c.go]] text\n[b](b.go)\n[[c.go]]\n",
+			want:   "intro\n\n-----\n\n[[c.go]]\n[b](b.go)\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CompactPromptLinks(tt.prompt)
+			if got != tt.want {
+				t.Errorf("CompactPromptLinks(%q) = %q, want %q", tt.prompt, got, tt.want)
+			}
+		})
+	}
+}
