@@ -1,21 +1,8 @@
 name: yact issue
 
 on:
-  workflow_dispatch:
-    inputs:
-      issue:
-        description: Issue number to implement
-        required: true
-        type: string
-      model:
-        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
-        type: choice
-        options:
-          - "1"
-          - "2"
-          - "3"
-          - "4"
-        default: "1"
+  issues:
+    types: [labeled]
 
 permissions:
   contents: write
@@ -24,10 +11,11 @@ permissions:
 
 jobs:
   implement:
+    if: contains(fromJSON('["implement-haiku","implement-sonnet","implement-opus"]'), github.event.label.name)
     runs-on: ubuntu-latest
     env:
-      ISSUE_NUMBER: ${{ inputs.issue }}
-      CLAUDE_LEVEL: ${{ inputs.model }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      CLAUDE_LEVEL: ${{ github.event.label.name == 'implement-haiku' && '1' || github.event.label.name == 'implement-sonnet' && '2' || '3' }}
       TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -92,7 +80,7 @@ jobs:
         if: always() && steps.implement.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
-          name: yact-buffer-issue-${{ inputs.issue }}
+          name: yact-buffer-issue-${{ github.event.issue.number }}
           path: .yact/temp/buffer.txt
           if-no-files-found: ignore
 

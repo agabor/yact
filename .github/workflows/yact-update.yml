@@ -1,21 +1,8 @@
 name: yact update pull request
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr:
-        description: Pull request number to improve
-        required: true
-        type: string
-      model:
-        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
-        type: choice
-        options:
-          - "1"
-          - "2"
-          - "3"
-          - "4"
-        default: "1"
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: write
@@ -24,10 +11,11 @@ permissions:
 
 jobs:
   implement:
+    if: contains(fromJSON('["update-haiku","update-sonnet","update-opus"]'), github.event.label.name)
     runs-on: ubuntu-latest
     env:
-      PR_NUMBER: ${{ inputs.pr }}
-      CLAUDE_LEVEL: ${{ inputs.model }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      CLAUDE_LEVEL: ${{ github.event.label.name == 'update-haiku' && '1' || github.event.label.name == 'update-sonnet' && '2' || '3' }}
       TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -89,7 +77,7 @@ jobs:
         if: always() && steps.implement.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
-          name: yact-buffer-pr-${{ inputs.pr }}
+          name: yact-buffer-pr-${{ github.event.pull_request.number }}
           path: .yact/temp/buffer.txt
           if-no-files-found: ignore
 
