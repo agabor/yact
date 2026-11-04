@@ -1,21 +1,8 @@
 name: yact review
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr:
-        description: Pull request number to review
-        required: true
-        type: string
-      model:
-        description: Claude model level (1 - Haiku, 2 - Sonnet, 3 - Opus, 4 - Fable)
-        type: choice
-        options:
-          - "1"
-          - "2"
-          - "3"
-          - "4"
-        default: "2"
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: read
@@ -24,10 +11,11 @@ permissions:
 
 jobs:
   review:
+    if: contains(fromJSON('["review-haiku","review-sonnet","review-opus"]'), github.event.label.name)
     runs-on: ubuntu-latest
     env:
-      PR_NUMBER: ${{ inputs.pr }}
-      CLAUDE_LEVEL: ${{ inputs.model }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      CLAUDE_LEVEL: ${{ github.event.label.name == 'review-haiku' && '1' || github.event.label.name == 'review-sonnet' && '2' || '3' }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
