@@ -66,23 +66,33 @@ jobs:
           if ! go build ./... > "$RUNNER_TEMP/build.txt" 2>&1; then
             cat "$RUNNER_TEMP/build.txt"
             y output < "$RUNNER_TEMP/build.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act
+            y -c "$CLAUDE_LEVEL" --no-progress act "fix build"
           fi
+
+      - name: Fetch Context
+        run: |
+          gh pr view $PR_NUMBER --json body --jq '.body' > yact-prompt.md
+          y compact
 
       - name: Fix Tests
         run: |
           if ! go test ./... > "$RUNNER_TEMP/test.txt" 2>&1; then
             cat "$RUNNER_TEMP/test.txt"
             y output < "$RUNNER_TEMP/test.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act
+            y -c "$CLAUDE_LEVEL" --no-progress act "fix tests"
           fi
+
+      - name: Fetch Context
+        run: |
+          gh pr view $PR_NUMBER --json body --jq '.body' > yact-prompt.md
+          y compact
 
       - name: Fix Vet
         run: |
           if ! go vet ./... > "$RUNNER_TEMP/vet.txt" 2>&1; then
             cat "$RUNNER_TEMP/vet.txt"
             y output < "$RUNNER_TEMP/vet.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act
+            y -c "$CLAUDE_LEVEL" --no-progress act "fix code issues"
           fi
 
       - name: Format code
