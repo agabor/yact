@@ -117,17 +117,14 @@ func (g GlobPattern) Matches(path string) bool {
 }
 
 // Links are compared by target only, so <a> and a are the same link even though they are written differently.
+// The body is dropped because the compacted prompt keeps only the links, which are the only part that selects files.
 func CompactPromptLinks(prompt string) string {
 	sections := SplitPromptFooter(prompt)
 	links := uniqueLinks(append(findPromptLinks(sections.Body), findPromptLinks(sections.Footer)...))
 	if len(links) == 0 {
-		return JoinPromptSections(PromptSections{Body: sections.Body})
+		return ""
 	}
-	if sections.Separator == "" {
-		sections.Separator = "-----"
-	}
-	sections.Footer = linkLines(links)
-	return JoinPromptSections(sections)
+	return JoinPromptSections(PromptSections{Separator: "-----", Footer: linkLines(links)})
 }
 
 func uniqueLinks(links []promptLink) []promptLink {

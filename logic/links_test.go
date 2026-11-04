@@ -146,29 +146,29 @@ func TestCompactPromptLinks(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "body links stay and footer lists unique links",
+			name:   "body is dropped and footer lists unique links",
 			prompt: "body [a](a.go)\n-----\n[[logic/links.go]]\n",
-			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n[[logic/links.go]]\n",
+			want:   "-----\n\n[a](a.go)\n[[logic/links.go]]\n",
 		},
 		{
 			name:   "same target in body and footer is listed once",
 			prompt: "body [a](a.go)\n-----\n[[a.go]]\n",
-			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n",
+			want:   "-----\n\n[a](a.go)\n",
 		},
 		{
-			name:   "missing separator gets one when links exist",
+			name:   "links without separator get one in the footer",
 			prompt: "body [a](a.go)\n",
-			want:   "body [a](a.go)\n\n-----\n\n[a](a.go)\n",
+			want:   "-----\n\n[a](a.go)\n",
 		},
 		{
-			name:   "prompt without links is unchanged",
+			name:   "prompt without links becomes empty",
 			prompt: "plain text\n",
-			want:   "plain text\n",
+			want:   "",
 		},
 		{
 			name:   "footer keeps only links in order of first appearance",
 			prompt: "intro\n-----\nSome note\n[[c.go]] text\n[b](b.go)\n[[c.go]]\n",
-			want:   "intro\n\n-----\n\n[[c.go]]\n[b](b.go)\n",
+			want:   "-----\n\n[[c.go]]\n[b](b.go)\n",
 		},
 	}
 
@@ -179,5 +179,21 @@ func TestCompactPromptLinks(t *testing.T) {
 				t.Errorf("CompactPromptLinks(%q) = %q, want %q", tt.prompt, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCompactPromptLinksLeavesOnlyFooter(t *testing.T) {
+	compacted := CompactPromptLinks("body [a](a.go)\n-----\n[[logic/links.go]]\n")
+	sections := SplitPromptFooter(compacted)
+
+	if sections.Body != "" {
+		t.Errorf("SplitPromptFooter(%q).Body = %q, want empty", compacted, sections.Body)
+	}
+	if sections.Separator != "-----" {
+		t.Errorf("SplitPromptFooter(%q).Separator = %q, want %q", compacted, sections.Separator, "-----")
+	}
+	wantFooter := "[a](a.go)\n[[logic/links.go]]\n"
+	if sections.Footer != wantFooter {
+		t.Errorf("SplitPromptFooter(%q).Footer = %q, want %q", compacted, sections.Footer, wantFooter)
 	}
 }
