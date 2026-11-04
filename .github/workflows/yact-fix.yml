@@ -1,4 +1,4 @@
-name: yact pull request
+name: yact fix pull request
 
 on:
   workflow_dispatch:
@@ -23,7 +23,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  implement:
+  fix:
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ inputs.pr }}
