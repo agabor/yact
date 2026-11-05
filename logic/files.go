@@ -55,7 +55,8 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 			return nil
 		}
 
-		files = append(files, path)
+		// Paths are slash-separated on every OS so that links and lookups compare equal on Windows.
+		files = append(files, filepath.ToSlash(path))
 		return nil
 	})
 	return files, err

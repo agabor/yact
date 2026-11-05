@@ -25,7 +25,12 @@ func HandleReadCommand(args []string) error {
 			continue
 		}
 
-		for _, filePath := range matches {
+		for _, match := range matches {
+			filePath, err := logic.ParseProjectPath(match)
+			if err != nil {
+				fmt.Printf("Rejected: %s: %v\n", match, err)
+				continue
+			}
 			if err := readFile(filePath); err != nil {
 				return err
 			}
@@ -35,8 +40,8 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func readFile(filePath string) error {
-	info, err := os.Stat(filePath)
+func readFile(filePath logic.ProjectPath) error {
+	info, err := os.Stat(string(filePath))
 	if err != nil {
 		fmt.Printf("Error accessing %s: %v\n", filePath, err)
 		return nil
@@ -47,7 +52,7 @@ func readFile(filePath string) error {
 		return nil
 	}
 
-	added, err := logic.AppendPromptLink(filePath)
+	added, err := logic.AppendPromptLink(string(filePath))
 	if err != nil {
 		return err
 	}

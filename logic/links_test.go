@@ -197,3 +197,20 @@ func TestCompactPromptLinksLeavesOnlyFooter(t *testing.T) {
 		t.Errorf("SplitPromptFooter(%q).Footer = %q, want %q", compacted, sections.Footer, wantFooter)
 	}
 }
+
+func TestNormalizeLinkTargets(t *testing.T) {
+	got := normalizeLinkTargets([]string{`logic\links.go`, "./main.go", "/abs/x.go", "../up.go", "a/../b.go"})
+	want := []string{"logic/links.go", "main.go", "b.go"}
+	if !slices.Equal(got, want) {
+		t.Errorf("normalizeLinkTargets() = %v, want %v", got, want)
+	}
+}
+
+func TestCompactPromptLinksUsesSlashes(t *testing.T) {
+	prompt := "body [a\\b.go](a\\b.go)\n-----\n[[a/b.go]]\n"
+	want := "-----\n\n[a/b.go](a/b.go)\n"
+	got := CompactPromptLinks(prompt)
+	if got != want {
+		t.Errorf("CompactPromptLinks(%q) = %q, want %q", prompt, got, want)
+	}
+}

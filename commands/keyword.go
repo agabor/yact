@@ -13,7 +13,11 @@ func HandleKeywordCommand(args []string) error {
 	}
 
 	for _, path := range files {
-		if err := readFile(path); err != nil {
+		filePath, err := logic.ParseProjectPath(path)
+		if err != nil {
+			return err
+		}
+		if err := readFile(filePath); err != nil {
 			return err
 		}
 	}

@@ -120,11 +120,36 @@ func (g GlobPattern) Matches(path string) bool {
 // The body is dropped because the compacted prompt keeps only the links, which are the only part that selects files.
 func CompactPromptLinks(prompt string) string {
 	sections := SplitPromptFooter(prompt)
-	links := uniqueLinks(append(findPromptLinks(sections.Body), findPromptLinks(sections.Footer)...))
+	found := append(findPromptLinks(sections.Body), findPromptLinks(sections.Footer)...)
+	for position := range found {
+		found[position] = unixStyleLink(found[position])
+	}
+	links := uniqueLinks(found)
 	if len(links) == 0 {
 		return ""
 	}
 	return JoinPromptSections(PromptSections{Separator: "-----", Footer: linkLines(links)})
+}
+
+// Backslashes are rewritten so that a link written on Windows keeps the same target form as the slash-form project paths.
+func unixStyleLink(link promptLink) promptLink {
+	return promptLink{
+		Text:   strings.ReplaceAll(link.Text, "\\", "/"),
+		Target: strings.ReplaceAll(link.Target, "\\", "/"),
+	}
+}
+
+// Targets that are not valid project paths cannot match a project file, so they are dropped.
+func normalizeLinkTargets(targets []string) []string {
+	var normalized []string
+	for _, target := range targets {
+		projectPath, err := ParseProjectPath(target)
+		if err != nil {
+			continue
+		}
+		normalized = append(normalized, string(projectPath))
+	}
+	return normalized
 }
 
 func uniqueLinks(links []promptLink) []promptLink {
@@ -162,8 +187,8 @@ func selectLinkedFiles(files []string, exactPaths []string, patterns []GlobPatte
 
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 	// Only link targets count, because a plain mention of a path must not send that file to the LLM.
-	exactPaths := ParseMarkdownLinkTargets(prompt)
-	patternRaws := doubleBracketTargets(prompt)
+	exactPaths := normalizeLinkTargets(ParseMarkdownLinkTargets(prompt))
+	patternRaws := normalizeLinkTargets(doubleBracketTargets(prompt))
 	if len(exactPaths) == 0 && len(patternRaws) == 0 {
 		return PromptLinks{}, nil
 	}

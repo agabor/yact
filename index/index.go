@@ -3,6 +3,7 @@ package index
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -112,20 +113,20 @@ func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, erro
 		Name: ".",
 		Type: "dir",
 	}
-	for _, path := range paths {
-		name := filepath.Base(path)
+	for _, filePath := range paths {
+		name := path.Base(filePath)
 		language, found := findLanguageForFile(name, languages)
 		if !found {
 			continue
 		}
-		fileNode, err := buildSourceFileNode(path, name, language)
+		fileNode, err := buildSourceFileNode(filePath, name, language)
 		if err != nil {
 			return nil, err
 		}
 		if len(fileNode.Functions) == 0 {
 			continue
 		}
-		directory := ensureDirectoryNode(root, filepath.Dir(path))
+		directory := ensureDirectoryNode(root, path.Dir(filePath))
 		directory.Children = append(directory.Children, fileNode)
 	}
 	return root, nil
@@ -136,7 +137,7 @@ func ensureDirectoryNode(root *IndexNode, dirPath string) *IndexNode {
 		return root
 	}
 	current := root
-	for _, name := range strings.Split(filepath.ToSlash(dirPath), "/") {
+	for _, name := range strings.Split(dirPath, "/") {
 		current = findOrAddChildDirectory(current, name)
 	}
 	return current
