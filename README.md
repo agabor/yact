@@ -2,7 +2,7 @@
 
 Minimal, responsive, transparent LLM coding assistant. Not for vibe coding.
 
-Website and getting-started guide: [yact.dev](https://yact.dev) (sources in [`docs/`](docs/)).
+Website and getting-started guide: [yact.dev](https://yact.dev)
 
 > **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party tool.
 > It is not made, endorsed, or supported by Anthropic PBC. "Claude" and "Anthropic" are
