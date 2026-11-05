@@ -4,13 +4,30 @@ Minimal, responsive, transparent LLM coding assistant. Not for vibe coding.
 
 Website and getting-started guide: [yact.dev](https://yact.dev) (sources in [`docs/`](docs/)).
 
-
 > **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party tool.
 > It is not made, endorsed, or supported by Anthropic PBC. "Claude" and "Anthropic" are
 > trademarks of Anthropic PBC; they are used here only to describe which API this tool
 > calls. For Anthropic's own products and documentation, go to
 > [anthropic.com](https://www.anthropic.com) and
 > [docs.claude.com](https://docs.claude.com).
+
+## Contents
+
+- [Design principles](#design-principles)
+- [How YACT works](#how-yact-works)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [The prompt file](#the-prompt-file)
+- [Prompt commands](#prompt-commands)
+- [Plan, then act](#plan-then-act)
+- [Commands](#commands)
+- [Global flags](#global-flags)
+- [Configuration](#configuration)
+- [Storage](#storage)
+- [Running YACT in GitHub Actions](#running-yact-in-github-actions)
+- [Troubleshooting](#troubleshooting)
+- [Security and privacy](#security-and-privacy)
+- [Contributing](#contributing)
 
 ## Design principles
 
@@ -26,97 +43,67 @@ Website and getting-started guide: [yact.dev](https://yact.dev) (sources in [`do
 
 ## How YACT works
 
-YACT is a CLI tool. You assemble a task by hand, send it once, and get one response back.
+YACT is a CLI tool, invoked as `y`. You assemble a task by hand, send it once, and get one
+response back.
 
-The task lives in a plain Markdown file, `yact-prompt.md`, in the root of your project
-directory. It holds Markdown links to the files you want to send, and optionally a plan
-or any other instructions you write yourself. The prompt file is sent to the LLM as the
-prompt, and every project file whose path appears in the prompt is sent along as context.
+The task lives in a plain Markdown file, `yact-prompt.md`, in the root of your project. It
+holds your instructions (or a plan) and **links to the files you want to send**. When you
+run a prompt command such as `ask`, `plan` or `act`, YACT:
 
-You add files with `y read` (or `y keyword`), which append links such as
-`[main.go](main.go)` to `yact-prompt.md`. Then you run a prompt command such as `ask`,
-`plan`, `act` or `bash`, optionally passing an extra task prompt as an argument. Each of
-those makes exactly one API call. Responses are parsed for code blocks; complete source
-files found in the response are written to disk, and any prose outside code blocks is
-printed to the terminal.
+1. builds one request from the prompt file, the linked files and a few optional message
+   files,
+2. sends it to Claude with the system prompt that belongs to the command,
+3. saves the raw response to `.yact/temp/buffer.txt`,
+4. and then, depending on the command, prints the response, saves it as a plan, or writes
+   the files it contains to disk.
+
+There is no tool calling, no MCP and no multi-turn loop.
 
 ### Whole files, not diffs
 
 YACT asks the model to emit complete source files rather than incremental edits. This keeps
-the LLM interface simple — there are no editing tools to call, no patch formats to get
-wrong, and no partial-apply failures — and it lets YACT keep each request self-contained
-and cheap.
+the LLM interface simple — no editing tools, no patch formats to get wrong, no partial-apply
+failures — and keeps each request self-contained.
 
 The trade-off is that an editable file must fit inside the model's output token limit.
-YACT requests up to 128000 output tokens per call. See
+YACT requests up to 128000 output tokens per call; see
 [Anthropic's model documentation](https://docs.claude.com/en/docs/about-claude/models) for
-the current per-model limits. Keeping source files to a few hundred lines is recommended
-regardless.
+per-model limits. YACT warns before the call about any linked file longer than 300 lines,
+and the official prompts ask the model to keep files under about 200 lines.
 
-### Deleting files
-
-If a response contains a code block that has only a file path comment and no content, YACT
-deletes that file from disk.
+A code block in a response is written to disk when its first line is a comment holding the
+file path (`// path`, `# path`, `/* path */`, `-- path` or `<!-- path -->`, optionally after
+a shebang line). A block with a path comment and **no content deletes that file**. Absolute
+paths and paths that leave the project directory are rejected.
 
 ### What is sent
 
-Every prompt command and `query` builds the request from these parts, in this order:
+Every prompt command and `query` sends one user message made of these parts, in order:
 
-1. **Message files** in `.yact/`, if they exist: `domain.txt`, `index.txt` (see
-   [Code index](#code-index)) and `output.txt` (see
-   [Send command output](#send-command-output)).
-2. **Context files**: every project file whose relative path appears in the prompt text.
-3. **The prompt** itself.
+1. `.yact/domain.txt` — an optional description of your project, written by you
+2. `.yact/temp/index.txt` — the [code index](#code-index), when the call asks for one
+3. `.yact/temp/output.txt` — command output captured with [`y output`](#send-command-output)
+4. [Skills](#skills) attached with `--skill`
+5. Every linked project file, as a code block whose first line is the file path
+6. The prompt itself
 
-The prompt is built from `yact-prompt.md` and the prompt argument:
-
-- **With a prompt argument**, the content of `yact-prompt.md` (if any) is followed by the
-  argument.
-- **Without a prompt argument**, `yact-prompt.md` is the prompt. If it contains a plan with
-  steps, only the steps that are not ticked off yet are sent (see
-  [Plan, then act](#plan-then-act)). A missing or empty `yact-prompt.md` is an error.
-
-### How context files are found
-
-YACT scans the project and sends every file whose relative path, such as
-`commands/call.go`, appears anywhere in the prompt text — whether as a Markdown link, in
-backticks, or in plain prose.
-
-- Hidden files and directories (names starting with `.`) are never sent, and neither is
-  `yact-prompt.md` itself.
-- Matching is a plain substring match on the path, so a mention of `src/router/router.go`
-  also matches `router/router.go` if both exist.
-- Each file is sent once, no matter how often it is mentioned.
-- URLs are never fetched.
-
-Use `--verbose` to print every path that is sent.
-
-### Input size limit
-
-Before every call YACT counts the lines of the prompt, the message files and all context
-files and prints the total as `Input lines: <n>`. Only the text that is actually sent is
-counted, so plan steps that are left out, whether through `--steps` or because they are
-already done, are not counted. If the total exceeds `max_input_lines` (default: 2000), the
-call is refused. Raise the limit permanently with `y config max_input_lines <n>`, or for a
-single call with `-m <n>`.
+Use `--verbose` to print every file and the prompt, and `--dry` to build and check the
+request without calling the API.
 
 ### Trade-offs to be aware of
 
-YACT is a Swiss army knife for LLM assisted coding rather than a complete automated coding
-suite. It is deliberately narrower than a full agent:
-
 - You select the context yourself. YACT will not go looking for the files a task needs, so
-  you need to know your codebase.
-- No MCP support, no tool calling, no multi-turn agent loop.
-- File sizes are bounded by the model's output token limit, as described above.
-- One provider only: Anthropic's API. There is currently no support for other providers or
-  local models.
+  you need to know your codebase. The code index and keyword search help.
+- File sizes are bounded by the model's output token limit.
+- One provider only: Anthropic's API. There is no support for other providers or local
+  models.
 
 ## Installation
 
 ### Build from source (recommended)
 
-YACT is written in Go. Building from source means you run code you can read:
+YACT is written in Go (1.26 or newer). Building from source means you run code you can
+read:
 
 ```
 git clone https://github.com/agabor/yact.git
@@ -131,25 +118,23 @@ mkdir -p ~/.local/bin
 mv y ~/.local/bin/
 ```
 
-There is also an `install.sh` script that builds the binary and installs it to
+There is also an `install.sh` script that builds the binary and moves it to
 `/usr/local/bin` using `sudo`.
 
 ### Prebuilt binaries
 
-Release binaries are published as GitHub release artifacts, built from tagged commits in
-the repository. Download them from the
+Release binaries are built by GitHub Actions from tagged commits and published on the
 [releases page](https://github.com/agabor/yact/releases):
 
 | Platform | Asset |
 | --- | --- |
 | Linux (x86-64) | `yact-linux-amd64` |
+| Linux (ARM64) | `yact-linux-arm64` |
 | Windows (x86-64) | `yact-windows-amd64.exe` |
 | macOS (Apple silicon) | `yact-darwin-arm64` |
 | macOS (Intel) | `yact-darwin-amd64` |
 
-Download the asset for your platform from the releases page, verify it against the checksum
-published alongside it, make it executable, and place it on your `PATH`. On Linux and
-macOS:
+On Linux and macOS:
 
 ```
 chmod +x yact-linux-amd64
@@ -157,526 +142,634 @@ mkdir -p ~/.local/bin
 mv yact-linux-amd64 ~/.local/bin/y
 ```
 
-Installing under `~/.local/bin` keeps the binary in your own user account. If you prefer a
-system-wide install under `/usr/local/bin`, that requires administrator privileges — only
-do so once you are satisfied with what you downloaded.
+On Windows, place `yact-windows-amd64.exe` in a directory on your `PATH` (renaming it to
+`y.exe` is convenient). Releases do not currently include checksum files; if you need to
+verify what you run, build from source.
 
-On Windows, place `yact-windows-amd64.exe` in a directory on your `PATH`, or run it
-directly from wherever you downloaded it.
+Check the installed version with `y --version`.
 
 ## Quick start
 
-Configure your Anthropic API key. Create the key yourself at
-[console.anthropic.com](https://console.anthropic.com); it is written to `~/.yact/config`
-on your machine and used only for calls to Anthropic's API:
+Create an API key in your own account at
+[console.anthropic.com](https://console.anthropic.com) and store it. YACT reads the key
+only from its own config file, not from the `ANTHROPIC_API_KEY` environment variable:
 
 ```
 y config anthropic_api_key <your-own-anthropic-key>
-```
-
-Verify your configuration at any time:
-
-```
 y config
 ```
 
-Download the official system prompts, then start a task:
+Then, inside a git working tree:
 
 ```
-y -d act
-y new
-y read main.go
-y act "add a --version flag"
+y new                                   # start an empty task
+y read main.go                          # link a file into yact-prompt.md
+y ask "how are flags parsed?"           # one call, answer printed
+y act "add a --version flag"            # one call, files written to disk
+git diff                                # review what was written
 ```
+
+For anything bigger than a small change, plan first:
+
+```
+y new
+y plan "add a --version flag"           # writes a plan to yact-prompt.md
+$EDITOR yact-prompt.md                  # review or edit the plan
+y act                                   # implement the plan, tick off its steps
+```
+
+System prompts are downloaded automatically from this repository the first time you use a
+command.
+
+## The prompt file
+
+`yact-prompt.md` is both the prompt and the list of context files.
+
+```
+Add a --version flag that prints the version set at build time.
+Keep the output format of ((help text)) unchanged.
+
+-----
+
+[main.go](main.go)
+[[commands/*.go]]
+```
+
+### Selecting context files
+
+Only explicit links select files. Plain mentions of a path in prose are not sent.
+
+- **Markdown links** `[text](path)` send exactly that file. Wrap paths with spaces in angle
+  brackets: `[my file.go](<my file.go>)`.
+- **Double-bracket links** `[[pattern]]` send every project file matching a glob pattern,
+  for example `[[commands/*.go]]`. Patterns follow Go's `filepath.Match`, so `*` does not
+  cross `/`.
+- **Keywords** `((phrase))` send every file whose content contains the phrase as whole
+  words, ignoring case and separators: `((plan step))` matches `PlanStep`, `plan_step` and
+  `plan step`, but not `explanation`. Only files with a configured
+  [extension](#file-extensions) are searched. The parentheses are removed before the
+  prompt is sent; the phrase itself stays.
+
+Each file is sent once. Hidden files and folders are never sent, except the `.github`
+folder so workflows can be edited. Folders listed in `.yact/ignore.txt` (by default
+`vendor` and `node_modules`) are skipped, and so is `yact-prompt.md` itself. URLs are never
+fetched.
+
+### The footer
+
+A line made only of dashes (such as `-----`) splits the file into a **body** and a
+**footer**. Links in the footer select files, but the footer text is **not sent** to the
+model. `y read` and `y keyword` add their links to the footer, creating it if needed, so
+the instructions you write stay clean.
+
+Note that any dash-only line counts, including a Markdown horizontal rule (`---`).
+
+### How the prompt is built
+
+- **With a prompt argument** (`y act "..."`), the argument is appended to the body of
+  `yact-prompt.md` and the combined text is sent. The combined text is also **written back
+  to `yact-prompt.md`**, so instructions accumulate across calls until you run `y new` or
+  `y compact`.
+- **Without a prompt argument** (`y act`), `yact-prompt.md` is the prompt. If it holds a
+  plan, only some of its steps may be sent (see [Plan, then act](#plan-then-act)). A
+  missing or empty file is an error.
 
 ## Prompt commands
 
-YACT is driven by system prompts. Every system prompt file in `~/.yact/systemprompts/`
-becomes a command. For example, if `act.txt` exists, you can run `y act`. Typical prompt
-commands are `ask`, `plan`, `act` and `bash`, but you can add your own. Each prompt command
-makes exactly one API call.
+Every system prompt file in `~/.yact/systemprompts/` becomes a command: `act.txt` gives you
+`y act`. If a command's prompt is missing, YACT downloads it from the `systemprompts/`
+folder of this repository's `main` branch. Pass `-d` / `--download` to download it again
+and pick up the latest version. `y help` lists the prompts you have.
 
-Download the official system prompts with the `-d` / `--download` flag. These are plain
-text files fetched from the YACT repository; you can read them at any time in
-`~/.yact/systemprompts/`:
+The official prompts:
 
-```
-y -d act
-y -d plan
-y -d ask
-y -d bash
-```
+| Command | Defaults | What it does |
+| --- | --- | --- |
+| `act` | `c1vi1` | Writes code. Responds with complete files only; fails on any free text |
+| `plan` | `c1pi2` | Writes or updates a step-by-step plan in `yact-prompt.md` |
+| `ask` | `c2n` | Answers questions about the code in plain text |
+| `analyze` | `c2n` | Reports where the code breaks the code principles, with fixes |
+| `review` | `c2n` | Reviews a diff sent with `y output` against the task |
+| `bash` | `c1n` | Prints a plain list of shell commands for a task |
 
-You can also write your own prompt files in `~/.yact/systemprompts/`, or tailor the
-official ones to your workflow. Run `y help` to see the list of currently available prompt
-commands.
+`act`, `plan`, `analyze` and `review` share one set of code principles
+([`systemprompts/include/principles.txt`](systemprompts/include/principles.txt)), so code is
+planned, written and reviewed against the same rules.
+
+You can edit the official prompts or write your own. Prompt names may not contain `/`,
+`\` or `..`.
 
 ### Default flags in prompt files
 
-A prompt file may start with a line of the form `flags: <letters>`. Each letter enables the
-short form of a global flag whenever that prompt command runs. That first line is not sent
-to the model. For example, a prompt file beginning with:
+A prompt file may start with a line `flags: <letters>`. That line is not sent to the model.
+Each letter turns on a flag whenever the command runs:
 
-```
-flags: c2n
-```
-
-behaves as if `-c 2 -n` had been passed. Supported letters:
-
-- `n` — `--no-write` (ignored if `-v` is active)
-- `c<level>` — Claude model level 1 to 4, for example `c1` for Haiku; a bare `c` or an
-  invalid level selects Sonnet (ignored if you pass `-c` yourself)
-- `i<level>` — `--index` level 1 or 2; a bare `i` selects 1 (ignored if you pass `-i`
-  yourself)
-- `d` — `--download`
-- `v` — `--validate-code` (ignored if `-n` is active)
+- `c<level>` — Claude model level 1 to 4 (`c1` is Haiku). A bare `c` or an invalid level
+  selects 2 (Sonnet). Ignored when you pass `-c` yourself.
+- `i<level>` — index level 1 or 2. A bare `i` selects 1. Ignored when you pass `-i`
+  yourself, so `-i 0` turns the index off.
+- `n` — `--no-write`
+- `v` — `--validate-code`
 - `p` — `--plan`
+- `d` — `--download`
 
-Any other character is ignored. The official prompts use these defaults: `act` runs with
-`c1v` (Haiku, validate code), `ask` with `c2n` (Sonnet, no write), `bash` with `c1n` (Haiku,
-no write), and `plan` with `c2np` (Sonnet, no write, save the response as the plan).
+Other characters are ignored. The `n`, `v`, `p` and `d` defaults are always added to the
+flags you pass, and `-n`, `-v` and `-p` exclude each other, so a combination such as
+`y -n act` (act defaults to `v`) fails with an error. The effective flags are printed as
+`Executing: y <flags> <command>` before the call.
 
-## Commands
+### Includes
 
-### Start a new task
+A prompt file can include shared text with `[[ name ]]`, which is replaced by the content
+of `~/.yact/systemprompts/include/<name>`. Includes may include other files; cycles are
+reported as errors. Includes are downloaded together with the prompt.
 
-Start over with an empty task:
+### Skills
 
-```
-y new
-```
-
-This deletes `yact-prompt.md` (including any plan in it) and the message files
-`.yact/domain.txt`, `.yact/index.txt` and `.yact/output.txt`.
-
-### Add files to the context
-
-Attach files so the model can reference them:
-
-```
-y read main.go
-y read "commands/*.go"
-```
-
-Glob patterns are supported. Each file is appended to `yact-prompt.md` as a Markdown link.
-Directories are skipped, and files already linked are not added twice.
-
-### Add files by keyword
-
-Recursively scan the project and add every file containing a keyword to the task:
+`--skill <name>` attaches `~/.yact/skills/<name>.md` verbatim to the request, after the
+message files and before the context files. It can be repeated. Missing skills are
+downloaded from the `skills/` folder of this repository, and `-d` downloads them again.
+The repository ships [`workflow`](skills/workflow.md), which teaches the model how to write
+YACT GitHub workflows:
 
 ```
-y keyword Transaction
+y --skill workflow act "add a workflow that runs y analyze on every pull request"
 ```
 
-Hidden directories are skipped, and only files with indexed extensions are considered (see
-[File extensions](#file-extensions)). Files already linked are not added twice.
+## Plan, then act
 
-### Send command output
-
-Read standard input into `.yact/output.txt`, which is sent with every call after the index
-and before the context files:
+### Writing a plan
 
 ```
-go test ./... 2>&1 | y output
-```
-
-The file stays in place until it is overwritten by the next `y output` or removed by
-`y new`.
-
-### Code index
-
-YACT can generate a compact index of the declarations in your project — file paths followed
-by function, method, type and class signatures, without bodies. Supported languages are Go,
-PHP, JavaScript, C#, Swift and Kotlin. `vendor`, `node_modules` and hidden directories are
-skipped.
-
-Generate an index for a single call with `-i` / `--index`:
-
-```
-y -i 1 ask "where is the config loaded?"
-```
-
-- `1` — public index: only the public interface is listed
-- `2` — private index: all declarations are listed
-
-The index is written to `.yact/index.txt` and sent only in the call that sets the flag.
-Prompt commands and `query` without `-i` remove the index file before the call.
-
-To write or remove the index without calling the LLM:
-
-```
-y index 1
-y index 2
-y index 0
-```
-
-### Run a prompt command
-
-Run any prompt command with an optional task prompt argument:
-
-```
-y act "implement Foo"
-y ask "is Foo buggy?"
 y plan "add authentication"
-y bash "find all TODO comments in Go files"
 ```
 
-The prompt argument is appended to the content of `yact-prompt.md`, and the files
-mentioned in either are sent as context (see [What is sent](#what-is-sent)). The argument
-is not saved anywhere.
-
-The response is parsed for code blocks. Complete source files found in the response are
-written directly to your filesystem. Any text outside code blocks is printed to the
-terminal. The raw response is always logged to `.yact/buffer.txt`.
-
-Because responses are written to disk, run YACT inside a version-controlled working tree so
-you can review and revert what it writes. Use `--no-write` to print the response instead of
-writing files:
+`plan` defaults to `-p`, so the response is saved to `yact-prompt.md`, replacing its
+previous content (including links added with `y read`); nothing is written to your source
+tree. The plan looks like this:
 
 ```
-y -n act "implement Foo"
+# Goal
+
+One or two sentences.
+
+## Steps
+
+### [ ] 1. Create the User model
+
+**File:** [src/models/user.go](src/models/user.go) (new)
+
+- Add `type User struct { ... }`
+
+**Context:** [src/db/connection.go](src/db/connection.go)
+
+### [ ] 2. ...
 ```
 
-### Plan, then act
+Each step changes one file and links the files it needs, so the plan also selects the
+context for each step. Review and edit it before you run it.
 
-The `plan` prompt asks the model for a short Markdown plan. The plan has a `# Goal` section
-and a `## Steps` section with one `### [ ] N. <title>` heading per step, and each step
-changes exactly one file. Each step ends with a `**Context:**` line holding links to the
-files needed for that step. With `-p` / `--plan`, the response is not processed as code; it
-is saved to `yact-prompt.md`, replacing its previous content:
+### Missing context
 
-```
-y -p plan "add authentication"
-```
+If the planner had to guess the content of a file it was not given, it lists that file
+under `## Missing context`. A plan with that section **cannot be run**: `act` fails with
+`Files needed as context are missing; run with --plan to update the plan`. Run `y plan`
+again — the files linked in the section are now sent — and the planner revises the plan
+and removes the section.
 
-Then run a prompt command without a prompt argument:
+### Implementing the plan
 
 ```
 y act
 ```
 
-The plan is the prompt. Without `--steps`, the text before the first step (the goal) and
-all steps that are not ticked off yet are sent; steps that are already done are left out,
-and so are the files mentioned only in them. A plan without steps is sent as a whole. If
-`yact-prompt.md` is missing or empty, the call fails.
+Without a prompt argument and without `--steps`, the goal and **every step that is not
+ticked off yet** are sent; ticked steps, and files linked only in them, are left out. After
+the files are written, the sent steps are ticked off in `yact-prompt.md`:
+`### [ ] 1. Title` becomes `### [x] 1. Title`. Untick a step by hand to run it again.
 
-Review or edit `yact-prompt.md` between the two steps if you want to adjust the plan.
+Steps are ticked only when the response was written to disk — not with `-n`, not when the
+call fails, and not for batch jobs. When every step is ticked, further calls fail with
+`no steps remain; run with --plan to update the plan`.
 
-#### Implementing selected steps
+### Implementing selected steps
 
-With `-s` / `--steps <selector>`, only the selected steps are implemented, one call at a
-time. The goal and the selected steps are sent; all other steps are left out. The selector
-can be:
+With `-s` / `--steps <selector>`, only the selected steps are sent, together with the goal:
 
 - `N` — a single step, for example `2`
-- `N-M` — a range of steps, for example `2-4`
-- a comma separated list of the above, for example `1,3,5-6`
+- `N-M` — a range, for example `2-4`
+- a comma separated list, for example `1,3,5-6`
 - `next` — the first step that is not ticked off yet
+- `0` — the whole plan as it is, without step selection; no step is ticked off
 
 ```
 y -s next act
 y -s 1,3 act
 ```
 
-`--steps` requires a plan, and cannot be combined with a prompt argument or with `--plan`.
-Plans with duplicate step numbers, selectors that name steps missing from the plan, and
-plans without steps are rejected. Selecting a step that is already done prints a warning,
-and the step is sent again.
+`--steps` cannot be combined with a prompt argument or with `--plan`. Selectors naming
+steps the plan does not contain, and plans with duplicate step numbers, are rejected.
+Selecting a step that is already done prints a warning and sends it again.
 
-#### Ticking off steps
+Links in the footer of a plan are part of its last step, so they are sent only when the
+last step is.
 
-After a call without a prompt argument has successfully written its response, the steps
-that were sent are marked done in `yact-prompt.md`: `### [ ] 1. Title` becomes
-`### [x] 1. Title`. When every step is already ticked, YACT prints
-`All plan steps are done.` and makes no call. Steps are not ticked when `-n` is used, when
-the call is submitted as a batch, or when the call fails. Untick a step by hand to run it
-again.
+### Updating a plan
 
-#### Replacing the plan
-
-Running a call with `-p` writes the response to `yact-prompt.md`, overwriting its previous
-content, including any links added with `y read`. Nothing is written to your source tree
-and the response is not validated in that case. Remove the plan with `y new` or by deleting
-`yact-prompt.md`.
-
-### Validate that a response is code only
-
-With `-v` / `--validate-code`, the call fails if the response contains free text outside
-code blocks or an incomplete code block. Nothing is written to disk in that case, although
-the response is still logged to `.yact/buffer.txt`:
+Run `y plan` without an argument to update an existing plan: the planner checks which
+steps are already implemented in the linked files, drops them and renumbers the rest. Add
+an argument to change the plan:
 
 ```
-y -v act "implement Foo"
+y plan "also add a logout endpoint"
 ```
 
-`-v` and `-n` are mutually exclusive when set through a prompt file's `flags:` line.
+## Commands
+
+```
+y [flags] <command> [arguments]
+```
+
+| Command | Description |
+| --- | --- |
+| `<prompt command> [prompt]` | Call the LLM with the command's system prompt |
+| `query [prompt]` | Call the LLM without a system prompt; the response is printed |
+| `new` | Start a new task |
+| `read <file>...` | Link files into `yact-prompt.md` (glob patterns supported) |
+| `keyword <keyword>` | Link every file containing the keyword |
+| `output` | Save standard input to be sent with every call |
+| `index <level>` | Write or remove the code index without calling the LLM |
+| `compact` | Reduce `yact-prompt.md` to its links |
+| `commit` | Write the code blocks of the last response to disk |
+| `batch` | Fetch the result of a pending batch job |
+| `config [key value]` | Show or change configuration |
+| `help` | Show help and the available prompt commands |
+
+### Start a new task
+
+```
+y new
+```
+
+Deletes `yact-prompt.md` (including any plan in it), `.yact/temp/index.txt` and
+`.yact/temp/output.txt`. `.yact/domain.txt` is kept.
+
+### Link files
+
+```
+y read main.go
+y read "commands/*.go"
+y keyword Transaction
+```
+
+`y read` appends `[path](path)` links to the footer of `yact-prompt.md`. Quote glob
+patterns so the shell does not expand them. Directories are skipped and files already
+linked are not added twice.
+
+`y keyword` links every project file whose content contains the keyword as whole
+words (see [Selecting context files](#selecting-context-files)). Use `((keyword))` in the
+prompt instead to search at call time without adding links.
+
+### Send command output
+
+```
+go test ./... 2>&1 | y output
+git diff | y output
+```
+
+Saves standard input to `.yact/temp/output.txt`. It is sent with **every** call until it
+is overwritten by the next `y output` or removed by `y new`.
+
+### Code index
+
+YACT can generate a compact index of the declarations in your project: file paths followed
+by function, method, type and class signatures, without bodies. Supported languages are
+Go, PHP, JavaScript (`.js`, `.mjs`, `.cjs`), C#, Swift and Kotlin. Hidden and ignored
+folders are skipped.
+
+```
+y -i 1 ask "where is the config loaded?"
+```
+
+- `0` — no index
+- `1` — public index: only the public interface
+- `2` — private index: all declarations
+
+The index is written to `.yact/temp/index.txt` and sent only in the call that asks for it;
+every other call deletes it. `act` defaults to level 1 and `plan` to level 2. To write or
+remove the index without calling the LLM:
+
+```
+y index 2
+y index 0
+```
+
+### Run a prompt command
+
+```
+y act "implement Foo"
+y ask "is Foo buggy?"
+y bash "find all TODO comments in Go files"
+```
+
+The response is always saved to `.yact/temp/buffer.txt`. What happens next depends on the
+output mode:
+
+- **default** — code blocks are written to disk, and any text outside them is printed
+- `-v` / `--validate-code` — the same, but the call fails and nothing is written if the
+  response contains free text, an incomplete code block or a rejected path
+- `-n` / `--no-write` — the response is printed
+- `-p` / `--plan` — the response is saved to `yact-prompt.md`
+
+Run YACT inside a version-controlled working tree so you can review and revert what it
+writes.
 
 ### Query without a system prompt
-
-Call the LLM with no system prompt. The response is printed and never written to disk:
 
 ```
 y query "explain what the keyword command does"
 ```
 
-The prompt is built the same way as for prompt commands, and `query` honours `-p` and `-s`
-the same way prompt commands do.
+The prompt and context are built the same way as for prompt commands. The response is
+always printed and never written, so `-p` and `-v` cannot be used with `query`. With no
+argument, the plan in `yact-prompt.md` is the prompt and `-s` selects steps, but no step
+is ticked off.
+
+### Compact the prompt file
+
+```
+y compact
+```
+
+Replaces `yact-prompt.md` with just its links, once each, in a footer. The instructions are
+dropped. Useful for reusing the context of a plan or a pull request description for a new
+instruction.
+
+### Commit the buffer
+
+```
+y commit
+y -v commit
+```
+
+Writes the code blocks of the last response in `.yact/temp/buffer.txt` to disk and prints
+any text around them. Use it after `-n`, or after a validated call that failed only because
+the model added a sentence of prose. With `-v`, the commit fails if the buffer contains
+free text or an incomplete code block.
 
 ### Batch requests
-
-With `-b` / `--batch`, the request is submitted to Anthropic's Message Batches API instead
-of being streamed. Batches are billed at a 50% discount but may take a while to complete.
-Only one batch can be pending at a time; its id is stored in `.yact/batch_job_id.txt`.
 
 ```
 y -b act "implement Foo"
 y batch
 ```
 
-`y batch` prints the batch status while it is still processing. Once it has ended, the
-result is fetched, token usage and the discounted cost are printed, the response is written
-to `.yact/buffer.txt`, and the pending job is cleared. The output flags given at submission
-are applied then:
+With `-b` / `--batch`, the request is submitted to Anthropic's Message Batches API instead
+of being streamed. Batches cost half as much but may take a while. Only one batch can be
+pending; it is stored in `.yact/batch_job_id.txt` together with the output mode.
 
-- `-p` — the response is written to `yact-prompt.md`
-- `-v` — the response is validated, and the call fails if it is not code only
-- `-n` — the response is printed
-
-Without these flags, the response is only stored in the buffer. Apply it with `y commit`.
-
-### Commit the buffer
-
-Write the code blocks of the last response in `.yact/buffer.txt` to disk, for example after
-a `-n` run or a batch:
-
-```
-y -n act "implement Foo"
-y commit
-```
-
-With `-v`, the commit fails if the buffer contains free text or an incomplete code block.
+`y batch` prints the status while the batch is processing. Once it has ended, it prints
+token usage and the discounted cost, saves the response to the buffer, delivers it with the
+output mode the batch was submitted with (writing files, validating, printing, or saving
+the plan), and clears the pending job. Plan steps are not ticked off for batch jobs.
 
 ## Global flags
 
+Flags come before the command.
+
 ```
--h, --help                 Show help message
--n, --no-write             Do not write files, print response instead
--c, --claude <level>       Use Claude model (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)
--i, --index <level>        Index for this call: 0 sends no index, 1 generates a public
-                           index, 2 generates a private index
--b, --batch                Submit the request as a batch job; the output flags (-n, -v,
-                           -p) are applied when the result is fetched with 'y batch'
--d, --download             Download the system prompt for the command
-    --no-progress          Hide progress indicator
--v, --validate-code        Fail if the response (or, for commit, the buffer) contains
-                           free text or incomplete code blocks
--p, --plan                 Write the response to yact-prompt.md
--s, --steps <selector>     Implement only the selected steps of yact-prompt.md (N, N-M,
-                           a comma separated list such as 1,3,5-6, or next). Requires a
-                           plan; cannot be combined with a prompt argument or with --plan.
-                           Finished steps are ticked off after a successful write
--m, --max-input-lines <n>  Set max input lines for the current command, without changing config
-    --verbose              Print all file paths sent to the LLM
+-c, --claude <level>        Claude model: 1 Haiku, 2 Sonnet, 3 Opus, 4 Fable
+-n, --no-write              Print the response instead of writing files
+-v, --validate-code         Fail if the response (or, for commit, the buffer) contains
+                            free text or incomplete code blocks
+-p, --plan                  Write the response to yact-prompt.md
+-s, --steps <selector>      Send only the selected plan steps: N, N-M, 1,3,5-6, next, or 0
+-i, --index <level>         Code index for this call: 0 none, 1 public, 2 private
+-b, --batch                 Submit the request as a batch job
+    --skill <name>          Attach ~/.yact/skills/<name>.md; can be repeated
+-d, --download              Download the command's system prompt and skills again
+    --dry                   Build and check the request, skip the LLM call
+    --verbose               Print the files and the prompt sent to the LLM
+    --no-progress           Hide the progress indicator
+    --version               Print the version and exit
+-h, --help                  Show help
 ```
 
-Flags come before the command:
+`-n`, `-v` and `-p` exclude each other.
 
 ```
 y -c 3 ask "how does the parser work?"
-y --claude 2 --no-progress plan "add authentication"
 y -i 2 ask "where is the config loaded?"
-y -m 3000 act "add a --version flag"
-y -b act "add a --version flag"
-y -p plan "add authentication"
-y -s next act
+y -i 0 act "rename Foo to Bar"
+y --dry --verbose act
+y -b plan "add authentication"
 ```
-
-Model flags override the configured model for a single invocation. Model availability
-depends on your own Anthropic account. When a flag is used, YACT prints the effective flags
-as `Executing: y <flags> <command>` before the call.
 
 ## Configuration
 
-View current settings:
-
 ```
-y config
-```
-
-Set configuration values:
-
-```
-y config claude_model sonnet
-y config max_input_lines 3000
+y config                              # show settings
+y config anthropic_api_key <key>      # required
+y config claude_model sonnet          # default model
+y config ext vue                      # add a file extension for keyword search
+y config ignore dist                  # skip a root-level folder
 ```
 
-Available configuration keys:
+Settings in `~/.yact/config`:
 
-- `anthropic_api_key` — your own Anthropic API key, stored locally (required)
-- `claude_model` — which model to use: `fable`, `opus`, `sonnet` or `haiku`
-  (default: `haiku`)
-- `max_input_lines` — maximum number of lines of prompt, message files and context files
-  sent in one call (default: 2000)
+- `anthropic_api_key` — your own Anthropic API key
+- `claude_model` — `haiku` (default), `sonnet`, `opus` or `fable`. The `-c` flag and a
+  prompt's `c` default override it
 
 The maximum output token count per call is fixed at 128000.
 
 ### File extensions
 
-The `y keyword` command only scans files with recognized extensions. A default set of
-common source file extensions is stored in `.yact/extensions.txt`. Add an extension with:
+Keyword search (`y keyword` and `((keyword))`) only looks at files with the extensions in
+`.yact/extensions.txt`, which is created with a default set of common source extensions the
+first time it is needed. Add one with `y config ext <extension>`. An empty file means the
+defaults.
 
-```
-y config ext vue
-```
+### Ignored folders
 
-## Cost tracking
+`.yact/ignore.txt` lists root-level folders that are never linked, searched or indexed. It
+is created with `vendor` and `node_modules`. Add one with `y config ignore <folder>`. An
+empty file means no folder is ignored.
 
-Every API call prints the model used, call duration, input and output token counts, and an
-estimated cost in dollars. The estimate is calculated locally from published rates and is
-informational only — your actual billing is whatever Anthropic charges your account. A
-warning is shown if the response hit the output token limit and may be incomplete.
+### Domain description
+
+Write a short description of your project — what it does, its main concepts and conventions
+— into `.yact/domain.txt`. It is sent first in every call.
+
+### Cost tracking
+
+Every call prints the model, duration, number of files sent, input and output tokens and an
+estimated cost in dollars. The estimate is calculated locally from hard-coded rates and is
+informational only. A warning is shown if the response hit the output token limit and may
+be incomplete.
 
 ## Storage
 
-Global settings live in `~/.yact/`:
+Global, in `~/.yact/`:
 
-- `config` — API key and model settings (JSON)
-- `systemprompts/` — system prompt text files
+- `config` — API key and default model (JSON)
+- `systemprompts/` — system prompts, and `include/` for shared prompt parts
+- `skills/` — skill files
 
-Per-project state lives in your project directory:
+Per project:
 
-- `yact-prompt.md` — the task prompt: links added by `y read` and `y keyword`, and the plan
-  written by `-p`
-- `.yact/buffer.txt` — log of the last LLM response
-- `.yact/index.txt` — the code index, sent when present
-- `.yact/output.txt` — command output captured by `y output`, sent when present
-- `.yact/domain.txt` — optional domain description, sent when present
-- `.yact/batch_job_id.txt` — the pending batch job and its output flags
-- `.yact/extensions.txt` — file extensions scanned by the keyword command
+- `yact-prompt.md` — the task: instructions, links and plans
+- `.yact/domain.txt` — optional project description, sent with every call
+- `.yact/extensions.txt` — extensions searched by keyword
+- `.yact/ignore.txt` — root-level folders to skip
+- `.yact/batch_job_id.txt` — the pending batch job and its output mode
+- `.yact/temp/buffer.txt` — the last LLM response
+- `.yact/temp/index.txt` — the code index, when a call asks for one
+- `.yact/temp/output.txt` — output captured by `y output`
 
-Add `.yact/` to your `.gitignore` so task state and response logs are not committed.
-
-`yact-prompt.md` is up to you. Ignore it if you treat it as a scratch file. Or keep it: a
-plan that has been reviewed and ticked off can be attached to a pull request (committed,
-pasted into the description, or kept elsewhere) to give reviewers more context. Each team
-can decide how.
-
-## Help
+A good `.gitignore` setup commits the `.yact/*.txt` settings so the whole team shares them,
+and ignores the rest:
 
 ```
-y help
-y --help
-y -h
+.yact/temp
+.yact/batch_job_id.txt
+yact-prompt.md
 ```
+
+Whether you keep `yact-prompt.md` is up to you. A reviewed and ticked-off plan makes a good
+pull request description.
+
+## Running YACT in GitHub Actions
+
+All state is in files and every call is one command, so YACT scripts easily. This
+repository is developed with these workflows, triggered by labels whose suffix picks the
+model (`-haiku`, `-sonnet`, `-opus`):
+
+| Workflow | Label | What it does |
+| --- | --- | --- |
+| [`yact-issue.yml`](.github/workflows/yact-issue.yml) | `implement-*` on an issue | Plans the issue, refines the plan if context is missing, implements it, commits with a generated message and opens a pull request with the plan as its description |
+| [`yact-update.yml`](.github/workflows/yact-update.yml) | `update-*` on a PR | Updates the plan from the PR description and the latest comment, implements it and pushes |
+| [`yact-fix.yml`](.github/workflows/yact-fix.yml) | `fix-*` on a PR | Feeds failing `go build`, `go test` and `go vet` output to `act` and pushes the fixes |
+| [`yact-review.yml`](.github/workflows/yact-review.yml) | `review-*` on a PR | Sends the diff, the changed files and the linked issues to `review` and posts the result as a comment |
+
+They need an `ANTHROPIC_API_KEY` repository secret, and the runner needs access to
+`raw.githubusercontent.com` to download the system prompts. Tips for CI:
+
+- Pass `--no-progress`.
+- Post `.yact/temp/buffer.txt` rather than scraping standard output.
+- Debug a workflow without spending tokens with `--dry --verbose`.
+
+To write your own workflow, use the [`workflow` skill](skills/workflow.md):
+`y --skill workflow act "..."`.
 
 ## Troubleshooting
 
 **"Claude API key not configured"**
 
-- Set your key: `y config anthropic_api_key <your-own-anthropic-key>`
+- Set your key: `y config anthropic_api_key <your-own-anthropic-key>`.
 
-**"input exceeds maximum number allowed lines"**
+**"--no-write and --validate-code cannot be combined"** (or `--plan` with either)
 
-- Start over with `y new` and re-add only the files you need
-- Remove links you do not need from `yact-prompt.md`
-- Select fewer plan steps with `-s`
-- Raise the limit for one call with `-m <n>`, or permanently with
-  `y config max_input_lines <n>`
+- The command's prompt file already turns one of these on (`act` uses `-v`, `plan` uses
+  `-p`, `ask` uses `-n`). To see what `act` would write without writing it, use `--dry
+  --verbose` to inspect the request, or rely on `git diff` afterwards.
 
 **"response contains free text outside code blocks" / "incomplete code block"**
 
-- These come from `-v` / `--validate-code`. Rerun the command, or drop `-v` to accept
-  free text. The rejected response is still available in `.yact/buffer.txt`.
+- These come from `-v`. Nothing was written. Rerun the command, or apply the response
+  anyway with `y commit` after checking `.yact/temp/buffer.txt`.
 
 **"no plan found in yact-prompt.md, provide a prompt or create a plan with --plan"**
 
-- You ran a call without a prompt argument and `yact-prompt.md` is missing or empty. Pass
-  a prompt, add files with `y read`, or create a plan with `y -p plan "<task>"`.
+- You ran a call without a prompt argument and `yact-prompt.md` is missing or empty. Pass a
+  prompt, or create a plan with `y plan "<task>"`.
 
-**"--steps and --plan cannot be combined" / "--steps cannot be combined with a prompt argument"**
+**"Files needed as context are missing; run with --plan to update the plan"**
 
-- `--steps` works on the saved plan only. Drop the prompt argument or the `-p` flag.
+- The plan has a `## Missing context` section. Run `y plan` once more.
+
+**"no steps remain; run with --plan to update the plan"**
+
+- Every step is ticked. Untick a step to rerun it, or update the plan with `y plan "..."`.
 
 **"step range ... does not match the plan" / "invalid step selector item"**
 
-- The selector names steps the plan does not contain, or is malformed. Use `N`, `N-M`, a
-  comma separated list, or `next`, and check the numbers in `yact-prompt.md`.
+- Use `N`, `N-M`, a comma separated list, `next` or `0`, and check the numbers in
+  `yact-prompt.md`.
 
 **"a batch is already pending"**
 
-- Fetch the pending result with `y batch` before submitting another batch.
+- Fetch the pending result with `y batch` first.
 
-**Unexpected files are sent**
+**Files are not sent, or unexpected files are sent**
 
-- Every project file whose path appears in the prompt text is sent. Run with `--verbose`
-  to see which files are sent, and rephrase or remove the mentions you do not want.
+- Only links select files. Run with `--dry --verbose` to see what would be sent. Check
+  that the path is relative to the project root and not in a hidden or ignored folder.
+  Remember that `.yact/temp/output.txt` is sent with every call until `y new`.
 
-**"No files found matching pattern"**
+**The model keeps seeing old instructions**
 
-- Check that the glob pattern matches existing files
-- Quote glob patterns so your shell does not expand them first
-- Use exact paths if glob patterns don't work
+- Prompt arguments are appended to `yact-prompt.md`. Edit the file, or run `y compact` or
+  `y new`.
 
 **"no system prompt found for command"**
 
-- Download the missing system prompt: `y -d <command>`
-- Or create the file manually in `~/.yact/systemprompts/`
+- The prompt could not be downloaded. Check the command name and your connection, or create
+  the file in `~/.yact/systemprompts/` yourself.
 
-**Truncated or incomplete responses**
+**"Warning: ... has N lines, more than 300" / truncated responses**
 
-- Split the file you are editing into smaller ones
+- Split large files: the model has to write them back in full.
 
 **API errors**
 
-- Verify your API key is valid in the Anthropic console
-- Check your internet connection
-- Ensure your account has available credits
+- Check that your API key is valid in the Anthropic console, that your account has
+  credits, and that the selected model is available to you.
 
 ## Security and privacy
 
-YACT is a local command-line program. It has no server component and no website that
-accepts input.
+YACT is a local command-line program. It has no server component.
 
-- **Your API key stays on your machine.** It is stored in `~/.yact/config` as plain JSON.
-  YACT sends it only to `https://api.anthropic.com`, as the `x-api-key` header that
-  Anthropic's API requires. It is never transmitted anywhere else.
-- **You get your own key.** YACT never issues, requests, brokers, or collects API keys.
-  Create an Anthropic key in your own account at
-  [console.anthropic.com](https://console.anthropic.com).
-- **No telemetry.** YACT does not phone home, collect analytics, or report usage. The only
-  outbound network connections it makes are the API calls you explicitly trigger, and
-  system-prompt downloads when you pass `-d`. URLs in the prompt are never fetched.
-- **No background activity.** YACT runs when you invoke it and exits. It installs no
-  service, daemon, or scheduled task, and modifies nothing outside `~/.yact/`, the
-  `.yact/` directory and `yact-prompt.md` of the project you are working in, and the files
-  written from responses.
-- **You choose what is sent.** Only the files mentioned in your prompt (added with
-  `y read` or `y keyword`, or written by you), the message files in `.yact/`, and the
-  prompt itself are included in a request. YACT never scans or uploads your codebase on
-  its own initiative; the code index is generated only when you pass `-i` or run
-  `y index`.
-- **Auditable.** The complete source is public. Every release is built from a tagged
-  commit in the repository, and every response is logged verbatim to `.yact/buffer.txt`.
-
-If you would rather not trust prebuilt binaries, build from source — it takes one command
-and is documented under [Installation](#installation).
+- **Your API key stays on your machine.** It is stored in `~/.yact/config` as plain JSON
+  and sent only to Anthropic's API, as the `x-api-key` header it requires.
+- **You get your own key.** YACT never issues, requests, brokers or collects API keys.
+- **No telemetry.** The only network connections YACT makes are the API calls you trigger,
+  and downloads of system prompts and skills from `raw.githubusercontent.com` when they are
+  missing locally or you pass `-d`. URLs in prompts are never fetched.
+- **No background activity.** YACT runs when you invoke it and exits. It modifies nothing
+  outside `~/.yact/`, the `.yact/` folder and `yact-prompt.md` of your project, and the
+  files written from responses.
+- **Writes stay in the project.** File paths in responses are parsed before anything is
+  written or deleted; absolute paths and paths that leave the project directory are
+  rejected.
+- **You choose what is sent.** Only linked files, the message files in `.yact/`, attached
+  skills and the prompt are sent. The code index is generated only when a call asks for it.
+- **Auditable.** The source is public, releases are built from tagged commits, and every
+  response is saved verbatim to `.yact/temp/buffer.txt`.
 
 ## Reporting a problem
 
-Open an issue at
-[github.com/agabor/yact/issues](https://github.com/agabor/yact/issues). For anything
-security-sensitive, please report it privately through the repository's security advisory
-page rather than in a public issue.
+Open an issue at [github.com/agabor/yact/issues](https://github.com/agabor/yact/issues).
+For anything security-sensitive, please report it privately through the repository's
+security advisory page rather than in a public issue.
 
 ## Contributing
 
-The codebase is small and split into a few focused packages (`api`, `commands`, `config`,
-`index`, `logic`), so it is quick to read. Contributions are welcome: open an issue to
-discuss an idea, or send a pull request.
+The codebase is small and split into focused packages:
+
+- `api` — the Claude client
+- `commands` — one handler per command
+- `config` — settings, flags and prompt loading
+- `index` — the code indexer
+- `logic` — prompt files, links, plans and response parsing
+
+Run the tests with `go test ./...`. The code follows the same
+[principles](systemprompts/include/principles.txt) that the prompts ask the model to
+follow. Contributions are welcome: open an issue to discuss an idea, or send a pull
+request.
 
 You can also change what YACT does without touching the code: every `*.txt` file in
-`~/.yact/systemprompts/` becomes a command. See [Prompt commands](#prompt-commands).
+`~/.yact/systemprompts/` becomes a command.
 
-The website in `docs/` is plain HTML, CSS and JavaScript with no build step and no
-external requests. `docs/assets/yact-scene.js` draws the hero animation.
+The website in `docs/` is plain HTML, CSS and JavaScript with no build step.
+`docs/assets/yact-scene.js` draws the hero animation.
