@@ -2,7 +2,7 @@ package logic
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 )
 
@@ -16,15 +16,22 @@ func ParseProjectPath(raw string) (ProjectPath, error) {
 		return "", fmt.Errorf("empty file path")
 	}
 
-	cleaned := filepath.Clean(strings.TrimPrefix(trimmed, "./"))
-	if strings.HasPrefix(cleaned, "/") || filepath.IsAbs(cleaned) {
+	// LLM output may use Windows separators; one slash form keeps the same
+	// file resolving identically on every OS.
+	slashed := strings.ReplaceAll(trimmed, "\\", "/")
+	cleaned := path.Clean(strings.TrimPrefix(slashed, "./"))
+	if strings.HasPrefix(cleaned, "/") || hasDriveLetter(cleaned) {
 		return "", fmt.Errorf("absolute path not allowed: %s", raw)
 	}
 
-	firstElement := strings.Split(cleaned, string(filepath.Separator))[0]
+	firstElement := strings.Split(cleaned, "/")[0]
 	if firstElement == ".." {
 		return "", fmt.Errorf("path escapes project directory: %s", raw)
 	}
 
 	return ProjectPath(cleaned), nil
+}
+
+func hasDriveLetter(cleaned string) bool {
+	return len(cleaned) >= 2 && cleaned[1] == ':'
 }
