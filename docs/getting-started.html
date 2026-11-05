@@ -27,6 +27,7 @@
       <nav class="site-nav" aria-label="Main">
         <ul>
           <li><a href="getting-started.html" aria-current="page">Getting started</a></li>
+          <li><a href="workflows.html">GitHub workflows</a></li>
           <li><a href="https://github.com/agabor/yact#readme">README</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
         </ul>
@@ -70,7 +71,7 @@
         <h2 id="install-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Install</h2>
 
         <h3>Build from source (recommended)</h3>
-        <p>YACT is written in Go, so building from source means you run code you can read.</p>
+        <p>YACT is written in Go (1.26 or newer), so building from source means you run code you can read.</p>
         <pre data-copy><code>git clone https://github.com/agabor/yact.git
 cd yact
 go build -o y .
@@ -84,6 +85,7 @@ mv y ~/.local/bin/</code></pre>
           <thead><tr><th scope="col">Platform</th><th scope="col">File</th></tr></thead>
           <tbody>
             <tr><td>Linux (x86-64)</td><td><code>yact-linux-amd64</code></td></tr>
+            <tr><td>Linux (ARM64)</td><td><code>yact-linux-arm64</code></td></tr>
             <tr><td>macOS (Apple silicon)</td><td><code>yact-darwin-arm64</code></td></tr>
             <tr><td>macOS (Intel)</td><td><code>yact-darwin-amd64</code></td></tr>
             <tr><td>Windows (x86-64)</td><td><code>yact-windows-amd64.exe</code></td></tr>
@@ -93,7 +95,8 @@ mv y ~/.local/bin/</code></pre>
         <pre data-copy><code>chmod +x yact-linux-amd64
 mkdir -p ~/.local/bin
 mv yact-linux-amd64 ~/.local/bin/y</code></pre>
-        <p>On Windows, put <code>yact-windows-amd64.exe</code> in a folder on your <code>PATH</code>, or run it from where you downloaded it.</p>
+        <p>On Windows, put <code>yact-windows-amd64.exe</code> in a folder on your <code>PATH</code> (renaming it to <code>y.exe</code> is convenient), or run it from where you downloaded it.</p>
+        <p>Check that it works with <code>y --version</code>. Releases do not include checksum files yet; if you need to verify what you run, build from source.</p>
       </div>
     </section>
 
@@ -105,15 +108,14 @@ mv yact-linux-amd64 ~/.local/bin/y</code></pre>
         <p>Save your key. It is written to <code>~/.yact/config</code> on your machine and used only for calls to Anthropic's API.</p>
         <pre data-copy><code>y config anthropic_api_key &lt;your-own-anthropic-key&gt;
 y config</code></pre>
-        <p>The second command shows your current settings, so you can check that it worked. Then download the official system prompts:</p>
-        <pre data-copy><code>y -d act
-y -d plan
-y -d ask
-y -d bash</code></pre>
-        <p>Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there becomes a command: <code>act</code> writes code, <code>plan</code> writes a plan, <code>ask</code> answers questions and <code>bash</code> writes shell commands. Read them whenever you like.</p>
-        <p>Finally, keep YACT's task state out of your commits. In the repository you work on, add this to <code>.gitignore</code>:</p>
-        <pre data-copy><code>.yact/</code></pre>
-        <p>The plan lives in <code>yact-prompt.md</code>. Whether it is committed or attached to a pull request is up to you, so ignore it only if your team does not want plans in the repository.</p>
+        <p>The second command shows your current settings, so you can check that it worked. YACT reads the key only from this file, not from the <code>ANTHROPIC_API_KEY</code> environment variable.</p>
+        <p>The system prompts download by themselves from the YACT repository the first time you use a command. Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there becomes a command: <code>plan</code> writes a plan, <code>act</code> writes code, <code>ask</code> answers questions, <code>review</code> reviews a diff, <code>analyze</code> checks code against the code principles and <code>bash</code> writes shell commands. Read them whenever you like. To fetch the latest version of one, add <code>-d</code>:</p>
+        <pre data-copy><code>y -d act</code></pre>
+        <p>Finally, keep YACT's working files out of your commits. In the repository you work on, add this to <code>.gitignore</code>:</p>
+        <pre data-copy><code>.yact/temp
+.yact/batch_job_id.txt</code></pre>
+        <p>The other files in <code>.yact/</code> are settings worth sharing with your team: the file extensions to search, the folders to skip and an optional <code>domain.txt</code> that describes your project to the model in every call.</p>
+        <p>The task and the plan live in <code>yact-prompt.md</code>. Whether it is committed or attached to a pull request is up to you; add it to <code>.gitignore</code> too if your team does not want plans in the repository.</p>
       </div>
     </section>
 
@@ -125,7 +127,7 @@ y -d bash</code></pre>
         <p>This walk-through uses a plan, so you read what will change before any code is written. Run it inside a Git repository.</p>
         <ol class="steps">
           <li>
-            <p><strong>Start clean.</strong> This removes any earlier task file and message files.</p>
+            <p><strong>Start clean.</strong> This removes any earlier task file, captured output and code index.</p>
             <pre data-copy><code>y new</code></pre>
           </li>
           <li>
@@ -134,8 +136,9 @@ y -d bash</code></pre>
 y read "commands/*.go"</code></pre>
           </li>
           <li>
-            <p><strong>Ask for a plan.</strong> The response is saved to <code>yact-prompt.md</code> instead of your source files. Open it, read it and edit anything you disagree with. Each step changes one file and ends with a <code>Context</code> line that lists the files that step needs.</p>
-            <pre data-copy><code>y -p plan "add a --version flag"</code></pre>
+            <p><strong>Ask for a plan.</strong> The response is saved to <code>yact-prompt.md</code> instead of your source files. Open it, read it and edit anything you disagree with. Each step changes one file and ends with a <code>Context</code> line that links the files that step needs.</p>
+            <pre data-copy><code>y plan "add a --version flag"</code></pre>
+            <p>If the plan ends with a <code>## Missing context</code> section, the planner had to guess what is in those files. Run <code>y plan</code> once more: the files listed there are sent this time, and the plan is revised. YACT will not implement a plan that still has that section.</p>
           </li>
           <li>
             <p><strong>Implement the first step.</strong> YACT sends the goal and that one step, makes one API call, writes the files and ticks the step off in the plan.</p>
@@ -146,19 +149,20 @@ y read "commands/*.go"</code></pre>
             <pre data-copy><code>git diff</code></pre>
           </li>
           <li>
-            <p><strong>Repeat.</strong> Run steps 4 and 5 until YACT prints <code>All plan steps are done.</code></p>
+            <p><strong>Repeat.</strong> Run steps 4 and 5 until every step heading reads <code>[x]</code>. To run all remaining steps in one call instead, use <code>y act</code> without <code>-s</code>. Once every step is done, YACT stops with <code>no steps remain</code>; untick a step to run it again, or start the next task with <code>y new</code>.</p>
           </li>
         </ol>
 
         <h3>A quicker path for small changes</h3>
-        <p>You can skip the plan and give the task directly. The files you added with <code>y read</code>, and any paths you mention, are sent as context.</p>
+        <p>You can skip the plan and give the task directly. The files you added with <code>y read</code> are sent as context.</p>
         <pre data-copy><code>y read main.go
 y act "add a --version flag"</code></pre>
+        <p>The task you type is also added to <code>yact-prompt.md</code>, so the next call sees it too. Run <code>y new</code> before an unrelated task.</p>
 
-        <h3>Read a response before it is written</h3>
-        <p>With <code>-n</code>, YACT prints the response instead of writing files. Apply it later with <code>y commit</code> when you are happy with it.</p>
-        <pre data-copy><code>y -n act "add a --version flag"
-y commit</code></pre>
+        <h3>Check a request before you send it</h3>
+        <p>With <code>--dry --verbose</code>, YACT prints every file and the full prompt it would send, and stops before the API call. It costs nothing.</p>
+        <pre data-copy><code>y --dry --verbose act "add a --version flag"</code></pre>
+        <p><code>act</code> only writes a response that is pure code. If the model added a sentence of explanation, nothing is written; the response is kept in <code>.yact/temp/buffer.txt</code>, and after reading it you can apply it anyway with <code>y commit</code>.</p>
 
         <h3>Choose a model</h3>
         <p><code>act</code> uses Haiku by default. Add <code>-c 2</code> for Sonnet, <code>-c 3</code> for Opus or <code>-c 4</code> for Fable. Which models you can use depends on your Anthropic account.</p>
@@ -174,8 +178,11 @@ y commit</code></pre>
         <pre data-copy><code>y new
 y read commands/call.go
 y ask "why does this function return early?"</code></pre>
-        <p>For a bigger picture, add a code index with <code>-i</code>. Level <code>1</code> lists public declarations and level <code>2</code> lists all of them.</p>
+        <p>For a bigger picture, add a code index with <code>-i</code>. It lists the declarations in your project, without the code inside them. Level <code>1</code> lists public declarations and level <code>2</code> lists all of them. It works for Go, PHP, JavaScript, C#, Swift and Kotlin. <code>act</code> and <code>plan</code> include an index by default.</p>
         <pre data-copy><code>y -i 1 ask "where is the config loaded?"</code></pre>
+        <p>To check a change before you merge it, send the diff and ask for a review:</p>
+        <pre data-copy><code>git diff main | y output
+y review "add a --version flag"</code></pre>
       </div>
     </section>
 
@@ -184,10 +191,20 @@ y ask "why does this function return early?"</code></pre>
     <section class="section" id="sent" aria-labelledby="sent-h">
       <div class="wrap">
         <h2 id="sent-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-coin"/></svg>See what is sent and what it costs</h2>
-        <p>Before each call YACT prints <code>Input lines: &lt;n&gt;</code>, the total number of lines it is about to send. If that is more than <code>max_input_lines</code> (2000 by default), the call is refused. After the call it prints the model, the duration, the token counts and an estimated cost.</p>
-        <p>To see exactly which files go out, add <code>--verbose</code>:</p>
-        <pre data-copy><code>y --verbose ask "how does the parser work?"</code></pre>
-        <p>A file is sent when its path appears anywhere in your task text, so a stray mention can pull in more than you meant. If the total is too large, run <code>y new</code> and add only the files you need, or raise the limit for one call with <code>-m 3000</code>.</p>
+        <p>A file is sent only when <code>yact-prompt.md</code> links it. Mentioning a path in passing sends nothing. There are three ways to link files:</p>
+        <dl class="defs">
+          <dt><code>[main.go](main.go)</code></dt>
+          <dd>A Markdown link sends that one file. This is what <code>y read</code> writes.</dd>
+          <dt><code>[[commands/*.go]]</code></dt>
+          <dd>Double brackets send every file that matches the pattern.</dd>
+          <dt><code>((plan step))</code></dt>
+          <dd>Double parentheses send every file that contains those words, in any casing: <code>PlanStep</code>, <code>plan_step</code> or <code>plan step</code>. This is what <code>y keyword</code> does, at the time of the call.</dd>
+        </dl>
+        <p><code>y read</code> puts its links below a line of dashes. Everything below that line selects files but is not sent as text, so your instructions stay readable.</p>
+        <p>Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. Output you capture with <code>y output</code> is sent with every call until you run <code>y new</code>.</p>
+        <p>To see exactly what goes out, add <code>--verbose</code>. Add <code>--dry</code> as well to stop before the call:</p>
+        <pre data-copy><code>y --dry --verbose ask "how does the parser work?"</code></pre>
+        <p>YACT warns before the call about any linked file over 300 lines, because the model has to write such a file back in full. After the call it prints the model, the duration, the token counts and an estimated cost.</p>
       </div>
     </section>
 
@@ -198,7 +215,8 @@ y ask "why does this function return early?"</code></pre>
         <h2 id="team-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>Use it with a team</h2>
         <p><strong>Plans in reviews.</strong> A plan shows what a change was meant to do, step by step. Commit it, paste it into the pull request description, link to it or keep it local. YACT does not prescribe a way, so the person leading the team decides.</p>
         <p><strong>Mentoring.</strong> If you are learning, write down what you expect each step of a plan to change before you run it, then compare with the diff. If you are mentoring, ask for the plan first and review it before any code exists.</p>
-        <p><strong>Shared commands.</strong> A command is a text file in <code>~/.yact/systemprompts/</code>, so a team can share <code>review.txt</code> or <code>explain.txt</code> like any other file. <a href="index.html#make-it-yours">See how</a>.</p>
+        <p><strong>Shared commands.</strong> A command is a text file in <code>~/.yact/systemprompts/</code>, so a team can share a tuned <code>act.txt</code> or its own <code>explain.txt</code> like any other file. <a href="index.html#make-it-yours">See how</a>.</p>
+        <p><strong>Automation.</strong> The same commands run in CI. Label an issue and a workflow plans it, implements it and opens a pull request; label a pull request and it gets a review. <a href="workflows.html">Set up the GitHub workflows</a>.</p>
       </div>
     </section>
 
@@ -210,12 +228,18 @@ y ask "why does this function return early?"</code></pre>
         <dl class="defs">
           <dt>Claude API key not configured</dt>
           <dd>Set your key with <code class="long">y config anthropic_api_key &lt;your-own-anthropic-key&gt;</code>.</dd>
-          <dt>input exceeds maximum number allowed lines</dt>
-          <dd>Start over with <code>y new</code> and add only the files you need, select fewer plan steps with <code>-s</code>, or raise the limit with <code>-m</code>.</dd>
           <dt>no system prompt found for command</dt>
-          <dd>Download it with <code>y -d &lt;command&gt;</code>, or create the file in <code>~/.yact/systemprompts/</code>.</dd>
+          <dd>The prompt could not be downloaded. Check the command name and your connection, or create the file in <code>~/.yact/systemprompts/</code>.</dd>
           <dt>response contains free text outside code blocks</dt>
-          <dd>This comes from <code>-v</code>, which <code>act</code> turns on by default. Run the command again, or read the rejected response in <code>.yact/buffer.txt</code>. Nothing was written to disk.</dd>
+          <dd>This comes from <code>-v</code>, which <code>act</code> turns on by default. Nothing was written to disk. Run the command again, or read the response in <code>.yact/temp/buffer.txt</code> and apply it with <code>y commit</code>.</dd>
+          <dt>--no-write and --validate-code cannot be combined</dt>
+          <dd>A command's prompt file can turn flags on: <code>act</code> uses <code>-v</code>, <code>plan</code> uses <code>-p</code> and <code>ask</code> uses <code>-n</code>, and these three exclude each other. To see what <code>act</code> would get, use <code>--dry --verbose</code> instead of <code>-n</code>.</dd>
+          <dt>Files needed as context are missing</dt>
+          <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more.</dd>
+          <dt>no steps remain</dt>
+          <dd>Every step of the plan is ticked. Untick a step to run it again, extend the plan with <code>y plan "…"</code>, or start over with <code>y new</code>.</dd>
+          <dt>A file was not sent</dt>
+          <dd>Only links send files. Run with <code>--dry --verbose</code>, and check that the path is relative to the project root and not in a hidden or skipped folder.</dd>
         </dl>
         <p>The <a href="https://github.com/agabor/yact#troubleshooting">README</a> lists more, and you can ask for help by opening an <a href="https://github.com/agabor/yact/issues">issue</a>.</p>
       </div>

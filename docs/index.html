@@ -27,6 +27,7 @@
       <nav class="site-nav" aria-label="Main">
         <ul>
           <li><a href="getting-started.html">Getting started</a></li>
+          <li><a href="workflows.html">GitHub workflows</a></li>
           <li><a href="https://github.com/agabor/yact#readme">README</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
         </ul>
@@ -77,6 +78,21 @@ go build -o y .</code></pre>
         <h2 id="idea-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-bulb"/></svg>What it does</h2>
         <p>Most coding tools decide for you: which files to read, which commands to run, when to stop. YACT does exactly what you ask, once. You pick the context, you read the plan, you review the diff.</p>
         <p>Each command makes a single API call. Complete source files in the response are written to disk, and any prose is printed to your terminal.</p>
+        <p>It ships with six commands, and each one is a plain text prompt you can read and change:</p>
+        <dl class="defs">
+          <dt><code>plan</code></dt>
+          <dd>Breaks a task into steps, one file per step, and saves the plan as Markdown for you to edit.</dd>
+          <dt><code>act</code></dt>
+          <dd>Writes the code: complete files, nothing else.</dd>
+          <dt><code>ask</code></dt>
+          <dd>Answers questions about the code and changes nothing.</dd>
+          <dt><code>review</code></dt>
+          <dd>Reviews a diff against the task it was meant to do.</dd>
+          <dt><code>analyze</code></dt>
+          <dd>Checks existing code against a published set of <a href="https://github.com/agabor/yact/blob/main/systemprompts/include/principles.txt">code principles</a>.</dd>
+          <dt><code>bash</code></dt>
+          <dd>Prints the shell commands for a task, for you to read and run.</dd>
+        </dl>
       </div>
     </section>
 
@@ -87,13 +103,13 @@ go build -o y .</code></pre>
         <h2 id="how-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg>How it works</h2>
         <ol class="steps">
           <li>
-            <p><strong>Pick the files.</strong> <code>y read</code> adds links to a plain Markdown task file, <code>yact-prompt.md</code>. Every project file whose path appears in the task is sent along as context.</p>
+            <p><strong>Pick the files.</strong> <code>y read</code> adds links to a plain Markdown task file, <code>yact-prompt.md</code>. The linked files are sent along as context, and nothing else from your project is.</p>
             <pre data-copy><code>y new
 y read "commands/*.go"</code></pre>
           </li>
           <li>
-            <p><strong>Plan, if you want one.</strong> The plan is saved as an editable Markdown file. Each step changes one file and lists the files it needs.</p>
-            <pre data-copy><code>y -p plan "add a --version flag"</code></pre>
+            <p><strong>Plan, if you want one.</strong> The plan is saved to <code>yact-prompt.md</code> for you to read and edit. Each step changes one file and links the files it needs.</p>
+            <pre data-copy><code>y plan "add a --version flag"</code></pre>
           </li>
           <li>
             <p><strong>Implement.</strong> One step, one API call. Complete files are written to your working tree and the step is ticked off in the plan.</p>
@@ -116,13 +132,13 @@ y read "commands/*.go"</code></pre>
         <h2 id="why-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>Why you might like it</h2>
         <dl class="defs">
           <dt>Predictable</dt>
-          <dd>Exactly one API call per command. Every call prints the model, the token counts and an estimated cost, and an input-line limit stops you from sending more than you meant to.</dd>
+          <dd>Exactly one API call per command. Every call prints the model, the token counts and an estimated cost. Add <code>--dry --verbose</code> to see exactly what would be sent, without making the call.</dd>
           <dt>Scriptable</dt>
-          <dd>There is no session to manage. Each command reads its context, makes one call and exits, so it fits a shell loop, a Makefile target or a CI job.</dd>
+          <dd>There is no session to manage. Each command reads its context, makes one call and exits, so it fits a shell loop, a Makefile target or a CI job. YACT itself is developed by <a href="workflows.html">GitHub workflows</a> that turn labelled issues into pull requests.</dd>
           <dt>Transparent</dt>
           <dd>The task is a Markdown file you can read and edit. Every raw response is logged. There is no telemetry and no background process.</dd>
           <dt>Cheap to run</dt>
-          <dd>Haiku is the default model. Add <code>-b</code> to submit a batch at a 50% discount, or <code>-n</code> to read a response before <code>y commit</code> writes it.</dd>
+          <dd>Haiku is the default model for planning and coding, and the request holds only the files you linked. Add <code>-b</code> to submit a batch at a 50% discount.</dd>
         </dl>
       </div>
     </section>
@@ -167,15 +183,38 @@ y read "commands/*.go"</code></pre>
 Add a --version flag that prints the build version.
 
 ## Steps
-### [x] 1. Add version constant
-**File:** config/config.go
+
+### [x] 1. Add the version variable
+
+**File:** [config/config.go](config/config.go)
+
+- Add `var Version = "dev"`, set at build time
+
 **Context:** none
 
 ### [ ] 2. Wire the flag in main.go
-**File:** main.go
+
+**File:** [main.go](main.go)
+
+- Add a `--version` flag that prints `config.Version`
+
 **Context:** [config/config.go](config/config.go)</code></pre>
         <p>Reviewers can check the diff against the plan, spot scope creep, and see exactly which files the model was given. Because each step touches one file, the history comes out as small, readable commits.</p>
-        <p>How the plan reaches the review is up to you. Commit it, paste it into the pull request description, link to it, or keep it local. YACT does not prescribe a way, so whoever leads the team can pick what fits.</p>
+        <p>If the planner had to guess what is in a file it was not given, it lists that file under <code>## Missing context</code>, and YACT refuses to implement the plan until you run <code>y plan</code> again with the file included.</p>
+        <p>How the plan reaches the review is up to you. Commit it, paste it into the pull request description, link to it, or keep it local. YACT does not prescribe a way, so whoever leads the team can pick what fits. The <a href="workflows.html">GitHub workflows</a> put it in the pull request description.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="ci" aria-labelledby="ci-h">
+      <div class="wrap">
+        <h2 id="ci-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>From issue to pull request</h2>
+        <p>Because every command is one call that reads and writes files, a GitHub workflow can run YACT the way you would. Label an issue <code>implement-haiku</code> and a workflow plans it, writes the code and opens a pull request with the plan as its description. Label the pull request <code>review-sonnet</code> and the review is posted as a comment.</p>
+        <p>Each step is a line of shell you can read in the workflow file, and the plan, the prompt and every response are files you can inspect.</p>
+        <div class="actions">
+          <a class="btn" href="workflows.html">See the workflows</a>
+        </div>
       </div>
     </section>
 
@@ -187,7 +226,7 @@ Add a --version flag that prints the build version.
         <ul>
           <li>You choose the context. YACT will not go looking for files, so you need to know your codebase.</li>
           <li>It rewrites whole files. Keep them to a few hundred lines, because every edited file has to fit in the model's output limit.</li>
-          <li>It never runs your tests or retries. You do that.</li>
+          <li>It never runs your tests or retries on its own. You do that, or a <a href="workflows.html#fix">workflow</a> does.</li>
           <li>It works with Anthropic's API only, for now.</li>
         </ul>
         <div class="two-up">
@@ -211,9 +250,9 @@ Add a --version flag that prints the build version.
         <h2 id="privacy-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Privacy and safety</h2>
         <ul>
           <li>Your API key is stored on your machine in <code>~/.yact/config</code> and sent only to Anthropic's API.</li>
-          <li>There is no telemetry. The only network calls are the API calls you trigger, and the system-prompt downloads you ask for with <code>-d</code>.</li>
-          <li>You choose what is sent: the files your task mentions, the message files in <code>.yact/</code>, and the task itself. <code>--verbose</code> lists every path.</li>
-          <li>YACT writes the files the model returns. Run it in a version-controlled working tree and read the result with <code>git diff</code>, or use <code>-n</code> to read a response first and <code>y commit</code> to apply it.</li>
+          <li>There is no telemetry. The only network calls are the API calls you trigger, and downloads of system prompts from this project's GitHub repository, the first time you use a command or when you pass <code>-d</code>.</li>
+          <li>You choose what is sent: the files your task links, the message files in <code>.yact/</code>, and the task itself. <code>--verbose</code> lists every path.</li>
+          <li>YACT writes the files the model returns, and only inside your project: absolute paths and paths that leave it are rejected. Run it in a version-controlled working tree and read the result with <code>git diff</code>.</li>
         </ul>
       </div>
     </section>
@@ -225,7 +264,7 @@ Add a --version flag that prints the build version.
         <h2 id="faq-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-question"/></svg>Questions</h2>
         <details>
           <summary>Does it send my whole repository?</summary>
-          <p>No. Only files whose paths appear in your task are sent, together with the message files in <code>.yact/</code>.</p>
+          <p>No. Only the files your task links are sent, together with the message files in <code>.yact/</code>. A path you mention in passing is not sent; a link is. If you ask for a code index with <code>-i</code>, a list of declaration signatures is sent too, without the code inside them.</p>
         </details>
         <details>
           <summary>Which models can I use?</summary>
@@ -237,7 +276,7 @@ Add a --version flag that prints the build version.
         </details>
         <details>
           <summary>How is it different from aider, Claude Code or Cursor?</summary>
-          <p>Those tools are interactive and agentic: they explore, loop and often run commands. YACT is one-shot and stateless, and it does only what you ask.</p>
+          <p>Those tools work in a session: they keep a conversation going, and some of them look for files, run commands and try again on their own. YACT has no session. Each command is one request built from files you can read, and it ends when the files are written. Many people use both: an agent to explore, YACT for changes they want to predict and review.</p>
         </details>
         <details>
           <summary>Is it made by Anthropic?</summary>
@@ -253,7 +292,7 @@ Add a --version flag that prints the build version.
         <h2 id="yours-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg>Make it yours</h2>
 
         <h3>Add a command without touching the code</h3>
-        <p>Every text file in <code>~/.yact/systemprompts/</code> becomes a command. Drop in <code>review.txt</code> and you have <code>y review</code>. Write an <code>explain.txt</code> that explains instead of editing and you have a command for onboarding. A <code>flags:</code> line at the top picks the model and turns writing off. No rebuild, no plugin API, no configuration language: a prompt is a file you can read and share.</p>
+        <p>Every text file in <code>~/.yact/systemprompts/</code> becomes a command. Edit <code>act.txt</code> and <code>y act</code> follows your team's rules. Write an <code>explain.txt</code> that explains instead of editing and you have a command for onboarding. A <code>flags:</code> line at the top picks the model and turns writing off. No rebuild, no plugin API, no configuration language: a prompt is a file you can read and share.</p>
         <pre data-copy><code>cat > ~/.yact/systemprompts/explain.txt &lt;&lt;'EOF'
 flags: c2n
 You are a patient mentor. Explain the code you are given in plain
