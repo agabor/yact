@@ -66,7 +66,7 @@
             <tr><td><code>review-*</code></td><td>a pull request</td><td>A review posted as a comment</td></tr>
           </tbody>
         </table>
-        <p>See them at work: <a href="https://github.com/agabor/yact/pull/22">pull request #22</a> and <a href="https://github.com/agabor/yact/pull/24">pull request #24</a> were planned and implemented from issues by <code>yact-issue.yml</code>.</p>
+        <p>See them at work: <a href="https://github.com/agabor/yact/pull/24">pull request #24</a> was planned and implemented from an issue by <code>yact-issue.yml</code>. <a href="https://github.com/agabor/yact/pull/22">Pull request #22</a> was too, and then got a second commit from <code>yact-update.yml</code> after a comment. Every branch named <code>yact/issue-…</code> in the repository's history came from the same workflow.</p>
       </div>
     </section>
 
@@ -92,7 +92,7 @@
 done</code></pre>
           </li>
           <li>
-            <p><strong>Let workflows open pull requests.</strong> In your repository settings, under Actions, General, Workflow permissions, turn on <em>Allow GitHub Actions to create and approve pull requests</em>. <code>yact-issue.yml</code> needs it to open the pull request.</p>
+            <p><strong>Let workflows open pull requests.</strong> In your repository settings, under Actions, General, Workflow permissions, turn on <em>Allow GitHub Actions to create and approve pull requests</em>. <code>yact-issue.yml</code> needs it to open the pull request. It is off by default for repositories in a personal account; repositories in an organization take the organization's setting, which an owner may have to change first.</p>
           </li>
           <li>
             <p><strong>Adapt the build steps to your language.</strong> The workflows are written for Go: they set up Go, run <code>go fmt</code> before committing, and <code>yact-fix.yml</code> runs <code>go build</code>, <code>go test</code> and <code>go vet</code>. Replace these with your own formatter, build and test commands. The YACT steps stay the same.</p>
@@ -175,7 +175,7 @@ gh pr comment "$PR_NUMBER" --body-file .yact/temp/buffer.txt</code></pre>
           <li><strong>Read the issue before you label it.</strong> Its text becomes the prompt. Whatever the model writes lands on a branch and in a pull request; nothing is merged without you.</li>
           <li><strong>Untrusted text stays in files.</strong> Issue and pull request text reaches YACT through files and quoted variables, never through workflow expressions in shell commands.</li>
           <li><strong>Costs are small and visible.</strong> An issue run makes three or four calls: one or two to plan, one to implement and one for the commit message. Each call prints its token counts and estimated cost in the run log. Haiku labels cost the least.</li>
-          <li><strong>Pull requests opened by a workflow do not start other workflows.</strong> GitHub does not start new runs for events caused by the default <code>GITHUB_TOKEN</code>, so your usual checks will not run on the new pull request until someone pushes to it. Use a token from a GitHub App or a personal access token if you want them to run straight away.</li>
+          <li><strong>Checks on a workflow's pull request wait for approval.</strong> When a pull request is opened or pushed to with the default <code>GITHUB_TOKEN</code>, GitHub creates the runs of your other workflows in an approval-required state, and someone with write access has to approve them. Use a token from a GitHub App or a personal access token if you want them to start straight away. See <a href="https://docs.github.com/actions/using-workflows/triggering-a-workflow">Triggering a workflow</a>.</li>
         </ul>
       </div>
     </section>
