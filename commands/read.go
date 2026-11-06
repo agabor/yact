@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"yact/config"
 	"yact/logic"
 )
 
@@ -12,6 +13,11 @@ func HandleReadCommand(args []string) error {
 	if len(args) < 1 {
 		fmt.Println("Usage: y read <file> [<file2> ...]")
 		return fmt.Errorf("missing file argument")
+	}
+
+	ignoredFolders, err := config.LoadIgnoredFolders()
+	if err != nil {
+		return err
 	}
 
 	for _, pattern := range args {
@@ -31,7 +37,7 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Rejected: %s: %v\n", match, err)
 				continue
 			}
-			if err := readFile(filePath); err != nil {
+			if err := readFile(filePath, ignoredFolders); err != nil {
 				return err
 			}
 		}
@@ -40,7 +46,16 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func readFile(filePath logic.ProjectPath) error {
+func skipsIgnoredFolder(filePath logic.ProjectPath, ignoredFolders []config.IgnorePattern) bool {
+	return logic.IsInIgnoredFolder(string(filePath), ignoredFolders)
+}
+
+func readFile(filePath logic.ProjectPath, ignoredFolders []config.IgnorePattern) error {
+	if skipsIgnoredFolder(filePath, ignoredFolders) {
+		fmt.Printf("Skipping ignored: %s\n", filePath)
+		return nil
+	}
+
 	info, err := os.Stat(string(filePath))
 	if err != nil {
 		fmt.Printf("Error accessing %s: %v\n", filePath, err)
