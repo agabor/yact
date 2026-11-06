@@ -37,7 +37,11 @@ func HandleReadCommand(args []string) error {
 				fmt.Printf("Rejected: %s: %v\n", match, err)
 				continue
 			}
-			if err := readFile(filePath, ignoredFolders); err != nil {
+			if skipsIgnoredFolder(filePath, ignoredFolders) {
+				fmt.Printf("Skipping ignored: %s\n", filePath)
+				continue
+			}
+			if err := readFile(filePath); err != nil {
 				return err
 			}
 		}
@@ -50,12 +54,7 @@ func skipsIgnoredFolder(filePath logic.ProjectPath, ignoredFolders []config.Igno
 	return logic.IsInIgnoredFolder(string(filePath), ignoredFolders)
 }
 
-func readFile(filePath logic.ProjectPath, ignoredFolders []config.IgnorePattern) error {
-	if skipsIgnoredFolder(filePath, ignoredFolders) {
-		fmt.Printf("Skipping ignored: %s\n", filePath)
-		return nil
-	}
-
+func readFile(filePath logic.ProjectPath) error {
 	info, err := os.Stat(string(filePath))
 	if err != nil {
 		fmt.Printf("Error accessing %s: %v\n", filePath, err)
