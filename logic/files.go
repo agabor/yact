@@ -2,6 +2,7 @@ package logic
 
 import (
 	"io/fs"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, error) {
-	ignoredRootFolders, err := config.LoadIgnoredFolders()
+	ignoredFolders, err := config.LoadIgnoredFolders()
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 			if isRoot {
 				return nil
 			}
-			if IsInIgnoredRootFolder(relativePath, ignoredRootFolders) {
+			if IsInIgnoredFolder(relativePath, ignoredFolders) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -69,14 +70,43 @@ func isIncludedHiddenPath(relativePath string) bool {
 	return firstSegment == ".github"
 }
 
-func IsInIgnoredRootFolder(relativePath string, ignoredRootFolders []string) bool {
-	firstSegment := strings.SplitN(filepath.ToSlash(relativePath), "/", 2)[0]
-	for _, folder := range ignoredRootFolders {
-		if folder == firstSegment {
-			return true
+// Patterns are anchored at the project root, and a file is ignored when one of
+// the folders leading to it matches, so ignoring "vendor" also hides "vendor/a/b.go".
+func IsInIgnoredFolder(relativePath string, ignoredFolders []config.IgnorePattern) bool {
+	segments := strings.Split(filepath.ToSlash(relativePath), "/")
+	folders := segments[:len(segments)-1]
+	for _, pattern := range ignoredFolders {
+		for depth := 1; depth <= len(folders); depth++ {
+			if matchesFolderSegments(pattern.Segments(), folders[:depth]) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// A "**" segment matches zero or more folder segments; every other segment is
+// matched with path.Match against exactly one folder segment.
+func matchesFolderSegments(pattern []string, folder []string) bool {
+	if len(pattern) == 0 {
+		return len(folder) == 0
+	}
+	if pattern[0] == "**" {
+		for skip := 0; skip <= len(folder); skip++ {
+			if matchesFolderSegments(pattern[1:], folder[skip:]) {
+				return true
+			}
+		}
+		return false
+	}
+	if len(folder) == 0 {
+		return false
+	}
+	matched, err := path.Match(pattern[0], folder[0])
+	if err != nil || !matched {
+		return false
+	}
+	return matchesFolderSegments(pattern[1:], folder[1:])
 }
 
 func FileHasExtension(path string, extensions []string) bool {

@@ -11,6 +11,12 @@ func TestParseIgnoredFolderArgument(t *testing.T) {
 	}{
 		{name: "empty value returns an error", value: "", wantErr: true},
 		{name: "one folder returns that folder", value: "vendor", want: "vendor"},
+		{name: "nested path returns that path", value: "foo/bar", want: "foo/bar"},
+		{name: "single star pattern is accepted", value: "foo/*/bar", want: "foo/*/bar"},
+		{name: "double star pattern is accepted", value: "foo/**/bar", want: "foo/**/bar"},
+		{name: "leading slash returns an error", value: "/foo", wantErr: true},
+		{name: "parent segment returns an error", value: "foo/../bar", wantErr: true},
+		{name: "backslash returns an error", value: `foo\bar`, wantErr: true},
 		{name: "several folders return an error", value: "vendor\nnode_modules", wantErr: true},
 	}
 
@@ -26,8 +32,8 @@ func TestParseIgnoredFolderArgument(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parseIgnoredFolderArgument(%q) unexpected error: %v", tc.value, err)
 			}
-			if got != tc.want {
-				t.Errorf("parseIgnoredFolderArgument(%q) = %q, want %q", tc.value, got, tc.want)
+			if got.Text() != tc.want {
+				t.Errorf("parseIgnoredFolderArgument(%q) = %q, want %q", tc.value, got.Text(), tc.want)
 			}
 		})
 	}

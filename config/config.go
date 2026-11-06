@@ -400,28 +400,32 @@ func SaveExtensions(extensions []string) error {
 	return os.WriteFile(GetProjectExtensionsPath(), []byte(content), 0644)
 }
 
-func ParseIgnoredFolders(content string) ([]string, error) {
-	var folders []string
+func ParseIgnoredFolders(content string) ([]IgnorePattern, error) {
+	var folders []IgnorePattern
 	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			continue
 		}
-		if strings.ContainsAny(trimmed, "/\\") {
-			return nil, fmt.Errorf("ignored folder %q must be a root folder name", trimmed)
+		folder, err := ParseIgnorePattern(trimmed)
+		if err != nil {
+			return nil, err
 		}
-		folders = append(folders, trimmed)
+		folders = append(folders, folder)
 	}
 	return folders, nil
 }
 
 // An empty ignore file means no folder is ignored, unlike extensions where
 // an empty file falls back to the defaults.
-func LoadIgnoredFolders() ([]string, error) {
+func LoadIgnoredFolders() ([]IgnorePattern, error) {
 	data, err := os.ReadFile(GetProjectIgnorePath())
 	if err != nil {
 		if os.IsNotExist(err) {
-			defaultFolders := DefaultIgnoredFolders()
+			defaultFolders, parseErr := ParseIgnoredFolders(strings.Join(DefaultIgnoredFolders(), "\n"))
+			if parseErr != nil {
+				return nil, parseErr
+			}
 			if saveErr := SaveIgnoredFolders(defaultFolders); saveErr != nil {
 				return defaultFolders, saveErr
 			}
@@ -433,12 +437,17 @@ func LoadIgnoredFolders() ([]string, error) {
 	return ParseIgnoredFolders(string(data))
 }
 
-func SaveIgnoredFolders(folders []string) error {
+func SaveIgnoredFolders(folders []IgnorePattern) error {
 	yactDir := GetProjectYactDir()
 	if err := os.MkdirAll(yactDir, 0755); err != nil {
 		return err
 	}
 
-	content := strings.Join(folders, "\n") + "\n"
+	lines := make([]string, 0, len(folders))
+	for _, folder := range folders {
+		lines = append(lines, folder.Text())
+	}
+
+	content := strings.Join(lines, "\n") + "\n"
 	return os.WriteFile(GetProjectIgnorePath(), []byte(content), 0644)
 }
