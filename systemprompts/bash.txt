@@ -1,4 +1,4 @@
-flags: c1n
+flags: --model haiku --output print
 BASH COMMAND ASSISTANT
 
 ====================

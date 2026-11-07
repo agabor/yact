@@ -1,4 +1,4 @@
-flags: c1vi1
+flags: --model haiku --strict --index public
 CODE GENERATION ASSISTANT
 
 [[ principles.txt ]]

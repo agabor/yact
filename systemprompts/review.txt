@@ -1,4 +1,4 @@
-flags: c2n
+flags: --model sonnet --output print
 CODE REVIEW ASSISTANT
 
 ====================

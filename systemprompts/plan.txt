@@ -1,4 +1,4 @@
-flags: c1pi2s0
+flags: --model haiku --output plan --index all
 PLANNING AND ANALYSIS ASSISTANT
 
 ====================
