@@ -6,58 +6,26 @@ import (
 	"yact/config"
 )
 
-func TestIndexLevelToVisibility(t *testing.T) {
-	tests := []struct {
-		name    string
-		level   int
-		want    string
-		wantErr bool
-	}{
-		{name: "level 1 is public", level: 1, want: "public"},
-		{name: "level 2 is private", level: 2, want: "private"},
-		{name: "level 0 is invalid", level: 0, wantErr: true},
-		{name: "level 3 is invalid", level: 3, wantErr: true},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := indexLevelToVisibility(tc.level)
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("indexLevelToVisibility(%d) error = nil, want error", tc.level)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("indexLevelToVisibility(%d) unexpected error: %v", tc.level, err)
-			}
-			if got != tc.want {
-				t.Errorf("indexLevelToVisibility(%d) = %q, want %q", tc.level, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestValidateStepsOptions(t *testing.T) {
 	tests := []struct {
-		name      string
-		selector  string
-		writePlan bool
-		prompt    string
-		wantErr   bool
+		name     string
+		selector string
+		mode     config.OutputMode
+		prompt   string
+		wantErr  bool
 	}{
-		{name: "empty selector accepts plan flag and prompt", selector: "", writePlan: true, prompt: "x"},
-		{name: "empty selector accepts no options", selector: "", writePlan: false, prompt: ""},
-		{name: "selector with plan flag fails", selector: "1", writePlan: true, wantErr: true},
-		{name: "selector with prompt fails", selector: "1", writePlan: false, prompt: "fix it", wantErr: true},
-		{name: "list selector passes", selector: "1,3,5-6"},
-		{name: "next passes", selector: "next"},
-		{name: "invalid selector fails", selector: "abc", wantErr: true},
+		{name: "empty selector accepts plan mode and prompt", selector: "", mode: config.OutputWritePlan, prompt: "x"},
+		{name: "empty selector accepts apply mode with no prompt", selector: "", mode: config.OutputApply, prompt: ""},
+		{name: "selector with plan mode fails", selector: "1", mode: config.OutputWritePlan, wantErr: true},
+		{name: "selector with prompt fails", selector: "1", mode: config.OutputApply, prompt: "fix it", wantErr: true},
+		{name: "list selector passes", selector: "1,3,5-6", mode: config.OutputApply},
+		{name: "next passes", selector: "next", mode: config.OutputApply},
+		{name: "invalid selector fails", selector: "abc", mode: config.OutputApply, wantErr: true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateStepsOptions(tc.selector, tc.writePlan, tc.prompt)
+			err := validateStepsOptions(tc.selector, tc.mode, tc.prompt)
 			if tc.wantErr && err == nil {
 				t.Fatal("validateStepsOptions() error = nil, want error")
 			}

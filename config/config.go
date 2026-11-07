@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"unicode"
 )
 
 const (
@@ -161,28 +160,6 @@ func (c *Config) Save() error {
 	return os.WriteFile(configFile, data, 0644)
 }
 
-func parseFlags(content string) []string {
-	if !strings.HasPrefix(content, "flags: ") {
-		return []string{}
-	}
-
-	firstLine := strings.Split(content, "\n")[0]
-	flagsStr := strings.TrimSpace(strings.TrimPrefix(firstLine, "flags: "))
-
-	var flags []string
-	runes := []rune(flagsStr)
-	for index := 0; index < len(runes); index++ {
-		ch := runes[index]
-		if (ch == 'c' || ch == 'i') && index+1 < len(runes) && unicode.IsDigit(runes[index+1]) {
-			flags = append(flags, string(runes[index:index+2]))
-			index++
-			continue
-		}
-		flags = append(flags, string(ch))
-	}
-	return flags
-}
-
 func readInclude(name string) (string, error) {
 	if err := validateIncludeName(name); err != nil {
 		return "", err
@@ -201,24 +178,27 @@ func readInclude(name string) (string, error) {
 	return string(data), nil
 }
 
-func LoadPromptWithFlags(name PromptName) (string, []string, error) {
+func LoadPromptWithFlags(name PromptName) (string, PromptDefaults, error) {
 	promptFile, err := getPromptFile(name)
 	if err != nil {
-		return "", nil, err
+		return "", PromptDefaults{}, err
 	}
 
 	data, err := os.ReadFile(promptFile)
 	if err != nil {
-		return "", nil, err
+		return "", PromptDefaults{}, err
 	}
 
 	content, err := ExpandIncludes(string(data), readInclude)
 	if err != nil {
-		return "", nil, fmt.Errorf("expanding includes for '%s': %w", name, err)
+		return "", PromptDefaults{}, fmt.Errorf("expanding includes for '%s': %w", name, err)
 	}
 
-	flags := parseFlags(content)
-	return content, flags, nil
+	defaults, err := ParsePromptFlags(name, content)
+	if err != nil {
+		return "", PromptDefaults{}, fmt.Errorf("reading flags for '%s': %w", name, err)
+	}
+	return content, defaults, nil
 }
 
 func downloadToFile(url string, localPath string) ([]byte, error) {

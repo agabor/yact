@@ -45,56 +45,28 @@ func getOptionalPrompt(args []string) string {
 	return ""
 }
 
-func validateIndexLevel(level int) error {
-	switch level {
-	case 0, 1, 2:
-		return nil
-	}
-	return fmt.Errorf("invalid index level %d, expected 0, 1 or 2", level)
-}
-
-// A nil level tells the flag list that --index was not given, so a system prompt default may apply.
-func indexLevelFromFlag(value int, given bool) *int {
-	if !given {
-		return nil
-	}
-	return &value
-}
-
-func parseSkillNames(raws []string) ([]config.SkillName, error) {
-	names := make([]config.SkillName, 0, len(raws))
-	for _, raw := range raws {
-		name, err := config.ParseSkillName(raw)
-		if err != nil {
-			return nil, err
-		}
-		names = append(names, name)
-	}
-	return names, nil
-}
-
 func promptNotFoundMessage(command config.PromptName, err error) {
 	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
 	fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
-func downloadAndLoadSystemPrompt(command config.PromptName) (string, []string, error) {
+func downloadAndLoadSystemPrompt(command config.PromptName) (string, config.PromptDefaults, error) {
 	if err := config.DownloadPrompt(command); err != nil {
-		return "", nil, err
+		return "", config.PromptDefaults{}, err
 	}
 	return config.LoadPromptWithFlags(command)
 }
 
-func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, []string, error) {
+func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, config.PromptDefaults, error) {
 	if forceDownload {
 		return downloadAndLoadSystemPrompt(command)
 	}
-	systemPrompt, flags, err := config.LoadPromptWithFlags(command)
+	systemPrompt, defaults, err := config.LoadPromptWithFlags(command)
 	if errors.Is(err, fs.ErrNotExist) {
 		return downloadAndLoadSystemPrompt(command)
 	}
-	return systemPrompt, flags, err
+	return systemPrompt, defaults, err
 }
 
 func loadSkill(name config.SkillName, forceDownload bool) (logic.Skill, error) {
@@ -129,63 +101,26 @@ func loadSkills(names []config.SkillName, forceDownload bool) ([]logic.Skill, er
 }
 
 func main() {
-	helpFlag := flag.BoolP("help", "h", false, "Show help message")
-	versionFlag := flag.Bool("version", false, "Print the version and exit")
-	noWriteFlag := flag.BoolP("no-write", "n", false, "Do not write files, print response instead")
-	claudeLevel := flag.IntP("claude", "c", 0, "Claude model level (1: Haiku, 2: Sonnet, 3: Opus, 4: Fable)")
-	downloadFlag := flag.BoolP("download", "d", false, "Download the system prompt for the command")
-	noProgressFlag := flag.Bool("no-progress", false, "Hide progress indicator")
-	validateCodeFlag := flag.BoolP("validate-code", "v", false, "Fail if the response contains free text or incomplete code blocks")
-	planFlag := flag.BoolP("plan", "p", false, "Write the response to .yact/plan.md")
-	batchFlag := flag.BoolP("batch", "b", false, "Submit the request as a batch job instead of streaming it")
-	stepsFlag := flag.StringP("steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, next, or 0 for the whole plan")
-	indexFlag := flag.IntP("index", "i", 0, "Index level for this call: 0 none, 1 public, 2 private")
-	verboseFlag := flag.Bool("verbose", false, "Print all file paths and the prompt sent to the LLM")
-	dryFlag := flag.Bool("dry", false, "Skip the LLM call, only build and check the request")
-	skillFlag := flag.StringArray("skill", nil, "Attach a skill file to the messages sent to the LLM. Can be repeated")
-
+	cli := config.RegisterFlags(flag.CommandLine)
 	flag.Parse()
 
-	indexGiven := flag.CommandLine.Changed("index")
-	if indexGiven {
-		if err := validateIndexLevel(*indexFlag); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-	}
-
-	skillNames, err := parseSkillNames(*skillFlag)
+	flags, err := cli.ToFlaglist(flag.CommandLine)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	args := flag.Args()
-
-	flags := config.Flaglist{
-		NoWrite:      *noWriteFlag,
-		NoProgress:   *noProgressFlag,
-		ValidateCode: *validateCodeFlag,
-		WritePlan:    *planFlag,
-		Batch:        *batchFlag,
-		Download:     *downloadFlag,
-		Verbose:      *verboseFlag,
-		Dry:          *dryFlag,
-		ClaudeLevel:  *claudeLevel,
-		Steps:        *stepsFlag,
-		IndexLevel:   indexLevelFromFlag(*indexFlag, indexGiven),
-		Skills:       skillNames,
-	}
-
-	if *helpFlag {
+	if cli.Help {
 		commands.ShowHelp()
 		return
 	}
 
-	if *versionFlag {
+	if cli.Version {
 		fmt.Printf("yact %s\n", version)
 		return
 	}
+
+	args := flag.Args()
 
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: no command provided\n")
@@ -226,20 +161,23 @@ func main() {
 		commandErr = commands.HandleNewCommand()
 	case "commit":
 		requireNoArgs("commit", commandArgs)
-		commandErr = commands.HandleCommitCommand(flags.ValidateCode)
+		commandErr = commands.HandleCommitCommand(cli.Strict)
 	case "query":
 		requireArgCount("query", commandArgs, 0, 1)
-		if flagString := flags.FlagString(); flagString != "" {
-			fmt.Printf("Executing: y %s query\n", flagString)
-		}
-		queryFlags := flags
-		queryFlags.NoWrite = true
-		skills, err := loadSkills(flags.Skills, flags.Download)
+		resolved, err := config.ResolveFlags(flags, config.QueryDefaults())
 		if err != nil {
 			commandErr = err
 			break
 		}
-		commandErr = commands.HandleCommand(queryFlags, cfg, "", getOptionalPrompt(commandArgs), skills)
+		if flagString := resolved.FlagString(); flagString != "" {
+			fmt.Printf("Executing: y %s query\n", flagString)
+		}
+		skills, err := loadSkills(resolved.Skills, resolved.Download)
+		if err != nil {
+			commandErr = err
+			break
+		}
+		commandErr = commands.HandleCommand(resolved, cfg, "", getOptionalPrompt(commandArgs), skills)
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
@@ -258,13 +196,17 @@ func main() {
 			os.Exit(1)
 		}
 
-		systemPrompt, defaultFlags, err := loadSystemPrompt(promptName, flags.Download)
+		systemPrompt, defaults, err := loadSystemPrompt(promptName, flags.Download)
 		if err != nil {
 			promptNotFoundMessage(promptName, err)
 			os.Exit(1)
 		}
 
-		flags.ApplyDefaults(defaultFlags, flags.HasUserSetModel())
+		resolved, err := config.ResolveFlags(flags, defaults)
+		if err != nil {
+			commandErr = err
+			break
+		}
 
 		cleanedPrompt := systemPrompt
 		if strings.HasPrefix(cleanedPrompt, "flags: ") {
@@ -274,16 +216,16 @@ func main() {
 			}
 		}
 
-		skills, err := loadSkills(flags.Skills, flags.Download)
+		skills, err := loadSkills(resolved.Skills, resolved.Download)
 		if err != nil {
 			commandErr = err
 			break
 		}
 
-		if flagString := flags.FlagString(); flagString != "" {
+		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(flags, cfg, cleanedPrompt, getOptionalPrompt(commandArgs), skills)
+		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt, getOptionalPrompt(commandArgs), skills)
 	}
 
 	if commandErr != nil {

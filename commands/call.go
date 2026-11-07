@@ -9,10 +9,7 @@ import (
 )
 
 func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string, skills []logic.Skill) error {
-	mode, err := config.ParseOutputMode(flags)
-	if err != nil {
-		return err
-	}
+	mode := config.ParseOutputMode(flags)
 
 	if flags.Batch {
 		if err := checkNoPendingBatch(); err != nil {
@@ -20,16 +17,17 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		}
 	}
 
-	if err := validateStepsOptions(flags.Steps, flags.WritePlan, prompt); err != nil {
+	if err := validateStepsOptions(flags.Steps, mode, prompt); err != nil {
 		return err
 	}
 
-	if err := applyIndexOverride(flags); err != nil {
+	if err := applyIndexOverride(flags.Index); err != nil {
 		return err
 	}
 
 	applyModelOverride(cfg, flags.ModelOverride())
 
+	var err error
 	planPrompt := ""
 	combinedPrompt := ""
 	planUsed := false
@@ -47,7 +45,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	// Writing the plan is how a blocked prompt gets unblocked, so it is never gated.
-	if !flags.WritePlan {
+	if mode != config.OutputWritePlan {
 		gateText := prompt
 		if planUsed {
 			gateText = planPrompt
@@ -106,7 +104,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		printSentPrompt(requestContentForLLM.Prompt)
 	}
 
-	if flags.Dry {
+	if flags.DryRun {
 		fmt.Println("Dry run: LLM call skipped.")
 		return nil
 	}

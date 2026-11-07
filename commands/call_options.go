@@ -14,33 +14,19 @@ func applyModelOverride(cfg *config.Config, modelOverride string) {
 	}
 }
 
-func indexLevelToVisibility(level int) (string, error) {
-	switch level {
-	case 1:
-		return "public", nil
-	case 2:
-		return "private", nil
-	}
-	return "", fmt.Errorf("invalid index level %d, expected 1 or 2", level)
-}
-
-func applyIndexOverride(flags config.Flaglist) error {
-	if !flags.HasIndex() {
+func applyIndexOverride(setting *config.IndexSetting) error {
+	if setting == nil || *setting == config.IndexNone {
 		return logic.RemoveIndexFile()
 	}
-	visibility, err := indexLevelToVisibility(*flags.IndexLevel)
-	if err != nil {
-		return err
-	}
-	return index.WriteIndex(visibility)
+	return index.WriteIndex(setting.Visibility())
 }
 
-func validateStepsOptions(stepsSelector string, writePlan bool, prompt string) error {
+func validateStepsOptions(stepsSelector string, mode config.OutputMode, prompt string) error {
 	if stepsSelector == "" {
 		return nil
 	}
-	if writePlan {
-		return fmt.Errorf("--steps and --plan cannot be combined")
+	if mode == config.OutputWritePlan {
+		return fmt.Errorf("--steps cannot be combined with --output plan")
 	}
 	if prompt != "" {
 		return fmt.Errorf("--steps cannot be combined with a prompt argument")

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"yact/api"
 	"yact/config"
@@ -46,10 +47,23 @@ func newClient(cfg *config.Config) api.Client {
 	return client
 }
 
+// The progress indicator writes control output, so it is shown only on a terminal.
+func shouldShowProgress(noProgress bool, stdoutIsTerminal bool) bool {
+	return !noProgress && stdoutIsTerminal
+}
+
+func stdoutIsTerminal() bool {
+	info, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
 func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (api.CallResult, error) {
 	client := newClient(cfg)
 
-	if noProgress {
+	if !shouldShowProgress(noProgress, stdoutIsTerminal()) {
 		return client.Call(requestContent, systemPrompt)
 	}
 

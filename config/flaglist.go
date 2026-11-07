@@ -6,21 +6,21 @@ import (
 )
 
 type Flaglist struct {
-	NoWrite      bool
-	NoProgress   bool
-	ValidateCode bool
-	WritePlan    bool
-	Batch        bool
-	Download     bool
-	Verbose      bool
-	Dry          bool
-	ClaudeLevel  int
-	Steps        string
-	IndexLevel   *int
-	Skills       []SkillName
+	Model      *ModelName
+	Index      *IndexSetting
+	Output     *OutputName
+	Strict     bool
+	Download   bool
+	Batch      bool
+	NoProgress bool
+	Verbose    bool
+	DryRun     bool
+	Steps      string
+	Skills     []SkillName
 }
 
 // OutputApply is the zero value, so a batch job stored without a mode is applied.
+// The numeric values are stored in .yact/batch_job_id.txt, so they must not change.
 type OutputMode int
 
 const (
@@ -30,53 +30,66 @@ const (
 	OutputValidateAndApply
 )
 
-// Contradictory flags are rejected here so that the order of flags never decides the mode.
-func ParseOutputMode(flags Flaglist) (OutputMode, error) {
-	if flags.WritePlan && flags.NoWrite {
-		return 0, fmt.Errorf("--plan and --no-write cannot be combined")
+// User values win over the prompt file defaults. Strict is rejected unless the output is apply,
+// so that a conflict is reported instead of silently ignored.
+func ResolveFlags(user Flaglist, defaults PromptDefaults) (Flaglist, error) {
+	resolved := user
+	if resolved.Model == nil {
+		resolved.Model = defaults.Model
 	}
-	if flags.WritePlan && flags.ValidateCode {
-		return 0, fmt.Errorf("--plan and --validate-code cannot be combined")
+	if resolved.Index == nil {
+		resolved.Index = defaults.Index
 	}
-	if flags.NoWrite && flags.ValidateCode {
-		return 0, fmt.Errorf("--no-write and --validate-code cannot be combined")
+	if resolved.Output == nil {
+		resolved.Output = defaults.Output
 	}
-	switch {
-	case flags.WritePlan:
-		return OutputWritePlan, nil
-	case flags.NoWrite:
-		return OutputPrintOnly, nil
-	case flags.ValidateCode:
-		return OutputValidateAndApply, nil
+
+	output := resolved.EffectiveOutput()
+	if user.Strict && output != OutputNameApply {
+		return Flaglist{}, fmt.Errorf("--strict cannot be combined with --output %s", output)
 	}
-	return OutputApply, nil
+	resolved.Output = &output
+	resolved.Strict = user.Strict || (defaults.Strict && output == OutputNameApply)
+	resolved.Download = user.Download || defaults.Download
+	return resolved, nil
+}
+
+// Query prints by default, because its response is for reading rather than for applying to files.
+func QueryDefaults() PromptDefaults {
+	output := OutputNamePrint
+	return PromptDefaults{Output: &output}
+}
+
+func ParseOutputMode(flags Flaglist) OutputMode {
+	switch flags.EffectiveOutput() {
+	case OutputNamePrint:
+		return OutputPrintOnly
+	case OutputNamePlan:
+		return OutputWritePlan
+	}
+	if flags.Strict {
+		return OutputValidateAndApply
+	}
+	return OutputApply
+}
+
+func (f Flaglist) EffectiveOutput() OutputName {
+	if f.Output == nil {
+		return OutputNameApply
+	}
+	return *f.Output
 }
 
 func (f Flaglist) ModelOverride() string {
-	switch f.ClaudeLevel {
-	case 1:
-		return "haiku"
-	case 2:
-		return "sonnet"
-	case 3:
-		return "opus"
-	case 4:
-		return "fable"
+	if f.Model == nil {
+		return ""
 	}
-	return ""
+	return string(*f.Model)
 }
 
-func (f Flaglist) HasUserSetModel() bool {
-	return f.ClaudeLevel > 0
-}
-
-func (f Flaglist) HasIndex() bool {
-	return f.IndexLevel != nil && (*f.IndexLevel == 1 || *f.IndexLevel == 2)
-}
-
-// --plan sends the plan whole, so it implies selector 0 unless --steps is given explicitly.
+// --output plan sends the plan whole, so it implies selector 0 unless --steps is given explicitly.
 func (f Flaglist) StepsSelector() string {
-	if f.WritePlan && f.Steps == "" {
+	if f.EffectiveOutput() == OutputNamePlan && f.Steps == "" {
 		return "0"
 	}
 	return f.Steps
@@ -85,14 +98,17 @@ func (f Flaglist) StepsSelector() string {
 func (f Flaglist) FlagString() string {
 	var parts []string
 
-	if f.NoWrite {
-		parts = append(parts, "--no-write")
+	if f.Model != nil {
+		parts = append(parts, fmt.Sprintf("--model %s", *f.Model))
 	}
-	if f.ClaudeLevel > 0 {
-		parts = append(parts, fmt.Sprintf("--claude %d", f.ClaudeLevel))
+	if f.Index != nil {
+		parts = append(parts, fmt.Sprintf("--index %s", f.Index.Name()))
 	}
-	if f.IndexLevel != nil {
-		parts = append(parts, fmt.Sprintf("--index %d", *f.IndexLevel))
+	if f.Output != nil && *f.Output != OutputNameApply {
+		parts = append(parts, fmt.Sprintf("--output %s", *f.Output))
+	}
+	if f.Strict {
+		parts = append(parts, "--strict")
 	}
 	if f.Download {
 		parts = append(parts, "--download")
@@ -100,20 +116,14 @@ func (f Flaglist) FlagString() string {
 	if f.NoProgress {
 		parts = append(parts, "--no-progress")
 	}
-	if f.ValidateCode {
-		parts = append(parts, "--validate-code")
-	}
-	if f.WritePlan {
-		parts = append(parts, "--plan")
-	}
 	if f.Batch {
 		parts = append(parts, "--batch")
 	}
 	if f.Verbose {
 		parts = append(parts, "--verbose")
 	}
-	if f.Dry {
-		parts = append(parts, "--dry")
+	if f.DryRun {
+		parts = append(parts, "--dry-run")
 	}
 	if f.Steps != "" {
 		parts = append(parts, fmt.Sprintf("--steps %s", f.Steps))
@@ -123,62 +133,4 @@ func (f Flaglist) FlagString() string {
 	}
 
 	return strings.Join(parts, " ")
-}
-
-func (f *Flaglist) ApplyDefaults(flags []string, skipModelFlags bool) {
-	for _, flag := range flags {
-		f.applyDefault(flag, skipModelFlags)
-	}
-}
-
-func (f *Flaglist) applyDefault(flag string, skipModelFlags bool) {
-	if strings.HasPrefix(flag, "c") {
-		if !skipModelFlags {
-			f.ClaudeLevel = claudeLevelFromFlag(flag)
-		}
-		return
-	}
-
-	if strings.HasPrefix(flag, "i") {
-		if f.IndexLevel == nil {
-			level := indexLevelFromFlag(flag)
-			f.IndexLevel = &level
-		}
-		return
-	}
-
-	switch flag {
-	case "n":
-		f.NoWrite = true
-	case "d":
-		f.Download = true
-	case "v":
-		f.ValidateCode = true
-	case "p":
-		f.WritePlan = true
-	}
-}
-
-func claudeLevelFromFlag(flag string) int {
-	const fallbackClaudeLevel = 2
-	if len(flag) < 2 {
-		return fallbackClaudeLevel
-	}
-	digit := flag[1]
-	if digit < '1' || digit > '4' {
-		return fallbackClaudeLevel
-	}
-	return int(digit - '0')
-}
-
-func indexLevelFromFlag(flag string) int {
-	const fallbackIndexLevel = 1
-	if len(flag) < 2 {
-		return fallbackIndexLevel
-	}
-	digit := flag[1]
-	if digit != '1' && digit != '2' {
-		return fallbackIndexLevel
-	}
-	return int(digit - '0')
 }
