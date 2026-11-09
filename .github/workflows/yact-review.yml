@@ -11,14 +11,28 @@ permissions:
 
 jobs:
   review:
-    if: contains(fromJSON('["review-haiku","review-sonnet","review-opus"]'), github.event.label.name)
+    if: github.event.label.name == 'review'
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      CLAUDE_LEVEL: ${{ github.event.label.name == 'review-haiku' && '1' || github.event.label.name == 'review-sonnet' && '2' || '3' }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Choose model
+        env:
+          DEFAULT_MODEL: sonnet
+        run: |
+          # The strongest model label on the pull request wins. Without one, the default is used.
+          labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+          model="$DEFAULT_MODEL"
+          for candidate in haiku sonnet opus; do
+            if grep -qxF "$candidate" <<< "$labels"; then
+              model="$candidate"
+            fi
+          done
+          echo "MODEL=$model" >> "$GITHUB_ENV"
+          echo "Using model: $model"
+
       - uses: actions/checkout@v7
 
       - name: Checkout branch
@@ -72,7 +86,11 @@ jobs:
           done
 
       - name: Review
-        run: y -c "$CLAUDE_LEVEL" --no-progress review "$(cat "$RUNNER_TEMP/request.txt")"
+        run: y -m "$MODEL" --no-progress review "$(cat "$RUNNER_TEMP/request.txt")"
 
       - name: Post review
         run: gh pr comment "$PR_NUMBER" --body-file .yact/temp/buffer.txt
+
+      - name: Remove trigger label
+        if: always()
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/review" --silent || echo "Could not remove the review label" >&2

@@ -11,15 +11,29 @@ permissions:
 
 jobs:
   implement:
-    if: contains(fromJSON('["update-haiku","update-sonnet","update-opus"]'), github.event.label.name)
+    if: github.event.label.name == 'update'
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      CLAUDE_LEVEL: ${{ github.event.label.name == 'update-haiku' && '1' || github.event.label.name == 'update-sonnet' && '2' || '3' }}
       TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Choose model
+        env:
+          DEFAULT_MODEL: haiku
+        run: |
+          # The strongest model label on the pull request wins. Without one, the default is used.
+          labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+          model="$DEFAULT_MODEL"
+          for candidate in haiku sonnet opus; do
+            if grep -qxF "$candidate" <<< "$labels"; then
+              model="$candidate"
+            fi
+          done
+          echo "MODEL=$model" >> "$GITHUB_ENV"
+          echo "Using model: $model"
+
       - uses: actions/checkout@v7
       
       - name: Checkout branch
@@ -53,12 +67,12 @@ jobs:
 
       - name: Create plan
         run: |
-          y -c "$CLAUDE_LEVEL" --no-progress -p plan
+          y -m "$MODEL" --no-progress plan
 
       - name: Refine plan with missing context
         run: |
           if grep -qxF '## Missing context' yact-prompt.md; then
-            y -c "$CLAUDE_LEVEL" --no-progress -p plan
+            y -m "$MODEL" --no-progress plan
           fi
 
       - name: Check plan has no missing context
@@ -71,7 +85,7 @@ jobs:
 
       - name: Implement plan
         id: implement
-        run: y -c "$CLAUDE_LEVEL" --no-progress act
+        run: y -m "$MODEL" --no-progress act
 
       - name: Upload buffer
         if: always() && steps.implement.outcome == 'failure'
@@ -92,7 +106,7 @@ jobs:
           else
             git diff --cached > "$RUNNER_TEMP/changes.diff"
             y output < "$RUNNER_TEMP/changes.diff"
-            y -c "$CLAUDE_LEVEL" --no-progress -i 0 -n query "The output contains a git diff that updates pull request #$PR_NUMBER after review feedback. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that describes what changed. Then a blank line and a short body that explains why the change was made. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
+            y -m "$MODEL" --no-progress -i none query "The output contains a git diff that updates pull request #$PR_NUMBER after review feedback. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that describes what changed. Then a blank line and a short body that explains why the change was made. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
             # A failed or empty model reply must not block the push.
             if [ ! -s "$RUNNER_TEMP/commit-message.txt" ]; then
               echo "Update pull request #$PR_NUMBER after review feedback" > "$RUNNER_TEMP/commit-message.txt"
@@ -100,3 +114,7 @@ jobs:
             git commit -F "$RUNNER_TEMP/commit-message.txt"
           fi
           git push
+
+      - name: Remove trigger label
+        if: always()
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/update" --silent || echo "Could not remove the update label" >&2

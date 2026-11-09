@@ -11,15 +11,29 @@ permissions:
 
 jobs:
   fix:
-    if: contains(fromJSON('["fix-haiku","fix-sonnet","fix-opus"]'), github.event.label.name)
+    if: github.event.label.name == 'fix'
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      CLAUDE_LEVEL: ${{ github.event.label.name == 'fix-haiku' && '1' || github.event.label.name == 'fix-sonnet' && '2' || '3' }}
       TRIGGERING_ACTOR: ${{ github.triggering_actor }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Choose model
+        env:
+          DEFAULT_MODEL: haiku
+        run: |
+          # The strongest model label on the pull request wins. Without one, the default is used.
+          labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+          model="$DEFAULT_MODEL"
+          for candidate in haiku sonnet opus; do
+            if grep -qxF "$candidate" <<< "$labels"; then
+              model="$candidate"
+            fi
+          done
+          echo "MODEL=$model" >> "$GITHUB_ENV"
+          echo "Using model: $model"
+
       - uses: actions/checkout@v7
       
       - name: Checkout branch
@@ -54,7 +68,7 @@ jobs:
           if ! go build ./... > "$RUNNER_TEMP/build.txt" 2>&1; then
             cat "$RUNNER_TEMP/build.txt"
             y output < "$RUNNER_TEMP/build.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act "fix build"
+            y -m "$MODEL" --no-progress act "fix build"
           fi
 
       - name: Fetch Context
@@ -67,7 +81,7 @@ jobs:
           if ! go test ./... > "$RUNNER_TEMP/test.txt" 2>&1; then
             cat "$RUNNER_TEMP/test.txt"
             y output < "$RUNNER_TEMP/test.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act "fix tests"
+            y -m "$MODEL" --no-progress act "fix tests"
           fi
 
       - name: Fetch Context
@@ -80,7 +94,7 @@ jobs:
           if ! go vet ./... > "$RUNNER_TEMP/vet.txt" 2>&1; then
             cat "$RUNNER_TEMP/vet.txt"
             y output < "$RUNNER_TEMP/vet.txt"
-            y -c "$CLAUDE_LEVEL" --no-progress act "fix code issues"
+            y -m "$MODEL" --no-progress act "fix code issues"
           fi
 
       - name: Format code
@@ -94,7 +108,7 @@ jobs:
           else
             git diff --cached > "$RUNNER_TEMP/changes.diff"
             y output < "$RUNNER_TEMP/changes.diff"
-            y -c "$CLAUDE_LEVEL" --no-progress -i 0 -n query "The output contains a git diff that fixes build, test or vet failures of pull request #$PR_NUMBER. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that names what was fixed. Then a blank line and a short body that explains why the change was needed. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
+            y -m "$MODEL" --no-progress -i none query "The output contains a git diff that fixes build, test or vet failures of pull request #$PR_NUMBER. Write the git commit message for it. The first line is an imperative summary of at most 72 characters that names what was fixed. Then a blank line and a short body that explains why the change was needed. Reply with the message only, without markdown fences." > "$RUNNER_TEMP/commit-message.txt"
             # A failed or empty model reply must not block the push.
             if [ ! -s "$RUNNER_TEMP/commit-message.txt" ]; then
               echo "Fix build, test and vet failures for pull request #$PR_NUMBER" > "$RUNNER_TEMP/commit-message.txt"
@@ -102,3 +116,7 @@ jobs:
             git commit -F "$RUNNER_TEMP/commit-message.txt"
           fi
           git push
+
+      - name: Remove trigger label
+        if: always()
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/fix" --silent || echo "Could not remove the fix label" >&2
