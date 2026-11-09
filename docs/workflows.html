@@ -13,23 +13,25 @@
   <meta property="og:url" content="https://yact.dev/workflows.html">
   <meta property="og:image" content="https://yact.dev/assets/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="preload" href="fonts/pixelify-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/ibm-plex-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/site.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/docs.css">
 </head>
 <body>
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="i-bulb" viewBox="0 0 12 12"><path d="M4 0h4v1h-4zM3 1h6v1h-6zM2 2h8v1h-8zM2 3h8v1h-8zM2 4h8v1h-8zM3 5h6v1h-6zM4 6h4v1h-4zM4 7h4v1h-4zM5 8h2v1h-2zM4 9h4v1h-4zM4 10h4v1h-4z"/></symbol><symbol id="i-gear" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM1 1h1v1h-1zM5 1h2v1h-2zM10 1h1v1h-1zM1 2h2v1h-2zM4 2h4v1h-4zM9 2h2v1h-2zM2 3h8v1h-8zM2 4h3v1h-3zM7 4h3v1h-3zM0 5h3v1h-3zM9 5h3v1h-3zM0 6h3v1h-3zM9 6h3v1h-3zM2 7h3v1h-3zM7 7h3v1h-3zM2 8h8v1h-8zM1 9h2v1h-2zM4 9h4v1h-4zM9 9h2v1h-2zM1 10h1v1h-1zM5 10h2v1h-2zM10 10h1v1h-1zM5 11h2v1h-2z"/></symbol><symbol id="i-heart" viewBox="0 0 12 12"><path d="M1 1h4v1h-4zM7 1h4v1h-4zM0 2h12v1h-12zM0 3h12v1h-12zM0 4h12v1h-12zM1 5h10v1h-10zM2 6h8v1h-8zM3 7h6v1h-6zM4 8h4v1h-4zM5 9h2v1h-2z"/></symbol><symbol id="i-people" viewBox="0 0 12 12"><path d="M2 0h2v1h-2zM8 0h2v1h-2zM1 1h4v1h-4zM7 1h4v1h-4zM1 2h4v1h-4zM7 2h4v1h-4zM2 3h2v1h-2zM8 3h2v1h-2zM0 4h5v1h-5zM6 4h6v1h-6zM0 5h5v1h-5zM6 5h6v1h-6zM0 6h5v1h-5zM6 6h6v1h-6zM0 7h5v1h-5zM6 7h6v1h-6zM0 8h5v1h-5zM6 8h6v1h-6z"/></symbol><symbol id="i-clipboard" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM1 1h2v1h-2zM4 1h4v1h-4zM9 1h2v1h-2zM1 2h1v1h-1zM10 2h1v1h-1zM1 3h1v1h-1zM3 3h1v1h-1zM5 3h4v1h-4zM10 3h1v1h-1zM1 4h1v1h-1zM10 4h1v1h-1zM1 5h1v1h-1zM3 5h1v1h-1zM5 5h4v1h-4zM10 5h1v1h-1zM1 6h1v1h-1zM10 6h1v1h-1zM1 7h1v1h-1zM3 7h1v1h-1zM5 7h4v1h-4zM10 7h1v1h-1zM1 8h1v1h-1zM10 8h1v1h-1zM1 9h10v1h-10z"/></symbol><symbol id="i-scale" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM5 1h2v1h-2zM1 2h10v1h-10zM5 3h2v1h-2zM1 4h1v1h-1zM5 4h2v1h-2zM10 4h1v1h-1zM1 5h1v1h-1zM5 5h2v1h-2zM10 5h1v1h-1zM0 6h4v1h-4zM5 6h2v1h-2zM8 6h4v1h-4zM0 7h4v1h-4zM5 7h2v1h-2zM8 7h4v1h-4zM5 8h2v1h-2zM4 9h4v1h-4zM3 10h6v1h-6z"/></symbol><symbol id="i-shield" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM1 1h10v1h-10zM1 2h10v1h-10zM1 3h4v1h-4zM7 3h4v1h-4zM1 4h4v1h-4zM7 4h4v1h-4zM1 5h4v1h-4zM7 5h4v1h-4zM1 6h10v1h-10zM2 7h8v1h-8zM3 8h6v1h-6zM4 9h4v1h-4zM5 10h2v1h-2z"/></symbol><symbol id="i-question" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM2 1h8v1h-8zM1 2h3v1h-3zM8 2h3v1h-3zM1 3h3v1h-3zM8 3h3v1h-3zM8 4h3v1h-3zM6 5h4v1h-4zM5 6h3v1h-3zM5 7h3v1h-3zM5 9h3v1h-3zM5 10h3v1h-3z"/></symbol><symbol id="i-pencil" viewBox="0 0 12 12"><path d="M9 0h2v1h-2zM8 1h4v1h-4zM7 2h4v1h-4zM6 3h4v1h-4zM5 4h4v1h-4zM4 5h4v1h-4zM3 6h4v1h-4zM2 7h4v1h-4zM1 8h4v1h-4zM1 9h3v1h-3zM1 10h1v1h-1z"/></symbol><symbol id="i-list" viewBox="0 0 12 12"><path d="M0 1h2v1h-2zM3 1h8v1h-8zM0 2h2v1h-2zM3 2h8v1h-8zM0 4h2v1h-2zM3 4h8v1h-8zM0 5h2v1h-2zM3 5h8v1h-8zM0 7h2v1h-2zM3 7h8v1h-8zM0 8h2v1h-2zM3 8h8v1h-8z"/></symbol><symbol id="i-download" viewBox="0 0 12 12"><path d="M4 0h4v1h-4zM4 1h4v1h-4zM4 2h4v1h-4zM2 3h8v1h-8zM3 4h6v1h-6zM4 5h4v1h-4zM5 6h2v1h-2zM0 8h12v1h-12zM0 9h12v1h-12z"/></symbol><symbol id="i-key" viewBox="0 0 12 12"><path d="M2 0h4v1h-4zM1 1h6v1h-6zM1 2h2v1h-2zM5 2h2v1h-2zM1 3h2v1h-2zM5 3h2v1h-2zM1 4h6v1h-6zM2 5h4v1h-4zM3 6h2v1h-2zM3 7h2v1h-2zM3 8h3v1h-3zM3 9h2v1h-2zM3 10h3v1h-3z"/></symbol><symbol id="i-play" viewBox="0 0 12 12"><path d="M1 1h2v1h-2zM1 2h4v1h-4zM1 3h6v1h-6zM1 4h8v1h-8zM1 5h10v1h-10zM1 6h10v1h-10zM1 7h8v1h-8zM1 8h6v1h-6zM1 9h4v1h-4zM1 10h2v1h-2z"/></symbol><symbol id="i-chat" viewBox="0 0 12 12"><path d="M1 0h10v1h-10zM0 1h12v1h-12zM0 2h12v1h-12zM0 3h12v1h-12zM0 4h12v1h-12zM0 5h12v1h-12zM1 6h10v1h-10zM2 7h3v1h-3zM3 8h2v1h-2z"/></symbol><symbol id="i-coin" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM2 1h8v1h-8zM1 2h4v1h-4zM7 2h4v1h-4zM1 3h3v1h-3zM8 3h3v1h-3zM0 4h4v1h-4zM8 4h4v1h-4zM0 5h4v1h-4zM8 5h4v1h-4zM0 6h4v1h-4zM8 6h4v1h-4zM0 7h4v1h-4zM8 7h4v1h-4zM1 8h3v1h-3zM8 8h3v1h-3zM1 9h4v1h-4zM7 9h4v1h-4zM2 10h8v1h-8zM3 11h6v1h-6z"/></symbol><symbol id="i-warning" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM4 1h4v1h-4zM4 2h4v1h-4zM3 3h2v1h-2zM7 3h2v1h-2zM3 4h2v1h-2zM7 4h2v1h-2zM2 5h3v1h-3zM7 5h3v1h-3zM2 6h3v1h-3zM7 6h3v1h-3zM1 7h4v1h-4zM7 7h4v1h-4zM1 8h11v1h-11zM0 9h12v1h-12z"/></symbol><symbol id="i-star" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM5 1h2v1h-2zM4 2h4v1h-4zM0 3h12v1h-12zM1 4h10v1h-10zM2 5h8v1h-8zM2 6h8v1h-8zM1 7h4v1h-4zM7 7h4v1h-4zM1 8h3v1h-3zM8 8h3v1h-3zM1 9h2v1h-2zM9 9h2v1h-2z"/></symbol></defs></svg>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
     <div class="wrap">
-      <a class="wordmark" href="./">yact.</a>
+      <a class="wordmark" href="./" aria-label="yact, home">yact</a>
       <nav class="site-nav" aria-label="Main">
         <ul>
-          <li><a href="getting-started.html">Getting started</a></li>
-          <li><a href="workflows.html" aria-current="page">GitHub workflows</a></li>
-          <li><a href="https://github.com/agabor/yact#readme">README</a></li>
+          <li><a href="index.html#how">How it works</a></li>
+          <li><a href="index.html#compare">Compare</a></li>
+          <li><a href="workflows.html" aria-current="page">Workflows</a></li>
+          <li><a href="getting-started.html">Docs</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
+          <li><span class="ver">v0.9.0</span></li>
         </ul>
       </nav>
     </div>
@@ -55,7 +57,7 @@
 
     <section class="section" id="overview" aria-labelledby="overview-h">
       <div class="wrap">
-        <h2 id="overview-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-bulb"/></svg>What they do</h2>
+        <h2 id="overview-h">What they do</h2>
         <p>YACT keeps all its state in files and makes one API call per command, so a workflow can run it the same way you would at a terminal. The YACT repository is developed with four such workflows. Each one starts when someone adds an <strong>action label</strong> to an issue or pull request.</p>
         <table>
           <thead><tr><th scope="col">Label</th><th scope="col">On</th><th scope="col">Result</th></tr></thead>
@@ -81,7 +83,7 @@
 
     <section class="section" id="setup" aria-labelledby="setup-h">
       <div class="wrap">
-        <h2 id="setup-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-key"/></svg>Set up</h2>
+        <h2 id="setup-h">Set up</h2>
         <ol class="steps">
           <li>
             <p><strong>Copy the workflows.</strong> Take the ones you want from <a href="https://github.com/agabor/yact/tree/main/.github/workflows"><code>.github/workflows</code></a> in the YACT repository and put them in the same folder of yours: <code>yact-issue.yml</code>, <code>yact-update.yml</code>, <code>yact-fix.yml</code> and <code>yact-review.yml</code>. Each one downloads the latest YACT release binary when it runs.</p>
@@ -114,7 +116,7 @@ done</code></pre>
 
     <section class="section" id="issue" aria-labelledby="issue-h">
       <div class="wrap">
-        <h2 id="issue-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>Issue to pull request</h2>
+        <h2 id="issue-h">Issue to pull request</h2>
         <p><code>yact-issue.yml</code> runs when an issue gets the <code>implement</code> label.</p>
         <ol class="steps">
           <li><p><strong>Write the task.</strong> The issue title and body become <code>yact-prompt.md</code>.</p></li>
@@ -137,7 +139,7 @@ y -m "$MODEL" --no-progress act</code></pre>
 
     <section class="section" id="update" aria-labelledby="update-h">
       <div class="wrap">
-        <h2 id="update-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg>Update a pull request</h2>
+        <h2 id="update-h">Update a pull request</h2>
         <p><code>yact-update.yml</code> runs when a pull request gets the <code>update</code> label. Write what should change as a comment first, then add the label.</p>
         <p>The pull request description (the plan) and the latest comment become the prompt. <code>y plan</code> checks which steps are already in the code, keeps the rest and applies the comment. <code>y act</code> implements the new plan, and the result is committed and pushed to the same branch.</p>
       </div>
@@ -147,7 +149,7 @@ y -m "$MODEL" --no-progress act</code></pre>
 
     <section class="section" id="fix" aria-labelledby="fix-h">
       <div class="wrap">
-        <h2 id="fix-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg>Fix a pull request</h2>
+        <h2 id="fix-h">Fix a pull request</h2>
         <p><code>yact-fix.yml</code> runs when a pull request gets the <code>fix</code> label. It runs the build, the tests and <code>go vet</code> in turn. For each one that fails:</p>
         <pre><code>gh pr view "$PR_NUMBER" --json body --jq '.body' > yact-prompt.md
 y compact
@@ -161,7 +163,7 @@ y -m "$MODEL" --no-progress act "fix tests"</code></pre>
 
     <section class="section" id="review" aria-labelledby="review-h">
       <div class="wrap">
-        <h2 id="review-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clipboard"/></svg>Review a pull request</h2>
+        <h2 id="review-h">Review a pull request</h2>
         <p><code>yact-review.yml</code> runs when a pull request gets the <code>review</code> label. It needs no write access to the code.</p>
         <p>The review gets everything a human reviewer would want: the plan from the description, the issues the pull request closes (or its title, if it closes none), the diff through <code>y output</code>, and the current content of every changed file through <code>y read</code>. <code>y review</code> checks correctness first, then security, then the code principles, and the response is posted as a comment.</p>
         <pre><code>gh pr diff "$PR_NUMBER" > "$RUNNER_TEMP/pr.diff"
@@ -175,7 +177,7 @@ gh pr comment "$PR_NUMBER" --body-file .yact/temp/buffer.txt</code></pre>
 
     <section class="section" id="safety" aria-labelledby="safety-h">
       <div class="wrap">
-        <h2 id="safety-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Safety and cost</h2>
+        <h2 id="safety-h">Safety and cost</h2>
         <ul>
           <li><strong>Only people who can label can trigger a run.</strong> Adding a label needs triage access or more, so someone who only opens an issue cannot spend your API credit. Only the action labels start a run; a model label on its own does nothing.</li>
           <li><strong>Read the issue before you label it.</strong> Its text becomes the prompt. Whatever the model writes lands on a branch and in a pull request; nothing is merged without you.</li>
@@ -190,7 +192,7 @@ gh pr comment "$PR_NUMBER" --body-file .yact/temp/buffer.txt</code></pre>
 
     <section class="section" id="own" aria-labelledby="own-h">
       <div class="wrap">
-        <h2 id="own-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>Write your own</h2>
+        <h2 id="own-h">Write your own</h2>
         <p>Any sequence of YACT commands makes a workflow. A few things help in CI:</p>
         <dl class="defs">
           <dt><code>--no-progress</code></dt>
@@ -211,9 +213,8 @@ y --skill workflow act "add a workflow that runs y analyze on pull requests labe
     </section>
 
     <section class="section night" aria-labelledby="cta-h">
-      <div class="art art-stars" aria-hidden="true"></div>
       <div class="wrap">
-        <h2 id="cta-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-star"/></svg>Try it on one issue</h2>
+        <h2 id="cta-h">Try it on one issue</h2>
         <p>Copy one workflow, add the secret and the labels, and label a small issue. Read the plan in the pull request, then the diff.</p>
         <div class="actions">
           <a class="btn btn-primary" href="https://github.com/agabor/yact/tree/main/.github/workflows">Get the workflows</a>
@@ -230,6 +231,6 @@ y --skill workflow act "add a workflow that runs y analyze on pull requests labe
     </div>
   </footer>
 
-  <script src="assets/site.js"></script>
+  <script src="assets/docs.js"></script>
 </body>
 </html>

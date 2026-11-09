@@ -1,336 +1,447 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>yact: one command, one API call, your files</title>
-  <meta name="description" content="YACT is a small command-line tool. You choose the files, it sends them to the model once and writes complete files back. No agent loop, no surprises.">
-  <link rel="canonical" href="https://yact.dev/">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="yact: one command, one API call, your files">
-  <meta property="og:description" content="A small command-line tool for AI-assisted edits you can predict, script and review. Not for vibe coding.">
-  <meta property="og:url" content="https://yact.dev/">
-  <meta property="og:image" content="https://yact.dev/assets/og.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="preload" href="fonts/pixelify-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/ibm-plex-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/site.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YACT: AI changes you can actually review</title>
+<meta name="description" content="YACT is a command-line tool where you choose the files, one model call writes them, and you read a small diff. No agent loop, no surprises.">
+<link rel="canonical" href="https://yact.dev/">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="YACT: AI changes you can actually review">
+<meta property="og:description" content="You choose the files, one model call writes them, and you read a small diff. Open source, written in Go.">
+<meta property="og:url" content="https://yact.dev/">
+<meta property="og:image" content="https://yact.dev/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lnk{color:#111315;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.lnk:hover{color:#565B62}
+.nav{color:#111315;text-decoration:none}
+.nav:hover{text-decoration:underline;text-underline-offset:4px}
+.btn-ink:hover{background:#2B2F33}
+.btn-line:hover{background:#FFFFFF}
+.btn-light:hover{background:#FFFFFF}
+html{scroll-behavior:smooth}
+.skip{position:absolute;left:-9999px;top:8px;background:#111315;color:#fff;padding:10px 16px;border-radius:6px;z-index:10}
+.skip:focus{left:8px}
+a:focus-visible{outline:2px solid #176B35;outline-offset:3px}
+</style>
 </head>
 <body>
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="i-bulb" viewBox="0 0 12 12"><path d="M4 0h4v1h-4zM3 1h6v1h-6zM2 2h8v1h-8zM2 3h8v1h-8zM2 4h8v1h-8zM3 5h6v1h-6zM4 6h4v1h-4zM4 7h4v1h-4zM5 8h2v1h-2zM4 9h4v1h-4zM4 10h4v1h-4z"/></symbol><symbol id="i-gear" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM1 1h1v1h-1zM5 1h2v1h-2zM10 1h1v1h-1zM1 2h2v1h-2zM4 2h4v1h-4zM9 2h2v1h-2zM2 3h8v1h-8zM2 4h3v1h-3zM7 4h3v1h-3zM0 5h3v1h-3zM9 5h3v1h-3zM0 6h3v1h-3zM9 6h3v1h-3zM2 7h3v1h-3zM7 7h3v1h-3zM2 8h8v1h-8zM1 9h2v1h-2zM4 9h4v1h-4zM9 9h2v1h-2zM1 10h1v1h-1zM5 10h2v1h-2zM10 10h1v1h-1zM5 11h2v1h-2z"/></symbol><symbol id="i-heart" viewBox="0 0 12 12"><path d="M1 1h4v1h-4zM7 1h4v1h-4zM0 2h12v1h-12zM0 3h12v1h-12zM0 4h12v1h-12zM1 5h10v1h-10zM2 6h8v1h-8zM3 7h6v1h-6zM4 8h4v1h-4zM5 9h2v1h-2z"/></symbol><symbol id="i-people" viewBox="0 0 12 12"><path d="M2 0h2v1h-2zM8 0h2v1h-2zM1 1h4v1h-4zM7 1h4v1h-4zM1 2h4v1h-4zM7 2h4v1h-4zM2 3h2v1h-2zM8 3h2v1h-2zM0 4h5v1h-5zM6 4h6v1h-6zM0 5h5v1h-5zM6 5h6v1h-6zM0 6h5v1h-5zM6 6h6v1h-6zM0 7h5v1h-5zM6 7h6v1h-6zM0 8h5v1h-5zM6 8h6v1h-6z"/></symbol><symbol id="i-clipboard" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM1 1h2v1h-2zM4 1h4v1h-4zM9 1h2v1h-2zM1 2h1v1h-1zM10 2h1v1h-1zM1 3h1v1h-1zM3 3h1v1h-1zM5 3h4v1h-4zM10 3h1v1h-1zM1 4h1v1h-1zM10 4h1v1h-1zM1 5h1v1h-1zM3 5h1v1h-1zM5 5h4v1h-4zM10 5h1v1h-1zM1 6h1v1h-1zM10 6h1v1h-1zM1 7h1v1h-1zM3 7h1v1h-1zM5 7h4v1h-4zM10 7h1v1h-1zM1 8h1v1h-1zM10 8h1v1h-1zM1 9h10v1h-10z"/></symbol><symbol id="i-scale" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM5 1h2v1h-2zM1 2h10v1h-10zM5 3h2v1h-2zM1 4h1v1h-1zM5 4h2v1h-2zM10 4h1v1h-1zM1 5h1v1h-1zM5 5h2v1h-2zM10 5h1v1h-1zM0 6h4v1h-4zM5 6h2v1h-2zM8 6h4v1h-4zM0 7h4v1h-4zM5 7h2v1h-2zM8 7h4v1h-4zM5 8h2v1h-2zM4 9h4v1h-4zM3 10h6v1h-6z"/></symbol><symbol id="i-shield" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM1 1h10v1h-10zM1 2h10v1h-10zM1 3h4v1h-4zM7 3h4v1h-4zM1 4h4v1h-4zM7 4h4v1h-4zM1 5h4v1h-4zM7 5h4v1h-4zM1 6h10v1h-10zM2 7h8v1h-8zM3 8h6v1h-6zM4 9h4v1h-4zM5 10h2v1h-2z"/></symbol><symbol id="i-question" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM2 1h8v1h-8zM1 2h3v1h-3zM8 2h3v1h-3zM1 3h3v1h-3zM8 3h3v1h-3zM8 4h3v1h-3zM6 5h4v1h-4zM5 6h3v1h-3zM5 7h3v1h-3zM5 9h3v1h-3zM5 10h3v1h-3z"/></symbol><symbol id="i-pencil" viewBox="0 0 12 12"><path d="M9 0h2v1h-2zM8 1h4v1h-4zM7 2h4v1h-4zM6 3h4v1h-4zM5 4h4v1h-4zM4 5h4v1h-4zM3 6h4v1h-4zM2 7h4v1h-4zM1 8h4v1h-4zM1 9h3v1h-3zM1 10h1v1h-1z"/></symbol><symbol id="i-list" viewBox="0 0 12 12"><path d="M0 1h2v1h-2zM3 1h8v1h-8zM0 2h2v1h-2zM3 2h8v1h-8zM0 4h2v1h-2zM3 4h8v1h-8zM0 5h2v1h-2zM3 5h8v1h-8zM0 7h2v1h-2zM3 7h8v1h-8zM0 8h2v1h-2zM3 8h8v1h-8z"/></symbol><symbol id="i-download" viewBox="0 0 12 12"><path d="M4 0h4v1h-4zM4 1h4v1h-4zM4 2h4v1h-4zM2 3h8v1h-8zM3 4h6v1h-6zM4 5h4v1h-4zM5 6h2v1h-2zM0 8h12v1h-12zM0 9h12v1h-12z"/></symbol><symbol id="i-key" viewBox="0 0 12 12"><path d="M2 0h4v1h-4zM1 1h6v1h-6zM1 2h2v1h-2zM5 2h2v1h-2zM1 3h2v1h-2zM5 3h2v1h-2zM1 4h6v1h-6zM2 5h4v1h-4zM3 6h2v1h-2zM3 7h2v1h-2zM3 8h3v1h-3zM3 9h2v1h-2zM3 10h3v1h-3z"/></symbol><symbol id="i-play" viewBox="0 0 12 12"><path d="M1 1h2v1h-2zM1 2h4v1h-4zM1 3h6v1h-6zM1 4h8v1h-8zM1 5h10v1h-10zM1 6h10v1h-10zM1 7h8v1h-8zM1 8h6v1h-6zM1 9h4v1h-4zM1 10h2v1h-2z"/></symbol><symbol id="i-chat" viewBox="0 0 12 12"><path d="M1 0h10v1h-10zM0 1h12v1h-12zM0 2h12v1h-12zM0 3h12v1h-12zM0 4h12v1h-12zM0 5h12v1h-12zM1 6h10v1h-10zM2 7h3v1h-3zM3 8h2v1h-2z"/></symbol><symbol id="i-coin" viewBox="0 0 12 12"><path d="M3 0h6v1h-6zM2 1h8v1h-8zM1 2h4v1h-4zM7 2h4v1h-4zM1 3h3v1h-3zM8 3h3v1h-3zM0 4h4v1h-4zM8 4h4v1h-4zM0 5h4v1h-4zM8 5h4v1h-4zM0 6h4v1h-4zM8 6h4v1h-4zM0 7h4v1h-4zM8 7h4v1h-4zM1 8h3v1h-3zM8 8h3v1h-3zM1 9h4v1h-4zM7 9h4v1h-4zM2 10h8v1h-8zM3 11h6v1h-6z"/></symbol><symbol id="i-warning" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM4 1h4v1h-4zM4 2h4v1h-4zM3 3h2v1h-2zM7 3h2v1h-2zM3 4h2v1h-2zM7 4h2v1h-2zM2 5h3v1h-3zM7 5h3v1h-3zM2 6h3v1h-3zM7 6h3v1h-3zM1 7h4v1h-4zM7 7h4v1h-4zM1 8h11v1h-11zM0 9h12v1h-12z"/></symbol><symbol id="i-star" viewBox="0 0 12 12"><path d="M5 0h2v1h-2zM5 1h2v1h-2zM4 2h4v1h-4zM0 3h12v1h-12zM1 4h10v1h-10zM2 5h8v1h-8zM2 6h8v1h-8zM1 7h4v1h-4zM7 7h4v1h-4zM1 8h3v1h-3zM8 8h3v1h-3zM1 9h2v1h-2zM9 9h2v1h-2z"/></symbol></defs></svg>
-  <a class="skip-link" href="#main">Skip to content</a>
+<a class="skip" href="#main">Skip to content</a>
+<div style="background: #F7F7F5; color: #111315; font-family: 'Inter', system-ui, sans-serif; font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased">
 
-  <header class="site-header">
-    <div class="wrap">
-      <a class="wordmark" href="./">yact.</a>
-      <nav class="site-nav" aria-label="Main">
-        <ul>
-          <li><a href="getting-started.html">Getting started</a></li>
-          <li><a href="workflows.html">GitHub workflows</a></li>
-          <li><a href="https://github.com/agabor/yact#readme">README</a></li>
-          <li><a href="https://github.com/agabor/yact">GitHub</a></li>
-        </ul>
-      </nav>
+<!-- NAV -->
+<header style="max-width: 1160px; margin: 0 auto; padding: 22px 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px">
+  <a href="index.html" style="display: inline-flex; align-items: center; text-decoration: none; color: #111315; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.03em">yact<span style="display: inline-block; width: 11px; height: 24px; background: #111315; margin-left: 5px"></span></a>
+  <nav aria-label="Main" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; font-size: 15px; font-weight: 500">
+    <a class="nav" href="#how">How it works</a>
+    <a class="nav" href="#compare">Compare</a>
+    <a class="nav" href="workflows.html">Workflows</a>
+    <a class="nav" href="getting-started.html">Docs</a>
+    <a class="nav" href="https://github.com/agabor/yact">GitHub</a>
+    <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; color: #3A3F45; border: 1px solid #C9CBC5; border-radius: 4px; padding: 2px 8px">v0.9.0</span>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section style="max-width: 1160px; margin: 0 auto; padding: clamp(36px, 6vw, 84px) 24px clamp(56px, 7vw, 104px); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 56px 64px">
+  <div style="flex: 1 1 460px; min-width: 0; max-width: 600px">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em">Open source · Go · GPL v3</div>
+    <h1 style="margin: 18px 0 24px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: clamp(44px, 6.4vw, 86px); line-height: 1; letter-spacing: -0.04em; text-wrap: balance">AI changes you can actually <span style="background: #E3F3E8; padding: 0 0.1em">review.</span></h1>
+    <p style="margin: 0; max-width: 520px; font-size: 20px; line-height: 1.5; color: #2B2F33">YACT is a command-line tool where you choose the files, one model call writes them, and you read a small diff. No agent loop. No surprises.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px">
+      <a class="btn-ink" href="getting-started.html" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px; box-sizing: border-box; background: #111315; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 6px">Get started</a>
+      <a class="btn-line" href="https://github.com/agabor/yact" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px; box-sizing: border-box; border: 1.5px solid #111315; color: #111315; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 6px">View on GitHub</a>
     </div>
-  </header>
+    <p style="margin: 22px 0 0; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13.5px; line-height: 1.7; color: #565B62">Prebuilt binaries for Linux, macOS and Windows: <a class="lnk" href="https://github.com/agabor/yact/releases/tag/v0.9.0">download v0.9.0</a><br>or build it yourself with Go: <span style="color: #111315">go build -o y .</span></p>
+  </div>
 
-  <main id="main">
-    <section class="hero" aria-labelledby="headline">
-      <div class="wrap">
-        <figure class="scene">
-          <div class="scene-wrap" id="scene-wrap">
-            <div class="scene-frame">
-              <canvas id="scene" width="256" height="112" role="img" aria-describedby="scene-desc" aria-label="Pixel art animation"></canvas>
-              <noscript><img src="assets/poster.png" width="1024" height="448" alt="Pixel art title card: yact. Not for vibe coding."></noscript>
-            </div>
-          </div>
-          <figcaption id="scene-desc">
-            <span>A robot agent takes four steps to fetch a ball. A small truck goes straight to it.</span>
-            <button type="button" class="link-btn" id="scene-toggle" hidden>Pause animation</button>
-          </figcaption>
-        </figure>
-
-        <h1 id="headline"><span>One command.</span> <span>One API call.</span> <span>Your files.</span></h1>
-        <p class="lede">YACT is a small command-line tool. You choose the files, it sends them to the model once and writes complete files back. No agent loop, no surprises.</p>
-
-        <div class="actions">
-          <a class="btn btn-primary" href="getting-started.html">Get started</a>
-          <a class="btn" href="https://github.com/agabor/yact">View the source</a>
-        </div>
-
-        <pre data-copy><code>git clone https://github.com/agabor/yact.git
-cd yact
-go build -o y .</code></pre>
-
-        <ul class="jump" aria-label="Jump to your section">
-          <li><a href="#developers">For developers</a></li>
-          <li><a href="#learning">For people learning the job</a></li>
-          <li><a href="#mentors">For mentors and reviewers</a></li>
-        </ul>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="idea" aria-labelledby="idea-h">
-      <div class="wrap">
-        <h2 id="idea-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-bulb"/></svg>What it does</h2>
-        <p>Most coding tools decide for you: which files to read, which commands to run, when to stop. YACT does exactly what you ask, once. You pick the context, you read the plan, you review the diff.</p>
-        <p>Each command makes a single API call. Complete source files in the response are written to disk, and any prose is printed to your terminal.</p>
-        <p>It ships with six commands, and each one is a plain text prompt you can read and change:</p>
-        <dl class="defs">
-          <dt><code>plan</code></dt>
-          <dd>Breaks a task into steps, one file per step, and saves the plan as Markdown for you to edit.</dd>
-          <dt><code>act</code></dt>
-          <dd>Writes the code: complete files, nothing else.</dd>
-          <dt><code>ask</code></dt>
-          <dd>Answers questions about the code and changes nothing.</dd>
-          <dt><code>review</code></dt>
-          <dd>Reviews a diff against the task it was meant to do.</dd>
-          <dt><code>analyze</code></dt>
-          <dd>Checks existing code against a published set of <a href="https://github.com/agabor/yact/blob/main/systemprompts/include/principles.txt">code principles</a>.</dd>
-          <dt><code>bash</code></dt>
-          <dd>Prints the shell commands for a task, for you to read and run.</dd>
-        </dl>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section has-art art-road-section" id="how" aria-labelledby="how-h">
-      <div class="wrap">
-        <h2 id="how-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg>How it works</h2>
-        <ol class="steps">
-          <li>
-            <p><strong>Pick the files.</strong> <code>y read</code> adds links to a plain Markdown task file, <code>yact-prompt.md</code>. The linked files are sent along as context, and nothing else from your project is.</p>
-            <pre data-copy><code>y new
-y read "commands/*.go"</code></pre>
-          </li>
-          <li>
-            <p><strong>Plan, if you want one.</strong> The plan is saved to <code>yact-prompt.md</code> for you to read and edit. Each step changes one file and links the files it needs.</p>
-            <pre data-copy><code>y plan "add a --version flag"</code></pre>
-          </li>
-          <li>
-            <p><strong>Implement.</strong> One step, one API call. Complete files are written to your working tree and the step is ticked off in the plan.</p>
-            <pre data-copy><code>y -s next act</code></pre>
-          </li>
-          <li>
-            <p><strong>Review.</strong> Read the diff the way you would read anyone else's. Then run the next step.</p>
-            <pre data-copy><code>git diff</code></pre>
-          </li>
-        </ol>
-        <p>New here? <a href="getting-started.html">Getting started</a> walks through installing YACT and making a first change.</p>
-      </div>
-      <div class="art art-road" aria-hidden="true"></div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="why" aria-labelledby="why-h">
-      <div class="wrap">
-        <h2 id="why-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>Why you might like it</h2>
-        <dl class="defs">
-          <dt>Predictable</dt>
-          <dd>Exactly one API call per command. Every call prints the model, the token counts and an estimated cost. Add <code>--dry --verbose</code> to see exactly what would be sent, without making the call.</dd>
-          <dt>Scriptable</dt>
-          <dd>There is no session to manage. Each command reads its context, makes one call and exits, so it fits a shell loop, a Makefile target or a CI job. YACT itself is developed by <a href="workflows.html">GitHub workflows</a> that turn labelled issues into pull requests.</dd>
-          <dt>Transparent</dt>
-          <dd>The task is a Markdown file you can read and edit. Every raw response is logged. There is no telemetry and no background process.</dd>
-          <dt>Cheap to run</dt>
-          <dd>Haiku is the default model for planning and coding, and the request holds only the files you linked. Add <code>-b</code> to submit a batch at a 50% discount.</dd>
-        </dl>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section has-art art-skyline-section" id="audiences" aria-labelledby="who-h">
-      <div class="wrap">
-        <h2 id="who-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-people"/></svg>Who it's for</h2>
-        <p>Whether you are two weeks into your first job or twenty years in, the workflow is the same: you choose the context, you read the plan, you review every change.</p>
-
-        <h3 id="developers">For developers</h3>
-        <p>You know your codebase and you want edits you can predict, script and review. You keep source files small, and you would rather compose commands than chat with an agent.</p>
-
-        <h3 id="learning">For people learning the job</h3>
-        <p>Working with AI should not mean shipping code you don't understand. YACT's workflow keeps the decisions with you:</p>
-        <ul>
-          <li>You choose the files, so you have to find your way around the codebase.</li>
-          <li>Ask for a plan first and read it before any code is written: what changes, in which file, and why.</li>
-          <li>You review one small change at a time, one file per step.</li>
-          <li>You can ask without changing anything. <code class="long">y ask "why does this function return early?"</code> explains code and leaves your source files alone.</li>
-        </ul>
-        <p>YACT does not do the thinking for you.</p>
-
-        <h3 id="mentors">For mentors and reviewers</h3>
-        <p>Review the intent, not just the diff.</p>
-        <ul>
-          <li><strong>Read the plan first.</strong> Is the breakdown right? Is each step one file? Is the context sensible? Fixing a plan is cheaper than fixing code.</li>
-          <li><strong>Teach with plans.</strong> Share a plan as an example of how you would break a task down, and ask a junior to explain theirs.</li>
-        </ul>
-      </div>
-      <div class="art art-skyline" aria-hidden="true"></div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="reviews" aria-labelledby="reviews-h">
-      <div class="wrap">
-        <h2 id="reviews-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clipboard"/></svg>Plans make reviews better</h2>
-        <p>A pull request normally shows what changed. A YACT plan also shows what was meant to change, step by step.</p>
-        <pre><code># Goal
-Add a --version flag that prints the build version.
-
-## Steps
-
-### [x] 1. Add the version variable
-
-**File:** [config/config.go](config/config.go)
-
-- Add `var Version = "dev"`, set at build time
-
-**Context:** none
-
-### [ ] 2. Wire the flag in main.go
-
-**File:** [main.go](main.go)
-
-- Add a `--version` flag that prints `config.Version`
-
-**Context:** [config/config.go](config/config.go)</code></pre>
-        <p>Reviewers can check the diff against the plan, spot scope creep, and see exactly which files the model was given. Because each step touches one file, the history comes out as small, readable commits.</p>
-        <p>If the planner had to guess what is in a file it was not given, it lists that file under <code>## Missing context</code>, and YACT refuses to implement the plan until you run <code>y plan</code> again with the file included.</p>
-        <p>How the plan reaches the review is up to you. Commit it, paste it into the pull request description, link to it, or keep it local. YACT does not prescribe a way, so whoever leads the team can pick what fits. The <a href="workflows.html">GitHub workflows</a> put it in the pull request description.</p>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="ci" aria-labelledby="ci-h">
-      <div class="wrap">
-        <h2 id="ci-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>From issue to pull request</h2>
-        <p>Because every command is one call that reads and writes files, a GitHub workflow can run YACT the way you would. Label an issue <code>implement</code> and a workflow plans it, writes the code and opens a pull request with the plan as its description. Label the pull request <code>review</code> and the review is posted as a comment. A <code>haiku</code>, <code>sonnet</code> or <code>opus</code> label picks the model.</p>
-        <p>Each step is a line of shell you can read in the workflow file, and the plan, the prompt and every response are files you can inspect.</p>
-        <div class="actions">
-          <a class="btn" href="workflows.html">See the workflows</a>
-        </div>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section has-art art-hills-section" id="tradeoffs" aria-labelledby="tradeoffs-h">
-      <div class="wrap">
-        <h2 id="tradeoffs-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-scale"/></svg>Honest trade-offs</h2>
-        <ul>
-          <li>You choose the context. YACT will not go looking for files, so you need to know your codebase.</li>
-          <li>It rewrites whole files. Keep them to a few hundred lines, because every edited file has to fit in the model's output limit.</li>
-          <li>It never runs your tests or retries on its own. You do that, or a <a href="workflows.html#fix">workflow</a> does.</li>
-          <li>It works with Anthropic's API only, for now.</li>
-        </ul>
-        <div class="two-up">
-          <div>
-            <h3>A good fit</h3>
-            <p>You know your codebase, you want edits you can predict and script, and you keep files small.</p>
-          </div>
-          <div>
-            <h3>Not a fit</h3>
-            <p>You want a tool that finds the files itself, runs the tests and fixes what broke.</p>
-          </div>
-        </div>
-      </div>
-      <div class="art art-hills" aria-hidden="true"></div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="privacy" aria-labelledby="privacy-h">
-      <div class="wrap">
-        <h2 id="privacy-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Privacy and safety</h2>
-        <ul>
-          <li>Your API key is stored on your machine in <code>~/.yact/config</code> and sent only to Anthropic's API.</li>
-          <li>There is no telemetry. The only network calls are the API calls you trigger, and downloads of system prompts from this project's GitHub repository, the first time you use a command or when you pass <code>-d</code>.</li>
-          <li>You choose what is sent: the files your task links, the message files in <code>.yact/</code>, and the task itself. <code>--verbose</code> lists every path.</li>
-          <li>YACT writes the files the model returns, and only inside your project: absolute paths and paths that leave it are rejected. Run it in a version-controlled working tree and read the result with <code>git diff</code>.</li>
-        </ul>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="faq" aria-labelledby="faq-h">
-      <div class="wrap">
-        <h2 id="faq-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-question"/></svg>Questions</h2>
-        <details>
-          <summary>Does it send my whole repository?</summary>
-          <p>No. Only the files your task links are sent, together with the message files in <code>.yact/</code>. A path you mention in passing is not sent; a link is. If you ask for a code index with <code>-i</code>, a list of declaration signatures is sent too, without the code inside them.</p>
-        </details>
-        <details>
-          <summary>Which models can I use?</summary>
-          <p>Anthropic's Claude models: Haiku (the default), Sonnet, Opus and Fable. Pick one with <code>-c 1</code> to <code>-c 4</code> or set it with <code>y config claude_model</code>. Availability depends on your Anthropic account.</p>
-        </details>
-        <details>
-          <summary>What does it cost?</summary>
-          <p>You use your own Anthropic API key and pay Anthropic for what you use. YACT prints the token counts and an estimated cost after every call.</p>
-        </details>
-        <details>
-          <summary>How is it different from aider, Claude Code or Cursor?</summary>
-          <p>Those tools work in a session: they keep a conversation going, and some of them look for files, run commands and try again on their own. YACT has no session. Each command is one request built from files you can read, and it ends when the files are written. Many people use both: an agent to explore, YACT for changes they want to predict and review.</p>
-        </details>
-        <details>
-          <summary>Is it made by Anthropic?</summary>
-          <p>No. YACT is an independent open-source project. It is not made, endorsed or supported by Anthropic PBC.</p>
-        </details>
-      </div>
-    </section>
-
-    <hr class="rule">
-
-    <section class="section" id="make-it-yours" aria-labelledby="yours-h">
-      <div class="wrap">
-        <h2 id="yours-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg>Make it yours</h2>
-
-        <h3>Add a command without touching the code</h3>
-        <p>Every text file in <code>~/.yact/systemprompts/</code> becomes a command. Edit <code>act.txt</code> and <code>y act</code> follows your team's rules. Write an <code>explain.txt</code> that explains instead of editing and you have a command for onboarding. A <code>flags:</code> line at the top picks the model and turns writing off. No rebuild, no plugin API, no configuration language: a prompt is a file you can read and share.</p>
-        <pre data-copy><code>cat > ~/.yact/systemprompts/explain.txt &lt;&lt;'EOF'
-flags: c2n
-You are a patient mentor. Explain the code you are given in plain
-language: what it does, why it is written that way, and what to read next.
-Do not write or change any code.
-EOF
-
-y read "commands/*.go"
-y explain "how is a command dispatched?"</code></pre>
-
-        <h3>A codebase you can read in an afternoon</h3>
-        <p>YACT is a few thousand lines of Go, split into small packages (<code>api</code>, <code>commands</code>, <code>config</code>, <code>index</code> and <code>logic</code>) with one clear job per file. If you want a new feature, a new language for the code index, or a bug fixed, it is approachable.</p>
-
-        <h3>Contributors are welcome</h3>
-        <p>Open an issue, send a pull request, or share a prompt that worked well for your team. Start at <a href="https://github.com/agabor/yact">github.com/agabor/yact</a>.</p>
-      </div>
-    </section>
-    <section class="section night" aria-labelledby="cta-h">
-      <div class="art art-stars" aria-hidden="true"></div>
-      <div class="wrap">
-        <h2 id="cta-h"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-star"/></svg>Try it on one small task</h2>
-        <p>Build it, point it at one file, read the plan and review the diff. Nothing runs in the background, so there is nothing to switch off afterwards.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="getting-started.html">Get started</a>
-          <a class="btn" href="https://github.com/agabor/yact">Star on GitHub</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal. <a href="https://github.com/agabor/yact">Source</a>, <a href="https://github.com/agabor/yact/releases">releases</a> and <a href="https://github.com/agabor/yact/issues">issues</a> are on GitHub.</p>
-      <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls.</p>
+  <div style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+    <div style="background: #FFFFFF; border: 1px solid #DCDDD8; border-radius: 10px; padding: 14px 18px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; line-height: 1.75; overflow-x: auto">
+      <div style="color: #565B62; font-size: 12px; letter-spacing: 0.03em; margin-bottom: 4px">PLAN · yact-prompt.md</div>
+      <div style="white-space: pre; color: #111315">### [x] 1. Add email validation</div>
+      <div style="white-space: pre; color: #565B62">### [ ] 2. Cover it with tests</div>
     </div>
-  </footer>
+    <div style="background: #FFFFFF; border: 1px solid #DCDDD8; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 #DCDDD8">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 12px 18px; background: #EFEFEB; border-bottom: 1px solid #DCDDD8; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px">
+        <span style="font-weight: 500">internal/signup/validate.go</span>
+        <span><span style="color: #176B35; font-weight: 700">+4</span> <span style="color: #A3261D; font-weight: 700">−1</span></span>
+      </div>
+      <div style="overflow-x: auto; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13.5px; line-height: 1.75">
+        <div style="display: flex; min-width: max-content; background: #F6F6F3; color: #565B62"><span style="width: 44px; flex: none"></span><span style="width: 22px; flex: none"></span><span style="white-space: pre; padding-right: 18px">@@ -12,3 +12,6 @@ func ValidateSignup</span></div>
+        <div style="display: flex; min-width: max-content"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #6B7076; box-sizing: border-box">12</span><span style="width: 22px; flex: none"></span><span style="white-space: pre; padding-right: 18px">func ValidateSignup(s Signup) error {</span></div>
+        <div style="display: flex; min-width: max-content; background: #FBE5E3"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #A3261D; box-sizing: border-box">13</span><span style="width: 22px; flex: none; color: #A3261D; font-weight: 700">−</span><span style="white-space: pre; padding-right: 18px; color: #5E1712">	return nil</span></div>
+        <div style="display: flex; min-width: max-content; background: #E3F3E8"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #176B35; box-sizing: border-box">13</span><span style="width: 22px; flex: none; color: #176B35; font-weight: 700">+</span><span style="white-space: pre; padding-right: 18px; color: #0F3D20">	if _, err := mail.ParseAddress(s.Email); err != nil {</span></div>
+        <div style="display: flex; min-width: max-content; background: #E3F3E8"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #176B35; box-sizing: border-box">14</span><span style="width: 22px; flex: none; color: #176B35; font-weight: 700">+</span><span style="white-space: pre; padding-right: 18px; color: #0F3D20">		return fmt.Errorf("invalid email: %w", err)</span></div>
+        <div style="display: flex; min-width: max-content; background: #E3F3E8"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #176B35; box-sizing: border-box">15</span><span style="width: 22px; flex: none; color: #176B35; font-weight: 700">+</span><span style="white-space: pre; padding-right: 18px; color: #0F3D20">	}</span></div>
+        <div style="display: flex; min-width: max-content; background: #E3F3E8"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #176B35; box-sizing: border-box">16</span><span style="width: 22px; flex: none; color: #176B35; font-weight: 700">+</span><span style="white-space: pre; padding-right: 18px; color: #0F3D20">	return nil</span></div>
+        <div style="display: flex; min-width: max-content"><span style="width: 44px; flex: none; text-align: right; padding-right: 12px; color: #6B7076; box-sizing: border-box">17</span><span style="width: 22px; flex: none"></span><span style="white-space: pre; padding-right: 18px">}</span></div>
+      </div>
+    </div>
+    <p style="margin: 0; font-size: 14px; color: #565B62">Illustrative example of one plan step and the diff it produces.</p>
+  </div>
+</section>
 
-  <script src="assets/yact-scene.js"></script>
-  <script src="assets/site.js"></script>
+<!-- PROBLEM -->
+<section style="background: #FFFFFF; border-top: 1px solid #DCDDD8; border-bottom: 1px solid #DCDDD8">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">01 · The problem</span> @@</div>
+    <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">AI took the friction out of coding. Some of it was doing a job.</h2>
+    <p style="margin: 24px 0 0; max-width: 640px; color: #3A3F45">Agentic tools explore your repository, decide what to change, run commands and keep going until they think they are done. That is fast. It also means:</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 32px 28px; margin-top: 48px">
+      <div style="border-top: 2px solid #111315; padding-top: 16px">
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25; letter-spacing: -0.01em">Changes are bigger than the task needed</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Nobody chose the scope, so the model did.</p>
+      </div>
+      <div style="border-top: 2px solid #111315; padding-top: 16px">
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25; letter-spacing: -0.01em">Reviews take longer</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">A large diff with no stated intent is hard to trust.</p>
+      </div>
+      <div style="border-top: 2px solid #111315; padding-top: 16px">
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25; letter-spacing: -0.01em">Developers drift from their code</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">When you stop editing, you slowly lose your picture of it.</p>
+      </div>
+      <div style="border-top: 2px solid #111315; padding-top: 16px">
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25; letter-spacing: -0.01em">Juniors skip the learning</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Finding the right place and making a small change is how people come to understand a codebase.</p>
+      </div>
+    </div>
+    <p style="margin: 56px 0 0; max-width: 720px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 500; font-size: clamp(22px, 2.6vw, 30px); line-height: 1.25; letter-spacing: -0.015em">Friction was never only a cost. Some of it was where understanding and judgment happened.</p>
+  </div>
+</section>
+
+<!-- IDEA -->
+<section style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+  <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">02 · The idea</span> @@</div>
+  <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">YACT keeps the friction where it belongs.</h2>
+  <p style="margin: 20px 0 0; font-size: 20px; color: #2B2F33">The model does the typing. You make the decisions.</p>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 40px 40px; margin-top: 56px">
+    <div>
+      <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 40px; font-weight: 500; line-height: 1; color: #176B35">01</div>
+      <h3 style="margin: 16px 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 24px; line-height: 1.2; letter-spacing: -0.015em">You choose the context</h3>
+      <p style="margin: 0; color: #3A3F45">You link the files that matter, and only those are sent. You have to know your code, and you stay in it.</p>
+    </div>
+    <div>
+      <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 40px; font-weight: 500; line-height: 1; color: #176B35">02</div>
+      <h3 style="margin: 16px 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 24px; line-height: 1.2; letter-spacing: -0.015em">Plan first, then one file at a time</h3>
+      <p style="margin: 0; color: #3A3F45">The plan is a Markdown file you read and edit before any code exists. Each step changes exactly one file.</p>
+    </div>
+    <div>
+      <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 40px; font-weight: 500; line-height: 1; color: #176B35">03</div>
+      <h3 style="margin: 16px 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 24px; line-height: 1.2; letter-spacing: -0.015em">One call, a diff you can read</h3>
+      <p style="margin: 0; color: #3A3F45">Every command makes a single API call and writes complete files. No loop, no hidden exploration. You check the result with <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">git diff</span>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how" style="background: #FFFFFF; border-top: 1px solid #DCDDD8; border-bottom: 1px solid #DCDDD8">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">03 · How it works</span> @@</div>
+    <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">From task to diff in four steps.</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 48px 64px; margin-top: 48px; align-items: flex-start">
+      <ol style="flex: 1 1 380px; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 28px">
+        <li style="display: flex; gap: 18px">
+          <span style="flex: none; width: 34px; height: 34px; box-sizing: border-box; border: 1.5px solid #111315; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; font-weight: 700">1</span>
+          <div><h3 style="margin: 0 0 4px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25">Pick the files</h3><p style="margin: 0; color: #3A3F45; font-size: 16px"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y new</span> starts a task, and <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y read</span> links files by path or glob. <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y keyword Transaction</span> links every file that contains that word, and <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">((Transaction))</span> in your prompt does the same. Only linked files are sent.</p></div>
+        </li>
+        <li style="display: flex; gap: 18px">
+          <span style="flex: none; width: 34px; height: 34px; box-sizing: border-box; border: 1.5px solid #111315; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; font-weight: 700">2</span>
+          <div><h3 style="margin: 0 0 4px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25">Plan</h3><p style="margin: 0; color: #3A3F45; font-size: 16px"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y plan</span> writes a Markdown plan, one file per step. Read it, edit it, throw it away.</p></div>
+        </li>
+        <li style="display: flex; gap: 18px">
+          <span style="flex: none; width: 34px; height: 34px; box-sizing: border-box; border: 1.5px solid #111315; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; font-weight: 700">3</span>
+          <div><h3 style="margin: 0 0 4px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25">Implement one step</h3><p style="margin: 0; color: #3A3F45; font-size: 16px"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y -s next act</span> writes the complete file for the next unticked step and ticks it off.</p></div>
+        </li>
+        <li style="display: flex; gap: 18px">
+          <span style="flex: none; width: 34px; height: 34px; box-sizing: border-box; border: 1.5px solid #111315; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; font-weight: 700">4</span>
+          <div><h3 style="margin: 0 0 4px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 21px; line-height: 1.25">Review</h3><p style="margin: 0; color: #3A3F45; font-size: 16px">Read <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">git diff</span>, then run the next step.</p></div>
+        </li>
+        <li style="list-style: none; margin-top: 4px; color: #565B62; font-size: 15px">Every command prints the model, the token counts and the estimated cost. Add <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em; color: #111315">--dry-run --verbose</span> to see exactly what would be sent, without calling the API.</li>
+      </ol>
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div style="background: #0F1114; color: #E7E8E5; border-radius: 10px; padding: 18px 22px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; line-height: 1.85; overflow-x: auto">
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y new</div>
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y read "internal/signup/*.go"</div>
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y keyword Signup</div>
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y plan "validate email addresses on signup"</div>
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y -s next act</div>
+          <div style="white-space: pre"><span style="color: #9AA0A6">$</span> git diff</div>
+        </div>
+        <div style="background: #0F1114; color: #E7E8E5; border-radius: 10px; padding: 18px 22px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13.5px; line-height: 1.8; overflow-x: auto">
+          <div style="color: #9AA0A6; font-size: 12px; letter-spacing: 0.03em; margin-bottom: 6px">yact-prompt.md, after step 1</div>
+          <div style="white-space: pre"># Goal</div>
+          <div style="white-space: pre; color: #C9CDD1">Validate email addresses on signup.</div>
+          <div style="white-space: pre"> </div>
+          <div style="white-space: pre">## Steps</div>
+          <div style="white-space: pre">### [x] 1. Add email validation</div>
+          <div style="white-space: pre; color: #C9CDD1">**File:** internal/signup/validate.go</div>
+          <div style="white-space: pre">### [ ] 2. Cover it with tests</div>
+          <div style="white-space: pre; color: #C9CDD1">**File:** internal/signup/validate_test.go</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section id="compare" style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+  <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">04 · Compared</span> @@</div>
+  <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">Not a smaller agent. A different question.</h2>
+  <p style="margin: 20px 0 0; max-width: 640px; font-size: 20px; color: #2B2F33">Who is in control of the change?</p>
+  <div style="overflow-x: auto; margin-top: 44px">
+    <table style="width: 100%; min-width: 780px; border-collapse: collapse; font-size: 16px; line-height: 1.45">
+      <thead>
+        <tr>
+          <th style="text-align: left; padding: 14px 18px; border-bottom: 2px solid #111315; width: 22%"></th>
+          <th style="text-align: left; padding: 14px 18px; border-bottom: 2px solid #111315; background: #FFFFFF; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 700">YACT</th>
+          <th style="text-align: left; padding: 14px 18px; border-bottom: 2px solid #111315; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 600">Coding agent</th>
+          <th style="text-align: left; padding: 14px 18px; border-bottom: 2px solid #111315; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 600">IDE assistant</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top">Who chooses the files</th>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; background: #FFFFFF; vertical-align: top">You, by linking them</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">The agent, by exploring</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">You, by selecting code</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top">Model calls per task</th>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; background: #FFFFFF; vertical-align: top">One per command</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Many, in a loop</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Many, interactive</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top">Runs tests and retries</th>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; background: #FFFFFF; vertical-align: top">No</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Yes</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Limited</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top">What you review</th>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; background: #FFFFFF; vertical-align: top">A plan, then a small diff</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Often a large diff</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Inline suggestions</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top">Cost</th>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; background: #FFFFFF; vertical-align: top">Shown for every call</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Varies with the run</td>
+          <td style="padding: 16px 18px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Usually a subscription</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align: left; font-weight: 600; padding: 16px 18px; vertical-align: top">Best for</th>
+          <td style="padding: 16px 18px; background: #FFFFFF; vertical-align: top">Planned, scoped changes and automation</td>
+          <td style="padding: 16px 18px; vertical-align: top; color: #3A3F45">Open-ended and exploratory work</td>
+          <td style="padding: 16px 18px; vertical-align: top; color: #3A3F45">Everyday typing</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin: 32px 0 0; max-width: 720px; color: #3A3F45">If you want a tool that finds the files, runs the tests and fixes the failures, use an agent. If you want to decide what changes and read every line that does, use YACT. Many people will use both.</p>
+</section>
+
+<!-- AUDIENCE -->
+<section style="background: #FFFFFF; border-top: 1px solid #DCDDD8; border-bottom: 1px solid #DCDDD8">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">05 · Who it is for</span> @@</div>
+    <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">Built for the people who carry the review.</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 20px; margin-top: 48px">
+      <div style="background: #F7F7F5; border: 1px solid #DCDDD8; border-radius: 10px; padding: 26px 24px">
+        <h3 style="margin: 0 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2">Maintainers</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Want AI help without growing the review queue. Every change starts from a plan you can read and ends in a small, reviewable diff.</p>
+      </div>
+      <div style="background: #F7F7F5; border: 1px solid #DCDDD8; border-radius: 10px; padding: 26px 24px">
+        <h3 style="margin: 0 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2">Teams where review is the bottleneck</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Reviewing intent in a short plan is cheaper than reviewing a large diff after the fact.</p>
+      </div>
+      <div style="background: #F7F7F5; border: 1px solid #DCDDD8; border-radius: 10px; padding: 26px 24px">
+        <h3 style="margin: 0 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2">Leads who onboard juniors</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">The junior links the files and states the intent, a senior reviews the plan, and the junior reads a small change. They use AI and still learn the codebase.</p>
+      </div>
+      <div style="background: #F7F7F5; border: 1px solid #DCDDD8; border-radius: 10px; padding: 26px 24px">
+        <h3 style="margin: 0 0 10px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2">Developers who know their code</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">You keep files small and want the model to type while you decide.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIMITS -->
+<section style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+  <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">06 · Trade-offs</span> @@</div>
+  <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">What control costs you.</h2>
+  <p style="margin: 20px 0 0; max-width: 640px; font-size: 20px; color: #2B2F33">Each of these is a deliberate trade for a smaller diff. Here they are plainly.</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-top: 48px; align-items: flex-start">
+    <div style="flex: 1 1 460px; min-width: 0; background: #FFFFFF; border: 1px solid #DCDDD8; border-radius: 10px; overflow: hidden">
+      <div style="display: flex; gap: 14px; padding: 18px 22px; background: #FBE5E3; border-bottom: 1px solid #F0C9C5"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #A3261D">−</span><span><strong style="font-weight: 600">You choose the files.</strong> Nothing explores for you, so you need to know your code. Keyword search helps.</span></div>
+      <div style="display: flex; gap: 14px; padding: 18px 22px; background: #FBE5E3; border-bottom: 1px solid #F0C9C5"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #A3261D">−</span><span><strong style="font-weight: 600">Whole files, kept small.</strong> Keep files to a few hundred lines so a complete file fits the output limit. YACT warns above 300 lines.</span></div>
+      <div style="display: flex; gap: 14px; padding: 18px 22px; background: #FBE5E3; border-bottom: 1px solid #F0C9C5"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #A3261D">−</span><span><strong style="font-weight: 600">You run the tests.</strong> YACT never retries by itself, so run them yourself, or in CI, and use a <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">fix</span> step if something fails.</span></div>
+      <div style="display: flex; gap: 14px; padding: 18px 22px; background: #FBE5E3"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #A3261D">−</span><span><strong style="font-weight: 600">Anthropic models only, for now.</strong></span></div>
+    </div>
+    <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+      <div style="background: #E3F3E8; border: 1px solid #BFE0C9; border-radius: 10px; padding: 22px 24px">
+        <div style="display: flex; gap: 14px"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #176B35">+</span><span><strong style="font-weight: 600">A good fit.</strong> You know your codebase, you keep files small, and you want to read what changes.</span></div>
+      </div>
+      <div style="background: #FBE5E3; border: 1px solid #F0C9C5; border-radius: 10px; padding: 22px 24px">
+        <div style="display: flex; gap: 14px"><span style="flex: none; width: 16px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700; color: #A3261D">−</span><span><strong style="font-weight: 600">Not a fit.</strong> You want a tool that finds the files, runs the tests and fixes the failures on its own.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AUTOMATION -->
+<section style="background: #FFFFFF; border-top: 1px solid #DCDDD8; border-bottom: 1px solid #DCDDD8">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">07 · Automation</span> @@</div>
+    <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">From issue to pull request, by label.</h2>
+    <p style="margin: 20px 0 0; max-width: 640px; color: #3A3F45">Add a label in GitHub and a workflow runs YACT for you. The label is removed when the run ends, so adding it again retries.</p>
+    <div style="overflow-x: auto; margin-top: 40px">
+      <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 16px; line-height: 1.45">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 12px 16px; border-bottom: 2px solid #111315; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 500; color: #565B62; width: 18%">Label</th>
+            <th style="text-align: left; padding: 12px 16px; border-bottom: 2px solid #111315; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 500; color: #565B62; width: 22%">Add it to</th>
+            <th style="text-align: left; padding: 12px 16px; border-bottom: 2px solid #111315; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 500; color: #565B62">You get</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 2px 8px">implement</span></td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top">An issue</td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">A plan, the code and a new pull request with the plan as its description</td>
+          </tr>
+          <tr>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 2px 8px">update</span></td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top">A pull request</td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">The plan updated from the latest comment, and new commits on the branch</td>
+          </tr>
+          <tr>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 2px 8px">fix</span></td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top">A pull request</td>
+            <td style="padding: 16px; border-bottom: 1px solid #DCDDD8; vertical-align: top; color: #3A3F45">Commits that fix a failing build, failing tests or go vet findings</td>
+          </tr>
+          <tr>
+            <td style="padding: 16px; vertical-align: top"><span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 14px; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 2px 8px">review</span></td>
+            <td style="padding: 16px; vertical-align: top">A pull request</td>
+            <td style="padding: 16px; vertical-align: top; color: #3A3F45">A review posted as a comment</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin: 28px 0 0; max-width: 720px; color: #3A3F45">Add <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 1px 6px">haiku</span> <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 1px 6px">sonnet</span> or <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em; background: #EFEFEB; border: 1px solid #DCDDD8; border-radius: 4px; padding: 1px 6px">opus</span> to choose the model. Without one, Haiku runs <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">implement</span>, <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">update</span> and <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">fix</span>, and Sonnet runs <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">review</span>.</p>
+    <p style="margin: 20px 0 0"><a class="lnk" href="workflows.html" style="font-weight: 600">Set it up with the workflows guide</a></p>
+  </div>
+</section>
+
+<!-- CUSTOMIZE -->
+<section style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+  <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">08 · Make it yours</span> @@</div>
+  <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">Every command is a text file.</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 48px 64px; margin-top: 48px; align-items: flex-start">
+    <div style="flex: 1 1 400px; min-width: 0">
+      <p style="margin: 0 0 28px; color: #3A3F45">Six commands ship with YACT. Each is a plain-text system prompt in <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">~/.yact/systemprompts/</span>. Add a file and you have a new command, with no rebuild.</p>
+      <div style="display: grid; grid-template-columns: 96px 1fr; gap: 12px 16px; font-size: 16px; line-height: 1.45">
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">plan</span><span style="color: #3A3F45">Splits a task into steps, one file per step</span>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">act</span><span style="color: #3A3F45">Writes complete files and nothing else</span>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">ask</span><span style="color: #3A3F45">Answers questions and changes nothing</span>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">review</span><span style="color: #3A3F45">Reviews a diff against its task</span>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">analyze</span><span style="color: #3A3F45">Checks code against published principles</span>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 700">bash</span><span style="color: #3A3F45">Prints shell commands for you to read and run</span>
+      </div>
+    </div>
+    <div style="flex: 1 1 420px; min-width: 0; background: #0F1114; color: #E7E8E5; border-radius: 10px; padding: 20px 24px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13.5px; line-height: 1.8; overflow-x: auto">
+      <div style="color: #9AA0A6; font-size: 12px; letter-spacing: 0.03em; margin-bottom: 8px">~/.yact/systemprompts/ask.txt, the first lines</div>
+      <div style="white-space: pre">flags: --model sonnet --output print</div>
+      <div style="white-space: pre">CODEBASE QUESTION ANSWERING ASSISTANT</div>
+      <div style="white-space: pre"> </div>
+      <div style="white-space: pre; color: #C9CDD1">You are a codebase expert assistant. Your job is to:</div>
+      <div style="white-space: pre; color: #C9CDD1">- Answer questions about how the codebase works</div>
+      <div style="white-space: pre; color: #C9CDD1">- Explain code functionality and architecture</div>
+      <div style="white-space: pre"> </div>
+      <div style="white-space: pre"><span style="color: #9AA0A6">$</span> y ask "how does keyword search pick files?"</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background: #FFFFFF; border-top: 1px solid #DCDDD8; border-bottom: 1px solid #DCDDD8">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 8vw, 112px) 24px; box-sizing: border-box">
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #565B62; letter-spacing: 0.02em; margin-bottom: 20px">@@ <span style="color: #111315; font-weight: 500">09 · Questions</span> @@</div>
+    <h2 style="margin: 0; max-width: 820px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -0.025em; text-wrap: balance">Questions people ask first.</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 36px 56px; margin-top: 48px">
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">Does it send my whole repository?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">No. Only the files you linked, the message files in <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">.yact/</span> and your task. With <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">-i</span>, a code index of declaration signatures is added.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">Which models can I use?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Claude Haiku by default, and Sonnet, Opus and Fable with <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">-m</span>, depending on your Anthropic account. Set a default with <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">y config claude_model</span>.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">What does it cost?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">You pay Anthropic directly. YACT prints the token counts and the estimated cost after every call.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">Where do my API key and code go?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">The key is stored in <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 0.9em">~/.yact/config</span> and sent only to Anthropic. There is no telemetry. The only network calls are the API calls you trigger and downloads of system prompts from the project's GitHub repository.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">Can it write outside my project?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">No. Absolute paths and paths that leave the project directory are rejected.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">How is it different from aider, Claude Code or Cursor?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">Those tools work in a session and can search, run commands and retry on their own. YACT has no session: one command, one call, and you decide the scope.</p>
+      </div>
+      <div>
+        <h3 style="margin: 0 0 8px; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 20px; line-height: 1.25">Is it made by Anthropic?</h3>
+        <p style="margin: 0; color: #3A3F45; font-size: 16px">No. It is an independent open-source project under the GNU GPL v3.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer style="background: #0F1114; color: #E7E8E5">
+  <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 7vw, 88px) 24px 40px; box-sizing: border-box">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 40px 64px">
+      <div style="flex: 1 1 360px; min-width: 0; max-width: 520px">
+        <div style="display: inline-flex; align-items: center; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 30px; letter-spacing: -0.03em">yact<span style="display: inline-block; width: 12px; height: 26px; background: #E7E8E5; margin-left: 5px"></span></div>
+        <p style="margin: 18px 0 0; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 500; font-size: 26px; line-height: 1.2; letter-spacing: -0.02em">AI changes you can actually review.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px">
+          <a class="btn-light" href="getting-started.html" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px; box-sizing: border-box; background: #E7E8E5; color: #0F1114; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 6px">Get started</a>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 32px 64px; font-size: 15px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; color: #A3A9AF; letter-spacing: 0.03em">DOCS</span>
+          <a href="getting-started.html" style="color: #E7E8E5">Getting started</a>
+          <a href="workflows.html" style="color: #E7E8E5">GitHub workflows</a>
+          <a href="https://github.com/agabor/yact#readme" style="color: #E7E8E5">README</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; color: #A3A9AF; letter-spacing: 0.03em">PROJECT</span>
+          <a href="https://github.com/agabor/yact" style="color: #E7E8E5">Source</a>
+          <a href="https://github.com/agabor/yact/releases" style="color: #E7E8E5">Releases</a>
+          <a href="https://github.com/agabor/yact/issues" style="color: #E7E8E5">Issues</a>
+        </div>
+      </div>
+    </div>
+    <p style="margin: 56px 0 0; padding-top: 24px; border-top: 1px solid #2A2E33; font-size: 14px; line-height: 1.6; color: #A3A9AF">GNU GPL v3. Created by Gábor Angyal. YACT is not affiliated with Anthropic PBC. Claude and Anthropic are trademarks of Anthropic PBC.</p>
+  </div>
+</footer>
+
+</div>
 </body>
 </html>
