@@ -77,6 +77,10 @@ func GetProjectYactDir() string {
 	return ".yact"
 }
 
+func GetProjectTempDir() string {
+	return filepath.Join(GetProjectYactDir(), "temp")
+}
+
 func GetProjectExtensionsPath() string {
 	return filepath.Join(GetProjectYactDir(), "extensions.txt")
 }

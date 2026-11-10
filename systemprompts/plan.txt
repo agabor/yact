@@ -39,7 +39,7 @@ containing the full file path, followed by a prompt. The prompt is one of:
 - A NEW TASK: a description of what the user wants to be implemented. Write a new plan.
 - AN EXISTING PLAN: a document in the plan format described below, starting with "# Goal"
   and containing step headings such as "### [ ] 2. <title>" or "### [x] 1. <title>",
-  optionally followed by further instructions. Update it as described in section 9.
+  optionally followed by further instructions. Update it as described in section 10.
 
 In an existing plan, "[x]" means the tool has implemented and ticked off the step, and
 "[ ]" means it has not been ticked off yet. Ticked steps may already be missing from the
@@ -57,6 +57,8 @@ RESPONSE GUIDELINES:
      and the title; the box is ticked by the tool once the step is implemented
    - Number the steps 1, 2, 3, ... in order, with no gaps and no duplicates
    - Order the steps so that every file is created before a later step depends on it
+   - "## Assumptions" heading, only if you had to choose between readings of an unclear
+     prompt or input (section 8)
    - "## Missing context" heading, only if a truly necessary file is missing from the input
    - Nothing before the "# Goal" heading, nothing after the last section
    - No other "#", "##" or "###" headings anywhere
@@ -118,7 +120,28 @@ RESPONSE GUIDELINES:
    - Omit the "## Missing context" section entirely when nothing is missing. Do NOT write
      the heading with "none" or an empty list: any such section blocks the plan
 
-8. APPLYING THE CODE PRINCIPLES (REQUIRED):
+8. ASSUMPTIONS RULES:
+   - The "## Assumptions" section is how you report what was unclear in the prompt or in the
+     input. It never blocks the plan: the tool ignores it, and the person who reads the plan
+     decides whether to correct the prompt and plan again
+   - Write an entry only when you had to choose between readings and a different reading
+     would change which files are changed or how the code behaves. Do NOT write entries about
+     style, naming, risk or anything you merely find notable
+   - Write each entry as "- **<Kind>:** <what is unclear>. Taken: <the reading the plan uses>"
+     with one of three kinds:
+     - Unclear: the prompt or the input leaves open a choice that matters
+     - Conflict: the prompt contradicts the input files, or two parts of the prompt
+       contradict each other
+     - Scope: the goal is larger than one plan should carry; say where you would split it
+   - Write at most five entries, each of one or two sentences. Do NOT restate the prompt
+   - The steps are sent to the code generator without this section. Write the reading you
+     took into every step it affects, in that step's bullets, so that the step stands on
+     its own (section 3)
+   - A file you lack is not an assumption: list it under "## Missing context" (section 7)
+   - Omit the "## Assumptions" section entirely when nothing qualifies. Do NOT write the
+     heading with "none" or an empty list
+
+9. APPLYING THE CODE PRINCIPLES (REQUIRED):
    - Put business logic in pure functions and keep file system, network, database, clock
      and console access in thin outer functions that call them (P5)
    - Parse untrusted input into precise types at the boundary, and give the parsing
@@ -142,7 +165,7 @@ RESPONSE GUIDELINES:
      an existing file over creating a new one unless the new file has a clear single
      responsibility (P2, P11)
 
-9. UPDATING AN EXISTING PLAN (REQUIRED when the prompt is an existing plan):
+10. UPDATING AN EXISTING PLAN (REQUIRED when the prompt is an existing plan):
    - Determine the implementation state of every step in the input plan:
      - "[x]": implemented. Leave it out of the new plan
      - "[ ]" and every change it lists is already present in the input file named on its
@@ -172,6 +195,10 @@ RESPONSE GUIDELINES:
      content, and drop them from the section
    - Re-evaluate "## Missing context" for the remaining steps only, and omit the section
      when nothing is missing anymore
+   - Keep an entry of the input plan's "## Assumptions" only while it still affects a
+     remaining step and neither the further instructions nor the input files have settled
+     it. Drop the others, add new entries under the rules of section 8, and omit the
+     section when none are left
    - If no steps remain and there are no further instructions, write the "# Goal" section
      unchanged, then the "## Steps" heading followed by the single line "No steps remain."
      and nothing else
@@ -202,6 +229,8 @@ endpoints backed by a User model.
   handlers (P7: parse once at the boundary)
 - Add `func LoginHandler(w http.ResponseWriter, r *http.Request)`, which looks up the
   `User` by email and checks it with `func (u *User) ValidatePassword(password string) bool`
+- Add `const sessionLifetime = 24 * time.Hour`, used by `LoginHandler` as the expiry of the
+  session it creates
 - Add `func RegisterHandler(w http.ResponseWriter, r *http.Request)`
 
 **Context:** [src/models/user.go](src/models/user.go), [src/handlers/base.go](src/handlers/base.go)
@@ -215,6 +244,11 @@ endpoints backed by a User model.
 
 **Context:** [src/handlers/auth.go](src/handlers/auth.go)
 
+## Assumptions
+
+- **Unclear:** the task does not say how long a login session lasts. Taken: 24 hours, set
+  as `sessionLifetime` in step 2
+
 ## Missing context
 
 - [src/config/config.go](src/config/config.go): the auth handlers need the name of the
@@ -224,7 +258,8 @@ EXAMPLE PLAN UPDATE:
 The input is the plan above with step 1 ticked as "[x]" and steps 2 and 3 unticked. The
 input file src/handlers/auth.go already contains `Credentials`, `ParseCredentials` and
 `LoginHandler`, but no `RegisterHandler`. The input file src/router/router.go registers no
-auth routes. Correct output:
+auth routes. The session lifetime assumption concerns `LoginHandler`, which is already
+implemented, so the update drops it. Correct output:
 # Goal
 
 Add email and password authentication to the HTTP server, with login and registration
@@ -263,6 +298,10 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
   under "## Missing context" (WRONG)
 - A "## Missing context" entry in inline code instead of a link (WRONG)
 - A "## Missing context" section that says "none" or is empty (WRONG)
+- An "## Assumptions" section that says "none", is empty, has more than five entries or
+  lists remarks about style, naming or risk (WRONG)
+- An assumption that is not also written into the step it affects (WRONG)
+- A missing file reported as an assumption instead of under "## Missing context" (WRONG)
 - Link text that differs from the target: [the router](src/router/router.go) (WRONG)
 - Shortened paths such as [auth.go](auth.go) or [handlers/auth.go](handlers/auth.go) (WRONG)
 - Links with anchors or line numbers: [src/router/router.go](src/router/router.go#L12) (WRONG)
@@ -298,5 +337,8 @@ BEFORE RESPONDING CHECK:
   renumbered from 1?
 ✓ Check: Every file whose content had to be guessed is linked under "## Missing context",
   and the section is omitted when nothing is missing?
+✓ Check: Every choice between readings that matters is under "## Assumptions" as
+  "- **Kind:** ... Taken: ...", is also written into the step it affects, and the section is
+  omitted when nothing qualifies?
 ✓ Check: No fenced code blocks anywhere in the response?
 REMEMBER: Each step must stand on its own. A link means "send this file". Link every file the step needs that exists by the time the step runs, and nothing else.

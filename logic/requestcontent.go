@@ -29,24 +29,16 @@ const (
 	bufferFileName = "buffer.txt"
 )
 
-func yactDir() string {
-	return config.GetProjectYactDir()
-}
-
-func tempDir() string {
-	return filepath.Join(yactDir(), "temp")
-}
-
 func IndexFilePath() string {
-	return filepath.Join(tempDir(), indexFileName)
+	return filepath.Join(config.GetProjectTempDir(), indexFileName)
 }
 
 func BufferFilePath() string {
-	return filepath.Join(tempDir(), bufferFileName)
+	return filepath.Join(config.GetProjectTempDir(), bufferFileName)
 }
 
 func outputFilePath() string {
-	return filepath.Join(tempDir(), outputFileName)
+	return filepath.Join(config.GetProjectTempDir(), outputFileName)
 }
 
 func RemoveIndexFile() error {
@@ -91,7 +83,7 @@ func (r RequestContent) MessagePaths() []string {
 }
 
 func AddMessage(content string) (string, error) {
-	return writeFixedFile(filepath.Join(yactDir(), domainFileName), content)
+	return writeFixedFile(filepath.Join(config.GetProjectYactDir(), domainFileName), content)
 }
 
 func AddOutput(content string) (string, error) {
@@ -99,7 +91,7 @@ func AddOutput(content string) (string, error) {
 }
 
 func LoadRequestContent() (RequestContent, error) {
-	domain, err := existingFilePath(filepath.Join(yactDir(), domainFileName))
+	domain, err := existingFilePath(filepath.Join(config.GetProjectYactDir(), domainFileName))
 	if err != nil {
 		return RequestContent{}, err
 	}

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"yact/config"
@@ -64,6 +65,8 @@ func processResponse(content string) error {
 		fmt.Println("Warning: Incomplete code block.")
 	}
 
+	llmFeedback := ""
+
 	for _, element := range elements {
 		switch element.Kind {
 		case logic.ElementCodeFile:
@@ -74,6 +77,9 @@ func processResponse(content string) error {
 				continue
 			}
 			printApplyOutcome(v.Path, outcome)
+			if logic.ProjectPath(filepath.Join(config.GetProjectTempDir(), "feedback.md")) == v.Path {
+				llmFeedback = v.Content
+			}
 		case logic.ElementRejectedFile:
 			parseErrors = append(parseErrors, element.Text)
 		case logic.ElementText:
@@ -81,6 +87,10 @@ func processResponse(content string) error {
 				fmt.Println(element.Text)
 			}
 		}
+	}
+
+	if len(llmFeedback) > 0 {
+		fmt.Println(llmFeedback)
 	}
 
 	if len(parseErrors) > 0 {

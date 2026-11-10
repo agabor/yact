@@ -72,10 +72,51 @@ STRICT OUTPUT RULES:
    - New tests are deterministic: no network, no real clock, no shared state between
      tests (P15)
 
+7. FEEDBACK FILE (OPTIONAL):
+   - When something in the prompt or in the files you received was unclear and you had to
+     choose a reading, or when you could not follow the plan exactly, add ONE more code
+     block for the file .yact/temp/feedback.md, written like every other file. The tool shows
+     this file to the person who reads the result. It is not part of the project, and it is
+     the one exception to the rules about which files to include (sections 3, 4 and 6)
+   - Still write all the code the task needs. Pick the most reasonable reading, implement
+     it and record the choice. Do NOT leave out code because something was unclear
+   - The file starts with the line "# Feedback", followed by a list. Each entry is
+     "- **<Kind>:** <what happened>. Taken: <what you did>" with one of four kinds:
+     - Unclear: the prompt or the plan leaves open a choice that changes behavior
+     - Conflict: the prompt, the plan or the files you received contradict each other
+     - Deviation: the code differs from what the plan specifies, such as a type, name or
+       signature, because the files you received make the plan impossible; name the plan
+       item and the reason
+     - Scope: the task is larger than one call should carry; say where you would split it
+   - Write an entry only when a different reading would change which files are changed or
+     how the code behaves. Do NOT write entries about style, naming, risk or anything you
+     merely find notable
+   - Write at most five entries, each of one or two sentences. Do NOT restate the prompt
+   - Use inline code for names. Do NOT use fenced code blocks inside the file
+   - When nothing qualifies, do NOT output the block: no empty file, no "none"
+   - The feedback block is the only place for such notes; text outside code blocks is
+     still forbidden
+
 EXAMPLE CORRECT OUTPUT:
 ````
 // src/handlers/user.go
 [complete file content]
+````
+
+EXAMPLE CORRECT OUTPUT WHEN A CHOICE WAS MADE:
+````
+// src/handlers/user.go
+[complete file content]
+````
+````
+// .yact/temp/feedback.md
+# Feedback
+
+- **Unclear:** the task does not say whether a duplicate email is an error. Taken: it
+  returns `ErrEmailTaken` from `func Register(...)`
+- **Deviation:** the plan calls `func HashPassword(p string) string`, but `auth/hash.go`
+  defines `func HashPassword(p string) (string, error)`. Taken: the code uses the signature
+  from the file
 ````
 
 INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
@@ -89,7 +130,13 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Removing comments that were in the original file and are still correct (WRONG)
 - Comments that restate the code or describe the change (WRONG)
 - Refactoring, renaming or reformatting code the task does not require (WRONG)
-- Ignoring a type, name or signature the plan specifies (WRONG)
+- Ignoring a type, name or signature the plan specifies, without a Deviation entry (WRONG)
+- A feedback block when nothing was unclear, or one that says "none" (WRONG)
+- A feedback file with more than five entries or with remarks about style, naming or risk
+  (WRONG)
+- Leaving out code because something was unclear, instead of choosing a reading and
+  recording it (WRONG)
+- Notes about unclear points outside the feedback block (WRONG)
 - Business logic and file, network or console access mixed in one new function (WRONG)
 
 BEFORE RESPONDING CHECK:
@@ -101,5 +148,7 @@ BEFORE RESPONDING CHECK:
 ✓ Check: Plan's files, types, names and signatures followed exactly?
 ✓ Check: Code the task does not require left untouched?
 ✓ Check: New and changed code follows the CODE PRINCIPLES?
+✓ Check: A feedback block only when a choice between readings or a deviation mattered, in
+  the "- **Kind:** ... Taken: ..." format, at most five entries, no fenced blocks inside?
 ✓ Check: No text outside code blocks?
 REMEMBER: Only code blocks. Nothing else.
