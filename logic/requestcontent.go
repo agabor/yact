@@ -4,14 +4,15 @@ import (
 	"os"
 	"path/filepath"
 	"yact/config"
+	"yact/projectpath"
 )
 
 type RequestContent struct {
 	Prompt string
-	Files  []string
-	Domain string
-	Index  string
-	Output string
+	Files  []projectpath.Path
+	Domain projectpath.Path
+	Index  projectpath.Path
+	Output projectpath.Path
 	// Set by the caller for a single call and never persisted, so the skills of one
 	// call cannot leak into the next one.
 	Skills []Skill
@@ -29,20 +30,20 @@ const (
 	bufferFileName = "buffer.txt"
 )
 
-func IndexFilePath() string {
-	return filepath.Join(config.GetProjectTempDir(), indexFileName)
+func IndexFilePath() projectpath.Path {
+	return projectpath.Join(config.GetProjectTempDir(), indexFileName)
 }
 
-func BufferFilePath() string {
-	return filepath.Join(config.GetProjectTempDir(), bufferFileName)
+func BufferFilePath() projectpath.Path {
+	return projectpath.Join(config.GetProjectTempDir(), bufferFileName)
 }
 
-func outputFilePath() string {
-	return filepath.Join(config.GetProjectTempDir(), outputFileName)
+func outputFilePath() projectpath.Path {
+	return projectpath.Join(config.GetProjectTempDir(), outputFileName)
 }
 
 func RemoveIndexFile() error {
-	if err := os.Remove(IndexFilePath()); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(string(IndexFilePath())); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
@@ -60,8 +61,8 @@ func writeFixedFile(path string, content string) (string, error) {
 	return path, nil
 }
 
-func existingFilePath(path string) (string, error) {
-	if _, err := os.Stat(path); err != nil {
+func existingFilePath(path projectpath.Path) (projectpath.Path, error) {
+	if _, err := os.Stat(string(path)); err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
 		}
@@ -71,9 +72,9 @@ func existingFilePath(path string) (string, error) {
 	return path, nil
 }
 
-func (r RequestContent) MessagePaths() []string {
-	paths := []string{}
-	for _, path := range []string{r.Domain, r.Index, r.Output} {
+func (r RequestContent) MessagePaths() []projectpath.Path {
+	paths := []projectpath.Path{}
+	for _, path := range []projectpath.Path{r.Domain, r.Index, r.Output} {
 		if path != "" {
 			paths = append(paths, path)
 		}
@@ -83,15 +84,15 @@ func (r RequestContent) MessagePaths() []string {
 }
 
 func AddMessage(content string) (string, error) {
-	return writeFixedFile(filepath.Join(config.GetProjectYactDir(), domainFileName), content)
+	return writeFixedFile(string(projectpath.Join(config.GetProjectYactDir(), domainFileName)), content)
 }
 
 func AddOutput(content string) (string, error) {
-	return writeFixedFile(outputFilePath(), content)
+	return writeFixedFile(string(outputFilePath()), content)
 }
 
 func LoadRequestContent() (RequestContent, error) {
-	domain, err := existingFilePath(filepath.Join(config.GetProjectYactDir(), domainFileName))
+	domain, err := existingFilePath(projectpath.Join(config.GetProjectYactDir(), domainFileName))
 	if err != nil {
 		return RequestContent{}, err
 	}
@@ -108,15 +109,15 @@ func LoadRequestContent() (RequestContent, error) {
 
 	return RequestContent{
 		Prompt: "",
-		Files:  []string{},
+		Files:  []projectpath.Path{},
 		Domain: domain,
 		Index:  index,
 		Output: output,
 	}, nil
 }
 
-func messageFilePaths() []string {
-	return []string{
+func messageFilePaths() []projectpath.Path {
+	return []projectpath.Path{
 		IndexFilePath(),
 		outputFilePath(),
 	}
@@ -124,7 +125,7 @@ func messageFilePaths() []string {
 
 func RemoveMessages() error {
 	for _, path := range messageFilePaths() {
-		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		if err := os.Remove(string(path)); err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}

@@ -19,7 +19,7 @@ func HandleNewCommand() error {
 }
 
 func removePromptFile() error {
-	err := os.Remove(config.GetProjectPromptPath())
+	err := os.Remove(string(config.GetProjectPromptPath()))
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

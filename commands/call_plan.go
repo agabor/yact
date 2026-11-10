@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"yact/logic"
+	"yact/projectpath"
 )
 
 type PlanSelection struct {
@@ -91,6 +92,18 @@ func sentPromptText(promptText string) string {
 	return logic.StripKeywordMarkers(logic.SplitPromptFooter(promptText).Body)
 }
 
+func parseProjectPaths(raws []string) ([]projectpath.Path, error) {
+	var paths []projectpath.Path
+	for _, raw := range raws {
+		projectPath, err := projectpath.Parse(raw)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, projectPath)
+	}
+	return paths, nil
+}
+
 func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
 	if requestContent.Prompt == "" {
 		return requestContent, nil
@@ -108,7 +121,11 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 
 	paths := append([]string{}, links.Paths...)
 	paths = append(paths, keywordPaths...)
-	requestContent.Files = logic.UniquePaths(paths)
+	projectPaths, err := parseProjectPaths(logic.UniquePaths(paths))
+	if err != nil {
+		return requestContent, err
+	}
+	requestContent.Files = projectPaths
 	requestContent.Prompt = sentPromptText(requestContent.Prompt)
 	return requestContent, nil
 }

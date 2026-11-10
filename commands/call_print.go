@@ -7,6 +7,7 @@ import (
 	"yact/api"
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 func showProgress(done chan bool) {
@@ -59,7 +60,7 @@ func printCallResult(result api.CallResult) {
 	}
 }
 
-func printApplyOutcome(path logic.ProjectPath, outcome logic.ApplyOutcome) {
+func printApplyOutcome(path projectpath.Path, outcome logic.ApplyOutcome) {
 	switch outcome {
 	case logic.OutcomeWritten:
 		fmt.Printf("Written: %s\n", path)

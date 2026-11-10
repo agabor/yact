@@ -4,6 +4,7 @@ import (
 	"os"
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 func HandleKeywordCommand(args []string) error {
@@ -13,7 +14,7 @@ func HandleKeywordCommand(args []string) error {
 	}
 
 	for _, path := range files {
-		filePath, err := logic.ParseProjectPath(path)
+		filePath, err := projectpath.Parse(path)
 		if err != nil {
 			return err
 		}

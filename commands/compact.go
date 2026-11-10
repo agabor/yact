@@ -11,7 +11,7 @@ import (
 func HandleCompactCommand() error {
 	promptPath := config.GetProjectPromptPath()
 
-	data, err := os.ReadFile(promptPath)
+	data, err := os.ReadFile(string(promptPath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("Nothing to compact: %s does not exist\n", promptPath)
@@ -21,7 +21,7 @@ func HandleCompactCommand() error {
 	}
 
 	compacted := logic.CompactPromptLinks(string(data))
-	if err := os.WriteFile(promptPath, []byte(compacted), 0644); err != nil {
+	if err := os.WriteFile(string(promptPath), []byte(compacted), 0644); err != nil {
 		return err
 	}
 

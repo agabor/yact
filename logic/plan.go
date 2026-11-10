@@ -8,7 +8,7 @@ import (
 )
 
 func ReadPlan() (string, bool, error) {
-	data, err := os.ReadFile(config.GetProjectPromptPath())
+	data, err := os.ReadFile(string(config.GetProjectPromptPath()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", false, nil
@@ -25,10 +25,10 @@ func ReadPlan() (string, bool, error) {
 }
 
 func WritePlan(content string) error {
-	if err := os.MkdirAll(config.GetProjectYactDir(), 0755); err != nil {
+	if err := os.MkdirAll(string(config.GetProjectYactDir()), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(config.GetProjectPromptPath(), []byte(content), 0644)
+	return os.WriteFile(string(config.GetProjectPromptPath()), []byte(content), 0644)
 }
 
 func FormatPromptLink(path string) string {
@@ -44,7 +44,7 @@ func HasPromptLink(promptText string, path string) bool {
 }
 
 func readPromptFileIfExists() (string, error) {
-	data, err := os.ReadFile(config.GetProjectPromptPath())
+	data, err := os.ReadFile(string(config.GetProjectPromptPath()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -70,7 +70,7 @@ func appendPromptLinkToFooter(promptText string, path string) string {
 }
 
 func AppendPromptLink(path string) (bool, error) {
-	if err := os.MkdirAll(config.GetProjectYactDir(), 0755); err != nil {
+	if err := os.MkdirAll(string(config.GetProjectYactDir()), 0755); err != nil {
 		return false, err
 	}
 
@@ -84,7 +84,7 @@ func AppendPromptLink(path string) (bool, error) {
 	}
 
 	updatedContent := appendPromptLinkToFooter(existingContent, path)
-	if err := os.WriteFile(config.GetProjectPromptPath(), []byte(updatedContent), 0644); err != nil {
+	if err := os.WriteFile(string(config.GetProjectPromptPath()), []byte(updatedContent), 0644); err != nil {
 		return false, err
 	}
 

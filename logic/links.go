@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"yact/projectpath"
 )
 
 var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)\s]+))\)`)
@@ -143,7 +145,7 @@ func unixStyleLink(link promptLink) promptLink {
 func normalizeLinkTargets(targets []string) []string {
 	var normalized []string
 	for _, target := range targets {
-		projectPath, err := ParseProjectPath(target)
+		projectPath, err := projectpath.Parse(target)
 		if err != nil {
 			continue
 		}

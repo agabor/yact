@@ -7,6 +7,7 @@ import (
 
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 func HandleReadCommand(args []string) error {
@@ -32,7 +33,7 @@ func HandleReadCommand(args []string) error {
 		}
 
 		for _, match := range matches {
-			filePath, err := logic.ParseProjectPath(match)
+			filePath, err := projectpath.Parse(match)
 			if err != nil {
 				fmt.Printf("Rejected: %s: %v\n", match, err)
 				continue
@@ -50,11 +51,11 @@ func HandleReadCommand(args []string) error {
 	return nil
 }
 
-func skipsIgnoredFolder(filePath logic.ProjectPath, ignoredFolders []config.IgnorePattern) bool {
+func skipsIgnoredFolder(filePath projectpath.Path, ignoredFolders []config.IgnorePattern) bool {
 	return logic.IsInIgnoredFolder(string(filePath), ignoredFolders)
 }
 
-func readFile(filePath logic.ProjectPath) error {
+func readFile(filePath projectpath.Path) error {
 	info, err := os.Stat(string(filePath))
 	if err != nil {
 		fmt.Printf("Error accessing %s: %v\n", filePath, err)

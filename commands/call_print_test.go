@@ -9,6 +9,7 @@ import (
 	"yact/api"
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 func TestPrintWarnings(t *testing.T) {
@@ -26,7 +27,7 @@ func TestPrintSentFiles(t *testing.T) {
 	requestContent := logic.RequestContent{
 		Domain: "domain.txt",
 		Output: "output.txt",
-		Files:  []string{"a.go", "b.go"},
+		Files:  []projectpath.Path{"a.go", "b.go"},
 	}
 
 	got := captureStdout(t, func() {
@@ -97,7 +98,7 @@ func TestPrintCallResult(t *testing.T) {
 }
 
 func TestPrintApplyOutcome(t *testing.T) {
-	path := logic.ProjectPath("src/a.go")
+	path := projectpath.Path("src/a.go")
 	tests := []struct {
 		name    string
 		outcome logic.ApplyOutcome

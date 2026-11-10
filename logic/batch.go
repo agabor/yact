@@ -14,7 +14,7 @@ type BatchJob struct {
 }
 
 func ReadBatchJob() (BatchJob, bool, error) {
-	data, err := os.ReadFile(config.GetProjectBatchJobPath())
+	data, err := os.ReadFile(string(config.GetProjectBatchJobPath()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return BatchJob{}, false, nil
@@ -31,18 +31,18 @@ func ReadBatchJob() (BatchJob, bool, error) {
 }
 
 func WriteBatchJob(job BatchJob) error {
-	if err := os.MkdirAll(config.GetProjectYactDir(), 0755); err != nil {
+	if err := os.MkdirAll(string(config.GetProjectYactDir()), 0755); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(job, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(config.GetProjectBatchJobPath(), data, 0644)
+	return os.WriteFile(string(config.GetProjectBatchJobPath()), data, 0644)
 }
 
 func DeleteBatchJobID() error {
-	err := os.Remove(config.GetProjectBatchJobPath())
+	err := os.Remove(string(config.GetProjectBatchJobPath()))
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

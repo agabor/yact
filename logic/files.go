@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"yact/projectpath"
 
 	"yact/config"
 )
@@ -48,7 +49,7 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 			return nil
 		}
 
-		if entry.Name() == config.GetProjectPromptPath() {
+		if projectpath.Path(entry.Name()) == config.GetProjectPromptPath() {
 			return nil
 		}
 

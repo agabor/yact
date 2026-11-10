@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"yact/config"
-	"yact/logic"
+	"yact/projectpath"
 )
 
 func TestSkipsIgnoredFolder(t *testing.T) {
@@ -57,9 +57,9 @@ func TestSkipsIgnoredFolder(t *testing.T) {
 				ignoredFolders = append(ignoredFolders, pattern)
 			}
 
-			filePath, err := logic.ParseProjectPath(tt.path)
+			filePath, err := projectpath.Parse(tt.path)
 			if err != nil {
-				t.Fatalf("ParseProjectPath(%q) failed: %v", tt.path, err)
+				t.Fatalf("Parse(%q) failed: %v", tt.path, err)
 			}
 
 			if got := skipsIgnoredFolder(filePath, ignoredFolders); got != tt.want {

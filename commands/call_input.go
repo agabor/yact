@@ -22,25 +22,21 @@ func countFileLines(requestContent logic.RequestContent) ([]fileLineCount, error
 	var fileCounts []fileLineCount
 
 	for _, messagePath := range requestContent.MessagePaths() {
-		messageContent, err := os.ReadFile(messagePath)
+		messageContent, err := os.ReadFile(string(messagePath))
 		if err != nil {
 			return nil, err
 		}
 		lines := len(strings.Split(string(messageContent), "\n"))
-		fileCounts = append(fileCounts, fileLineCount{Path: messagePath, Lines: lines})
+		fileCounts = append(fileCounts, fileLineCount{Path: string(messagePath), Lines: lines})
 	}
 
 	for _, contextPath := range requestContent.Files {
-		projectPath, err := logic.ParseProjectPath(contextPath)
-		if err != nil {
-			return nil, err
-		}
-		codeFile, err := logic.ReadAsFile(projectPath)
+		codeFile, err := logic.ReadAsFile(contextPath)
 		if err != nil {
 			return nil, err
 		}
 		lines := len(strings.Split(codeFile.Content, "\n"))
-		fileCounts = append(fileCounts, fileLineCount{Path: contextPath, Lines: lines})
+		fileCounts = append(fileCounts, fileLineCount{Path: string(contextPath), Lines: lines})
 	}
 
 	return fileCounts, nil
@@ -50,7 +46,7 @@ func countFileLines(requestContent logic.RequestContent) ([]fileLineCount, error
 // so the user did not choose them for the request and their length is not a warning sign.
 func isYactFolderPath(path string) bool {
 	cleaned := filepath.ToSlash(filepath.Clean(path))
-	return strings.HasPrefix(cleaned, config.GetProjectYactDir()+"/")
+	return strings.HasPrefix(cleaned, string(config.GetProjectYactDir())+"/")
 }
 
 func longFileWarnings(counts []fileLineCount) []string {

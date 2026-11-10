@@ -1,12 +1,15 @@
-package logic
+package projectpath
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
-func TestParseProjectPath(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		name    string
 		raw     string
-		want    ProjectPath
+		want    Path
 		wantErr bool
 	}{
 		{"forward slashes kept", "logic/links.go", "logic/links.go", false},
@@ -26,12 +29,37 @@ func TestParseProjectPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseProjectPath(tt.raw)
+			got, err := Parse(tt.raw)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ParseProjectPath(%q) error = %v, wantErr %v", tt.raw, err, tt.wantErr)
+				t.Fatalf("Parse(%q) error = %v, wantErr %v", tt.raw, err, tt.wantErr)
 			}
 			if got != tt.want {
-				t.Errorf("ParseProjectPath(%q) = %q, want %q", tt.raw, got, tt.want)
+				t.Errorf("Parse(%q) = %q, want %q", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestJoin(t *testing.T) {
+	tests := []struct {
+		name    string
+		base    Path
+		element string
+		want    Path
+	}{
+		{"plain join", ".yact", "temp", ".yact/temp"},
+		{"base with trailing slash", ".yact/", "extensions.txt", ".yact/extensions.txt"},
+		{"nested element", ".yact", "temp/buffer.txt", ".yact/temp/buffer.txt"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Join(tt.base, tt.element)
+			if got != tt.want {
+				t.Errorf("Join(%q, %q) = %q, want %q", tt.base, tt.element, got, tt.want)
+			}
+			if strings.Contains(string(got), `\`) {
+				t.Errorf("Join(%q, %q) = %q, must not contain a backslash", tt.base, tt.element, got)
 			}
 		})
 	}

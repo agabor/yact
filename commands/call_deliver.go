@@ -2,11 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 func validateCodeOnlyResponse(content string) error {
@@ -77,7 +77,7 @@ func processResponse(content string) error {
 				continue
 			}
 			printApplyOutcome(v.Path, outcome)
-			if logic.ProjectPath(filepath.Join(config.GetProjectTempDir(), "feedback.md")) == v.Path {
+			if projectpath.Join(config.GetProjectTempDir(), "feedback.md") == v.Path {
 				llmFeedback = v.Content
 			}
 		case logic.ElementRejectedFile:

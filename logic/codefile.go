@@ -3,16 +3,18 @@ package logic
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
+
+	"yact/projectpath"
 )
 
 const BlockDelimiterMin = "``" + "`"
 const BlockDelimiter = BlockDelimiterMin + "`"
 
 type CodeFile struct {
-	Path    ProjectPath
+	Path    projectpath.Path
 	Content string
 }
 
@@ -115,13 +117,13 @@ func linesToCodeFile(lines []string) (CodeFile, error) {
 		lines = append(lines[:lineIndex], lines[lineIndex+1:]...)
 	}
 
-	path, err := ParseProjectPath(filePath)
+	projectPath, err := projectpath.Parse(filePath)
 	if err != nil {
 		return CodeFile{}, err
 	}
 
 	return CodeFile{
-		Path:    path,
+		Path:    projectPath,
 		Content: joinLines(lines),
 	}, nil
 }
@@ -130,7 +132,7 @@ func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func ReadAsFile(filePath ProjectPath) (CodeFile, error) {
+func ReadAsFile(filePath projectpath.Path) (CodeFile, error) {
 	content, err := os.ReadFile(string(filePath))
 	if err != nil {
 		return CodeFile{}, err
@@ -148,7 +150,7 @@ func (cf *CodeFile) IsEmpty() bool {
 
 func (cf *CodeFile) writeContent() error {
 	filePath := string(cf.Path)
-	dir := filepath.Dir(filePath)
+	dir := path.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory %s: %w", dir, err)
 	}

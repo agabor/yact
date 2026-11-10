@@ -2,21 +2,18 @@ package logic
 
 import (
 	"os"
-	"path/filepath"
+	"yact/config"
 )
 
-const bufferFilePath = ".yact/temp/buffer.txt"
-const bufferDirPath = ".yact/temp"
-
 func ensureBufferDir() error {
-	return os.MkdirAll(bufferDirPath, 0755)
+	return os.MkdirAll(string(config.GetProjectTempDir()), 0755)
 }
 
 func PutBuffer(content string) error {
 	if err := ensureBufferDir(); err != nil {
 		return err
 	}
-	file, err := os.Create(filepath.Clean(bufferFilePath))
+	file, err := os.Create(string(BufferFilePath()))
 	if err != nil {
 		return err
 	}
@@ -27,7 +24,7 @@ func PutBuffer(content string) error {
 }
 
 func ReadBuffer() (string, error) {
-	data, err := os.ReadFile(filepath.Clean(bufferFilePath))
+	data, err := os.ReadFile(string(BufferFilePath()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil

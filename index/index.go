@@ -101,7 +101,7 @@ func WriteIndex(visibility string) error {
 		return err
 	}
 	data := renderIndex(root, visibility)
-	indexPath := logic.IndexFilePath()
+	indexPath := string(logic.IndexFilePath())
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 		return err
 	}

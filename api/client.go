@@ -38,7 +38,7 @@ func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error)
 	fileCount := 0
 
 	for _, messagePath := range messagePaths {
-		messageContent, err := os.ReadFile(messagePath)
+		messageContent, err := os.ReadFile(string(messagePath))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -50,7 +50,7 @@ func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error)
 	}
 
 	for _, filePath := range requestContent.Files {
-		fileContent, err := Serialize(filePath)
+		fileContent, err := Serialize(string(filePath))
 		if err != nil {
 			return nil, 0, err
 		}

@@ -111,7 +111,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	// Later calls with a prompt read this file back, so it must hold the prompt that was sent.
 	if !planUsed {
-		if err := os.WriteFile(config.GetProjectPromptPath(), []byte(combinedPrompt), 0644); err != nil {
+		if err := os.WriteFile(string(config.GetProjectPromptPath()), []byte(combinedPrompt), 0644); err != nil {
 			return err
 		}
 	}

@@ -1,4 +1,4 @@
-package logic
+package projectpath
 
 import (
 	"fmt"
@@ -8,9 +8,9 @@ import (
 
 // Paths come from LLM output, so anything that would resolve outside the
 // project directory must be rejected before it can be written or deleted.
-type ProjectPath string
+type Path string
 
-func ParseProjectPath(raw string) (ProjectPath, error) {
+func Parse(raw string) (Path, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		return "", fmt.Errorf("empty file path")
@@ -29,9 +29,14 @@ func ParseProjectPath(raw string) (ProjectPath, error) {
 		return "", fmt.Errorf("path escapes project directory: %s", raw)
 	}
 
-	return ProjectPath(cleaned), nil
+	return Path(cleaned), nil
 }
 
 func hasDriveLetter(cleaned string) bool {
 	return len(cleaned) >= 2 && cleaned[1] == ':'
+}
+
+// Project paths use "/" on every OS, so they are joined with path.Join; filepath.Join would produce backslashes on Windows.
+func Join(base Path, element string) Path {
+	return Path(path.Join(string(base), element))
 }

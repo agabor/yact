@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"yact/projectpath"
 )
 
 const (
@@ -73,28 +75,28 @@ func getIncludeFile(name string) (string, error) {
 	return filepath.Join(dir, name), nil
 }
 
-func GetProjectYactDir() string {
-	return ".yact"
+func GetProjectYactDir() projectpath.Path {
+	return projectpath.Path(".yact")
 }
 
-func GetProjectTempDir() string {
-	return filepath.Join(GetProjectYactDir(), "temp")
+func GetProjectTempDir() projectpath.Path {
+	return projectpath.Join(GetProjectYactDir(), "temp")
 }
 
-func GetProjectExtensionsPath() string {
-	return filepath.Join(GetProjectYactDir(), "extensions.txt")
+func GetProjectExtensionsPath() projectpath.Path {
+	return projectpath.Join(GetProjectYactDir(), "extensions.txt")
 }
 
-func GetProjectIgnorePath() string {
-	return filepath.Join(GetProjectYactDir(), "ignore.txt")
+func GetProjectIgnorePath() projectpath.Path {
+	return projectpath.Join(GetProjectYactDir(), "ignore.txt")
 }
 
-func GetProjectPromptPath() string {
-	return "yact-prompt.md"
+func GetProjectPromptPath() projectpath.Path {
+	return projectpath.Path("yact-prompt.md")
 }
 
-func GetProjectBatchJobPath() string {
-	return filepath.Join(GetProjectYactDir(), "batch_job_id.txt")
+func GetProjectBatchJobPath() projectpath.Path {
+	return projectpath.Join(GetProjectYactDir(), "batch_job_id.txt")
 }
 
 func DefaultConfig() *Config {
@@ -346,7 +348,7 @@ func ListPromptNames() ([]string, error) {
 func LoadExtensions() ([]string, error) {
 	extensionsPath := GetProjectExtensionsPath()
 
-	data, err := os.ReadFile(extensionsPath)
+	data, err := os.ReadFile(string(extensionsPath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			defaultExtensions := DefaultExtensions()
@@ -376,12 +378,12 @@ func LoadExtensions() ([]string, error) {
 
 func SaveExtensions(extensions []string) error {
 	yactDir := GetProjectYactDir()
-	if err := os.MkdirAll(yactDir, 0755); err != nil {
+	if err := os.MkdirAll(string(yactDir), 0755); err != nil {
 		return err
 	}
 
 	content := strings.Join(extensions, "\n") + "\n"
-	return os.WriteFile(GetProjectExtensionsPath(), []byte(content), 0644)
+	return os.WriteFile(string(GetProjectExtensionsPath()), []byte(content), 0644)
 }
 
 func ParseIgnoredFolders(content string) ([]IgnorePattern, error) {
@@ -403,7 +405,7 @@ func ParseIgnoredFolders(content string) ([]IgnorePattern, error) {
 // An empty ignore file means no folder is ignored, unlike extensions where
 // an empty file falls back to the defaults.
 func LoadIgnoredFolders() ([]IgnorePattern, error) {
-	data, err := os.ReadFile(GetProjectIgnorePath())
+	data, err := os.ReadFile(string(GetProjectIgnorePath()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			defaultFolders, parseErr := ParseIgnoredFolders(strings.Join(DefaultIgnoredFolders(), "\n"))
@@ -423,7 +425,7 @@ func LoadIgnoredFolders() ([]IgnorePattern, error) {
 
 func SaveIgnoredFolders(folders []IgnorePattern) error {
 	yactDir := GetProjectYactDir()
-	if err := os.MkdirAll(yactDir, 0755); err != nil {
+	if err := os.MkdirAll(string(yactDir), 0755); err != nil {
 		return err
 	}
 
@@ -433,5 +435,5 @@ func SaveIgnoredFolders(folders []IgnorePattern) error {
 	}
 
 	content := strings.Join(lines, "\n") + "\n"
-	return os.WriteFile(GetProjectIgnorePath(), []byte(content), 0644)
+	return os.WriteFile(string(GetProjectIgnorePath()), []byte(content), 0644)
 }
