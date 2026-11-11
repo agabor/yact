@@ -150,7 +150,7 @@ func main() {
 		commandErr = commands.HandleReadCommand(commandArgs)
 	case "output":
 		requireNoArgs("output", commandArgs)
-		commandErr = commands.HandleOutputCommand(commandArgs)
+		commandErr = commands.HandleOutputCommand()
 	case "keyword":
 		requireArgCount("keyword", commandArgs, 1)
 		commandErr = commands.HandleKeywordCommand(commandArgs)

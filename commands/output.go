@@ -9,7 +9,7 @@ import (
 	"yact/logic"
 )
 
-func HandleOutputCommand(args []string) error {
+func HandleOutputCommand() error {
 	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return err

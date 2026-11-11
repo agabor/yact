@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"yact/config"
@@ -71,11 +72,9 @@ func addExtension(extension string) error {
 		return fmt.Errorf("error loading extensions: %w", err)
 	}
 
-	for _, existing := range extensions {
-		if existing == extension {
-			fmt.Printf("Extension '%s' already exists\n", extension)
-			return nil
-		}
+	if slices.Contains(extensions, extension) {
+		fmt.Printf("Extension '%s' already exists\n", extension)
+		return nil
 	}
 
 	extensions = append(extensions, extension)
