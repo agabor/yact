@@ -267,6 +267,7 @@ div.compare { overflow-x: auto; }
 .dark a, .dark a:hover { color: var(--night-ink); }
 .steps h3 { color: var(--ink); }
 .dl .t { tab-size: 4; }
-.hero h1 { font-size: clamp(40px, 5.4vw, 68px); }
+.hero h1 { font-size: clamp(34px, 4.3vw, 54px); line-height: 1.12; }
+.hero h1 mark { white-space: nowrap; }
 div.compare { margin-bottom: 24px; }
 .ready .dim { color: var(--green); opacity: .75; }
