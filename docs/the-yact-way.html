@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The YACT way: prompts you can lint</title>
-  <meta name="description" content="A prompt is a program in a very high-level language. YACT checks it for two properties, complete and no silent assumptions, before any code is written.">
+  <meta name="description" content="A prompt is a program in a very high-level language. Before any code is written, YACT checks the prompt for two properties: it is complete, and it has no silent assumptions.">
   <link rel="canonical" href="https://yact.dev/the-yact-way.html">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:title" content="The YACT way">
-  <meta property="og:description" content="A prompt is a program in a very high-level language. YACT checks it for two properties, complete and no silent assumptions, before any code is written.">
+  <meta property="og:description" content="A prompt is a program in a very high-level language. Before any code is written, YACT checks the prompt for two properties: it is complete, and it has no silent assumptions.">
   <meta property="og:url" content="https://yact.dev/the-yact-way.html">
   <meta property="og:image" content="https://yact.dev/assets/og.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -27,6 +27,7 @@
           <li><a href="index.html#how">How it works</a></li>
           <li><a href="index.html#compare">Compare</a></li>
           <li><a href="the-yact-way.html" aria-current="page">The YACT way</a></li>
+          <li><a href="code-principles.html">Code principles</a></li>
           <li><a href="getting-started.html">Docs</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
           <li><span class="ver">v0.9.0</span></li>
@@ -38,13 +39,14 @@
   <main id="main">
     <div class="wrap">
       <h1 class="page-title">The YACT way</h1>
-      <p class="lede">A prompt is a program in a very high-level language. YACT is a tool with a method for writing one well, and for handing the result to a reviewer.</p>
+      <p class="lede">A prompt is a program in a very high-level language. This page explains the method that follows from that idea: how to write a prompt that can be checked, and how to hand the result to a reviewer.</p>
       <ul class="jump" aria-label="On this page">
         <li><a href="#principle">The principle</a></li>
         <li><a href="#complete">Complete</a></li>
         <li><a href="#assumptions">No silent assumptions</a></li>
         <li><a href="#plan">The plan</a></li>
         <li><a href="#loop">The loop</a></li>
+        <li><a href="#code">Code that suits the method</a></li>
         <li><a href="#limits">What it does not do</a></li>
         <li><a href="#habits">Habits that follow</a></li>
       </ul>
@@ -55,13 +57,14 @@
     <section class="section" id="principle" aria-labelledby="principle-h">
       <div class="wrap">
         <h2 id="principle-h">The principle</h2>
-        <p>When you ask a model to change code, the prompt is the program: it says what should happen, and the model compiles it into files. Like any program, it can be wrong in two ways that can be looked for without running anything.</p>
+        <p>When you ask a model to change code, the prompt is the program. It says what should happen, and the model compiles it into files. A prompt can be wrong in two ways that can be found without running anything.</p>
         <ul>
-          <li>It can <strong>refer to something that is not there</strong>: a type, a caller, a file the model has not been shown.</li>
-          <li>It can <strong>leave a choice open</strong>, so the model fills it in without telling you.</li>
+          <li>It can <strong>refer to something the model cannot see</strong>: a type, a caller or a file that was not linked.</li>
+          <li>It can <strong>leave a decision open</strong>, so that the model makes the decision without telling you.</li>
         </ul>
-        <p>The plan is the same prompt, written out more explicitly: the goal, then the steps. So both are held to the same two properties. A prompt is <strong>complete</strong> when every reference resolves, and it has <strong>no silent assumptions</strong> when every default is visible.</p>
-        <p>YACT works like a linter for these properties. The model checks them during the <code>y plan</code> call and writes what it finds into the plan, before any code exists. Fixing a gap then costs a sentence instead of a review.</p>
+        <p>These give the two properties that YACT checks. A prompt is <strong>complete</strong> when the model can see everything the prompt refers to. A prompt has <strong>no silent assumptions</strong> when every decision the model made for you is written down.</p>
+        <p>The plan is the same prompt in a more explicit form: a goal and a list of steps. The same two properties apply to it.</p>
+        <p>YACT works like a linter for these two properties. The model checks them during the <code>y plan</code> call and writes the results into the plan. No code has been written at that point, so closing a gap costs one sentence in the prompt and not a round of review.</p>
       </div>
     </section>
 
@@ -70,8 +73,8 @@
     <section class="section" id="complete" aria-labelledby="complete-h">
       <div class="wrap">
         <h2 id="complete-h">Complete: an error</h2>
-        <p>When the model would have to guess what is inside a file it cannot see, it does not guess: the plan gets a <code>## Missing context</code> section. YACT treats that as an error: it will not implement a plan that still has the section. Facts about code the model has not seen belong here, such as who calls a function or what a type contains.</p>
-        <p>You fix it by giving the model the files. Link them with <code>y read</code> or <code>y keyword</code>, write <code>((keyword))</code> in the prompt, or run <code>y plan</code> again, which sends the files the section lists.</p>
+        <p>If the model needs to know what is inside a file it was not given, it does not guess. It adds a <code>## Missing context</code> section to the plan and lists the files there. YACT treats this section as an error: <code>act</code> refuses to run while the plan contains it. The section is for facts about code the model has not seen, such as which functions call a function or which fields a type has.</p>
+        <p>To fix it, give the model the files. The simplest way is to run <code>y plan</code> again: the entries are links, so the listed files are sent this time. You can also link files yourself with <code>y read</code> or <code>y keyword</code>, or write <code>((keyword))</code> in the prompt.</p>
       </div>
     </section>
 
@@ -80,9 +83,9 @@
     <section class="section" id="assumptions" aria-labelledby="assumptions-h">
       <div class="wrap">
         <h2 id="assumptions-h">No silent assumptions: a warning</h2>
-        <p>Where the prompt is open about what you want, the model picks an answer and lists it under <code>## Assumptions</code>. YACT never blocks on this section, because the choice is yours.</p>
-        <p>Each entry marks a decision you did not make, so check it. If the assumption is what you want, it is fine and can stay in the plan. If it is not, say what you want in the prompt and plan again.</p>
-        <p>The two sections differ in kind. <strong>Missing context</strong> holds facts the model could not see. <strong>Assumptions</strong> holds choices about what you want. Keeping them apart keeps the first one a reliable gate.</p>
+        <p>Where the prompt does not say what you want, the model decides and lists its decision under <code>## Assumptions</code>. YACT never blocks on this section, because only you can say whether a decision is right.</p>
+        <p>Each entry is a decision that you did not make, so check every one. If you agree with it, leave it in the plan. If you disagree, state what you want in the prompt and run <code>y plan</code> again.</p>
+        <p>The two sections hold different kinds of things. <strong>Missing context</strong> holds facts about code that the model could not see. <strong>Assumptions</strong> holds decisions about what you want. A fact can be looked up, so it blocks <code>act</code> until the file is linked. A decision is yours, so it only warns.</p>
       </div>
     </section>
 
@@ -90,15 +93,16 @@
 
     <section class="section" id="plan" aria-labelledby="plan-h">
       <div class="wrap">
-        <h2 id="plan-h">The plan binds the change</h2>
-        <p>Once the two sections are dealt with, the plan is more than a to-do list. Each step names the file it changes and links the context the model is given to write it. So the plan records, in one place:</p>
+        <h2 id="plan-h">The plan ties the change to its intent</h2>
+        <p>A plan that has no missing context, and whose assumptions you have checked, is more than a to-do list. Each step names the one file it changes and links the files the model receives to implement it. The plan therefore records four things in one place:</p>
         <ul>
-          <li><strong>the intent</strong>: the goal in your words, then the steps that reach it</li>
-          <li><strong>the change</strong>: the file each step touches</li>
-          <li><strong>the context</strong>: the files the model was given for each step</li>
-          <li><strong>the assumptions</strong>: what the model chose where the prompt was open</li>
+          <li><strong>the intent</strong>: the goal in your words, followed by the steps that reach it</li>
+          <li><strong>the change</strong>: the file each step changes</li>
+          <li><strong>the context</strong>: the files the model received for each step</li>
+          <li><strong>the assumptions</strong>: the decisions the model made where the prompt left them open</li>
         </ul>
-        <p>This is what helps a reviewer. A pull or merge request that comes with its plan can be reviewed against what was asked, and the reviewer does not have to work out the intent from the diff.</p>
+        <p>This is what helps a reviewer. When a pull or merge request includes its plan, the reviewer compares the change with what was asked and does not have to work out the intent from the diff.</p>
+        <p>YACT does not attach the plan for you. The plan is in <code>yact-prompt.md</code>, and <code>y new</code> deletes that file. Commit the plan or copy it into the pull request before you start the next change.</p>
       </div>
     </section>
 
@@ -108,13 +112,24 @@
       <div class="wrap">
         <h2 id="loop-h">The loop</h2>
         <ol class="steps">
-          <li><h3>Write the prompt</h3><p>Say what you want in plain words, and link the files you know it needs.</p></li>
-          <li><h3>Plan</h3><p><code>y plan</code> writes the steps, and the two sections say what is missing and what the model assumed.</p></li>
-          <li><h3>Read the two sections</h3><p>Link the files that Missing context asks for, and check the assumptions. Plan again if you changed anything.</p></li>
-          <li><h3>Act, one step at a time</h3><p>The plan is ready when Missing context is gone and the assumptions are true. <code>y -s next act</code> implements one step per call, and you check each change against its step.</p></li>
-          <li><h3>Hand over the change with its plan</h3><p>In the pull request, the reviewer reads the change against the plan.</p></li>
+          <li><h3>Write the prompt</h3><p>Say what you want in plain words, and link the files that you know the change needs.</p></li>
+          <li><h3>Plan</h3><p><code>y plan</code> writes the steps. The two sections list what is missing and what the model assumed.</p></li>
+          <li><h3>Read the two sections</h3><p>Link the files that Missing context lists, and check each assumption. If you changed anything, plan again.</p></li>
+          <li><h3>Act, one step at a time</h3><p>When the plan has no Missing context section and you agree with every assumption, run <code>y -s next act</code>. It implements one step per call. Compare each change with its step.</p></li>
+          <li><h3>Hand over the change with its plan</h3><p>Include the plan in the pull request, so that the reviewer can compare the change with it.</p></li>
         </ol>
-        <p>If <code>act</code> still finds a problem in the plan, it writes a note to <code>.yact/temp/feedback.md</code> and YACT prints it. Treat it as a bug report on the prompt: fix the prompt, not only the code.</p>
+        <p><code>act</code> can still find a problem in the plan while it writes the code. It then writes a note to <code>.yact/temp/feedback.md</code>, and YACT prints the note. Treat the note as a bug report on the prompt: correct the prompt as well as the code.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="code" aria-labelledby="code-h">
+      <div class="wrap">
+        <h2 id="code-h">Code that suits the method</h2>
+        <p>The method makes two demands on the code. Each call sees only the files you linked, so the code must be understandable from a few files. <code>act</code> writes every changed file back in full, so the files must be small.</p>
+        <p>YACT's sixteen <a href="code-principles.html">code principles</a> describe code that meets both demands: searchable names, no hidden side effects, logic kept apart from I/O, precise types, and files under about 200 lines. <code>plan</code> and <code>act</code> follow them in the code they write or change.</p>
+        <p>This is also why YACT is easy to introduce on a new project or a clean codebase, and hard to introduce on a legacy one. Where files are very large and dependencies are tangled, every step needs a lot of context and a long rewrite, and <code>act</code> does not refactor code that the prompt did not mention.</p>
       </div>
     </section>
 
@@ -123,9 +138,10 @@
     <section class="section" id="limits" aria-labelledby="limits-h">
       <div class="wrap">
         <h2 id="limits-h">What it does not do</h2>
-        <p>The lint does not prove that the change is correct. No checker does: proving even a short ordinary program right is extremely hard, and nobody expects that of a linter. What YACT gives you is narrower and still useful. It surfaces gaps that would otherwise stay hidden until review.</p>
-        <p>It is also limited by the model, which makes the checks. The sections show what the model noticed, so an entry can be missed, and a plan without an Assumptions section is not proof that nothing was open. You still read the plan, check the change and run the tests.</p>
-        <p>One more guard is possible and not built yet: a strict mode that treats assumptions as errors too, the way a linter can be told to fail on any warning. For now, assumptions are yours to check.</p>
+        <p><strong>It does not prove that a change is correct.</strong> No linter does. What YACT gives you is narrower: it shows gaps in the prompt that would otherwise stay hidden until review.</p>
+        <p><strong>It does not find every gap.</strong> The model does the checking, and the two sections show what the model noticed. It can overlook an entry, so a plan without an Assumptions section may still contain an assumption. You still read the plan, check the change and run the tests.</p>
+        <p><strong>It does not limit which files <code>act</code> writes.</strong> The plan names one file per step, but inside the project the model can write or delete other files. <code>git diff</code> shows you if it did.</p>
+        <p><strong>It does not fail on assumptions.</strong> A strict mode that treats assumptions as errors, the way a linter can be told to fail on warnings, is not built yet. For now, you check the assumptions yourself.</p>
       </div>
     </section>
 
@@ -136,17 +152,17 @@
         <h2 id="habits-h">Habits that follow</h2>
         <dl class="defs">
           <dt>Read the two sections before the steps</dt>
-          <dd>They are the shortest way to see where the prompt is weak.</dd>
-          <dt>Fix the prompt, not the output</dt>
-          <dd>If a change is wrong because something was open, correct the prompt and run again. The plan then says what the code does, and the reviewer reads the right intent.</dd>
+          <dd>They show most quickly where the prompt is weak.</dd>
+          <dt>Fix the prompt, not only the output</dt>
+          <dd>If a change is wrong because the prompt left something open, correct the prompt and plan again. The plan then matches the code, and the reviewer reads the real intent.</dd>
           <dt>Keep files small</dt>
-          <dd>A complete file is easier to link, to read and to write back whole.</dd>
+          <dd><code>act</code> writes each changed file back in full. A small file is quicker and cheaper to rewrite, and its diff is easier to check.</dd>
           <dt>Put the plan in front of reviewers</dt>
-          <dd>Commit it or copy it into the pull request, whichever your team prefers. The assumptions are the first things a reviewer should check.</dd>
+          <dd>Commit it or copy it into the pull request, whichever your team prefers. A reviewer should check the assumptions first.</dd>
         </dl>
         <div class="actions">
           <a class="btn btn-primary" href="getting-started.html">Try the loop</a>
-          <a class="btn" href="index.html#how">See how it works</a>
+          <a class="btn" href="code-principles.html">Read the code principles</a>
         </div>
       </div>
     </section>
@@ -164,6 +180,7 @@
             <span>DOCS</span>
             <a href="getting-started.html">Getting started</a>
             <a href="the-yact-way.html">The YACT way</a>
+            <a href="code-principles.html">Code principles</a>
             <a href="https://github.com/agabor/yact#readme">README</a>
           </div>
           <div class="foot-col">

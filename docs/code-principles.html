@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code principles: the rules YACT applies to code</title>
+  <meta name="description" content="The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code.">
+  <link rel="canonical" href="https://yact.dev/code-principles.html">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="YACT code principles">
+  <meta property="og:description" content="The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code.">
+  <meta property="og:url" content="https://yact.dev/code-principles.html">
+  <meta property="og:image" content="https://yact.dev/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html#how">How it works</a></li>
+          <li><a href="index.html#compare">Compare</a></li>
+          <li><a href="the-yact-way.html">The YACT way</a></li>
+          <li><a href="code-principles.html" aria-current="page">Code principles</a></li>
+          <li><a href="getting-started.html">Docs</a></li>
+          <li><a href="https://github.com/agabor/yact">GitHub</a></li>
+          <li><span class="ver">v0.9.0</span></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <h1 class="page-title">Code principles</h1>
+      <p class="lede">YACT has sixteen principles for the code it plans, writes and reviews. They have one goal: every piece of code can be understood from what is visible in one place, and mistakes are caught by types, the compiler and tests rather than by careful reading.</p>
+      <ul class="jump" aria-label="On this page">
+        <li><a href="#why">Why YACT has them</a></li>
+        <li><a href="#principles">The sixteen principles</a></li>
+        <li><a href="#defaults">Four defaults</a></li>
+        <li><a href="#applied">How YACT applies them</a></li>
+        <li><a href="#change">Changing them</a></li>
+        <li><a href="#legacy">New code and legacy code</a></li>
+      </ul>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="why" aria-labelledby="why-h">
+      <div class="wrap">
+        <h2 id="why-h">Why YACT has them</h2>
+        <p><a href="the-yact-way.html">The YACT way</a> is about the prompt. These principles are about the code. YACT needs both, for two reasons.</p>
+        <ul>
+          <li><strong>Each call sees only the files you linked.</strong> Code that can be understood from one place needs few linked files. Code with hidden side effects, generic names or implicit wiring needs many, and the model is more likely to miss one.</li>
+          <li><strong><code>act</code> writes every changed file back in full.</strong> A small file is quick and cheap to rewrite, and its diff is easy to check.</li>
+        </ul>
+        <p>The principles also keep the code readable for people. A person who reviews a change has the same limit as the model: they can only judge what they can see.</p>
+        <p>The text below follows the file that the model receives, lightly edited for reading. The file in the repository, <a href="https://github.com/agabor/yact/blob/main/systemprompts/include/principles.txt"><code>systemprompts/include/principles.txt</code></a>, is the authoritative version.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="principles" aria-labelledby="principles-h">
+      <div class="wrap">
+        <h2 id="principles-h">The sixteen principles</h2>
+        <dl class="defs">
+          <dt id="p1">P1. Searchable names</dt>
+          <dd>Names reveal intent and are unique enough to find with a text search. No generic names (<code>data</code>, <code>info</code>, <code>utils</code>, <code>helpers</code>, <code>manager</code>, <code>process</code>, <code>handle</code>). No identifiers built from strings at runtime. One name per concept.</dd>
+          <dt id="p2">P2. Single responsibility</dt>
+          <dd>Each function, type and module has one job and one reason to change.</dd>
+          <dt id="p3">P3. No hidden side effects</dt>
+          <dd>A function does what its name and signature say, and nothing else. It does not mutate arguments, globals or shared objects unless that is its stated purpose.</dd>
+          <dt id="p4">P4. Command-query separation</dt>
+          <dd>A function either returns information or changes state, not both. Returning an error together with a result is fine.</dd>
+          <dt id="p5">P5. Functional core, imperative shell</dt>
+          <dd>Business logic lives in pure functions. File system, network, database, clock, randomness, environment and console output live in a thin outer layer that calls the core.</dd>
+          <dt id="p6">P6. Illegal states unrepresentable</dt>
+          <dd>Model states with types that cannot hold invalid combinations: sum types, enums, sealed classes, separate structs, or the closest construct the language offers. Do not use loose strings, booleans that exclude each other, or optional fields that depend on each other.</dd>
+          <dt id="p7">P7. Parse, don't validate</dt>
+          <dd>Convert untrusted input (user input, CLI arguments, files, network data, LLM output) into precise types once, at the boundary. Inner code takes those types and does not check them again.</dd>
+          <dt id="p8">P8. Explicit over implicit</dt>
+          <dd>Plain calls with visible arguments. No magic decorators, reflection-based wiring, monkey-patching, implicit conversions, hidden global state or behavior that depends on naming conventions.</dd>
+          <dt id="p9">P9. Static types</dt>
+          <dd>Type every function signature and data structure the language allows. No <code>any</code>, <code>interface{}</code>, untyped maps or dicts where a concrete type fits.</dd>
+          <dt id="p10">P10. Wrapped dependencies</dt>
+          <dd>Third-party libraries and external services are called through a thin interface the project owns, not from all over the code.</dd>
+          <dt id="p11">P11. Deep modules</dt>
+          <dd>A module has a small, simple interface that hides substantial work. Avoid shallow pass-through layers.</dd>
+          <dt id="p12">P12. Shallow structure</dt>
+          <dd>Composition over inheritance, early returns over nesting, short call chains and few layers of indirection.</dd>
+          <dt id="p13">P13. Simple and conventional</dt>
+          <dd>Build only what the task needs now. Readable over clever. Use the mainstream idioms of the language and of the codebase.</dd>
+          <dt id="p14">P14. Comments explain why</dt>
+          <dd>Names and types say what the code does. Comments state intent, business rules, invariants, constraints and non-obvious decisions. No comments that restate the code.</dd>
+          <dt id="p15">P15. Tests</dt>
+          <dd>Logic is covered by fast, independent, deterministic tests that run with one command. Pure functions are tested directly, without mocks.</dd>
+          <dt id="p16">P16. Consistency</dt>
+          <dd>Formatting, naming and structure match the surrounding code.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="defaults" aria-labelledby="defaults-h">
+      <div class="wrap">
+        <h2 id="defaults-h">Four defaults</h2>
+        <p>Developers disagree about some trade-offs. For four of them, the principles state a default so that the model does not choose a different answer on every call.</p>
+        <dl class="defs">
+          <dt id="d1">D1. Duplication</dt>
+          <dd>Tolerate small duplication until the right abstraction is clear. Do not merge code that only looks alike. Do remove duplication of one business rule.</dd>
+          <dt id="d2">D2. Function size</dt>
+          <dd>Keep related logic together in one readable function rather than scattering it across many tiny ones. Split a function when it has more than one responsibility, not when it reaches a line count.</dd>
+          <dt id="d3">D3. Organization</dt>
+          <dd>Follow the existing layout of the codebase. When a new module is needed, keep the code of one feature together.</dd>
+          <dt id="d4">D4. File size</dt>
+          <dd>Keep source files under about 200 lines and split them before 300, because every change rewrites the whole file. Split along responsibilities inside the same package or module and keep its public interface unchanged, rather than creating new modules or shallow wrappers.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="applied" aria-labelledby="applied-h">
+      <div class="wrap">
+        <h2 id="applied-h">How YACT applies them</h2>
+        <p>Four of the six commands include the principles, so code is planned, written and reviewed by the same rules.</p>
+        <dl class="defs">
+          <dt><code>plan</code></dt>
+          <dd>Designs the steps so that the resulting code follows the principles. Where a principle explains a design decision, the step names it, for example "(P7: parse once at the boundary)". <code>plan</code> does not add steps that only refactor, wrap or rename code the goal does not need.</dd>
+          <dt><code>act</code></dt>
+          <dd>Applies the principles to every function and type it writes or changes. It leaves all other code unchanged, even code that breaks a principle. When it extends existing code, it follows the pattern already used there.</dd>
+          <dt><code>review</code></dt>
+          <dd>Reports a violation only when it makes the changed code harder to change or easier to break, and names the principle.</dd>
+          <dt><code>analyze</code></dt>
+          <dd>Checks the files you link against all the principles, or against the ones you name, and reports what it finds. It changes nothing.</dd>
+        </dl>
+        <p>The plan has priority. If a plan and a principle disagree, <code>act</code> follows the plan. The principles decide only what the plan leaves open.</p>
+        <p>The principles shape how a goal is reached. They do not change the goal: YACT does not refactor your code because it breaks a principle. If you want that, ask for it in a prompt.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="change" aria-labelledby="change-h">
+      <div class="wrap">
+        <h2 id="change-h">Changing them</h2>
+        <p>The principles are one text file on your machine:</p>
+        <pre><code>~/.yact/systemprompts/include/principles.txt</code></pre>
+        <p>Edit it to match your team's rules. The change applies to <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> from the next call. Keep the identifiers (<code>P1</code>, <code>D4</code>) stable if you can, because plans and reviews refer to them.</p>
+        <p>Keep a copy of your version. Running one of those four commands with <code>-d</code> downloads the original file again and overwrites your edits.</p>
+        <p>Some principles assume a statically typed language (P6, P9). In a dynamically typed codebase, the model applies them as far as the language allows, and you may want to reword them.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="legacy" aria-labelledby="legacy-h">
+      <div class="wrap">
+        <h2 id="legacy-h">New code and legacy code</h2>
+        <p>YACT is easy to introduce where the code already follows these principles, or where there is no code yet. On a new project, <code>plan</code> and <code>act</code> follow the principles from the first file.</p>
+        <p>It is hard to introduce on a legacy codebase with very large files:</p>
+        <ul>
+          <li>Every step rewrites a whole file. For a file of several thousand lines, that is slow and expensive, and the response can reach the output limit.</li>
+          <li>Tangled code needs a lot of context. The plan lists more missing context, and each step links more files.</li>
+          <li><code>act</code> does not refactor code that the prompt did not mention, so the code does not get cleaner as a side effect of other changes.</li>
+        </ul>
+        <p>YACT warns before a call about every linked file over 300 lines. To see how far a part of your codebase is from the principles, link its files and run <code>y analyze</code>.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="getting-started.html">Get started</a>
+          <a class="btn" href="the-yact-way.html">Read The YACT way</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+          <p>Lint the prompt. Review the change against its plan.</p>
+        </div>
+        <div class="foot-cols">
+          <div class="foot-col">
+            <span>DOCS</span>
+            <a href="getting-started.html">Getting started</a>
+            <a href="the-yact-way.html">The YACT way</a>
+            <a href="code-principles.html">Code principles</a>
+            <a href="https://github.com/agabor/yact#readme">README</a>
+          </div>
+          <div class="foot-col">
+            <span>PROJECT</span>
+            <a href="https://github.com/agabor/yact">Source</a>
+            <a href="https://github.com/agabor/yact/releases">Releases</a>
+            <a href="https://github.com/agabor/yact/issues">Issues</a>
+          </div>
+        </div>
+      </div>
+      <div class="legal">
+        <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal.</p>
+        <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls. Fonts (Inter, Space Grotesk, JetBrains Mono) are served from this site under the SIL Open Font License; see <a href="fonts/LICENSES.txt">the licences</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+</body>
+</html>
