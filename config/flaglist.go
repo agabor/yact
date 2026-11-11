@@ -10,7 +10,6 @@ type Flaglist struct {
 	Index      *IndexSetting
 	Output     *OutputName
 	Strict     bool
-	Download   bool
 	Batch      bool
 	NoProgress bool
 	Verbose    bool
@@ -50,7 +49,6 @@ func ResolveFlags(user Flaglist, defaults PromptDefaults) (Flaglist, error) {
 	}
 	resolved.Output = &output
 	resolved.Strict = user.Strict || (defaults.Strict && output == OutputNameApply)
-	resolved.Download = user.Download || defaults.Download
 	return resolved, nil
 }
 
@@ -109,9 +107,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Strict {
 		parts = append(parts, "--strict")
-	}
-	if f.Download {
-		parts = append(parts, "--download")
 	}
 	if f.NoProgress {
 		parts = append(parts, "--no-progress")

@@ -58,10 +58,7 @@ func downloadAndLoadSystemPrompt(command config.PromptName) (string, config.Prom
 	return config.LoadPromptWithFlags(command)
 }
 
-func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, config.PromptDefaults, error) {
-	if forceDownload {
-		return downloadAndLoadSystemPrompt(command)
-	}
+func loadSystemPrompt(command config.PromptName) (string, config.PromptDefaults, error) {
 	systemPrompt, defaults, err := config.LoadPromptWithFlags(command)
 	if errors.Is(err, fs.ErrNotExist) {
 		return downloadAndLoadSystemPrompt(command)
@@ -69,12 +66,7 @@ func loadSystemPrompt(command config.PromptName, forceDownload bool) (string, co
 	return systemPrompt, defaults, err
 }
 
-func loadSkill(name config.SkillName, forceDownload bool) (logic.Skill, error) {
-	if forceDownload {
-		if err := config.DownloadSkill(name); err != nil {
-			return logic.Skill{}, err
-		}
-	}
+func loadSkill(name config.SkillName) (logic.Skill, error) {
 	content, err := config.LoadSkill(name)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := config.DownloadSkill(name); err != nil {
@@ -88,10 +80,10 @@ func loadSkill(name config.SkillName, forceDownload bool) (logic.Skill, error) {
 	return logic.Skill{Name: string(name), Content: content}, nil
 }
 
-func loadSkills(names []config.SkillName, forceDownload bool) ([]logic.Skill, error) {
+func loadSkills(names []config.SkillName) ([]logic.Skill, error) {
 	skills := make([]logic.Skill, 0, len(names))
 	for _, name := range names {
-		skill, err := loadSkill(name, forceDownload)
+		skill, err := loadSkill(name)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +164,7 @@ func main() {
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		skills, err := loadSkills(resolved.Skills, resolved.Download)
+		skills, err := loadSkills(resolved.Skills)
 		if err != nil {
 			commandErr = err
 			break
@@ -181,6 +173,8 @@ func main() {
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
+	case "download":
+		commandErr = commands.HandleDownloadCommand(commandArgs)
 	case "index":
 		requireArgCount("index", commandArgs, 1)
 		commandErr = commands.HandleIndexCommand(commandArgs)
@@ -196,7 +190,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		systemPrompt, defaults, err := loadSystemPrompt(promptName, flags.Download)
+		systemPrompt, defaults, err := loadSystemPrompt(promptName)
 		if err != nil {
 			promptNotFoundMessage(promptName, err)
 			os.Exit(1)
@@ -216,7 +210,7 @@ func main() {
 			}
 		}
 
-		skills, err := loadSkills(resolved.Skills, resolved.Download)
+		skills, err := loadSkills(resolved.Skills)
 		if err != nil {
 			commandErr = err
 			break

@@ -22,6 +22,7 @@ Commands:
   query [prompt]                       Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with --strict, fail on free text or incomplete code blocks)
   batch                                Fetch the pending batch result and write it using the output flags it was submitted with (--output, --strict). Without them, the result goes to the buffer. Apply the buffer with commit
+  download prompt <command> | skill <name> Download a system prompt or a skill from the project repository, replacing the local copy
   index <none|public|all>              Write the index to .yact/temp/index.txt without calling the LLM, where none removes it, public is public and all is private
   <command> [prompt]                   Call the LLM with the systempront that belongs to the given command.
 
@@ -55,7 +56,6 @@ Global Flags:
   -i, --index <name>                   Index for this call: none sends no index, public generates a public index, all generates a private index. The index is written to .yact/temp/index.txt and sent only in the call that sets the switch
   -s, --steps <selector>               Implement only the selected steps of .yact/plan.md. Requires .yact/plan.md and cannot be combined with a prompt argument or with --output plan. The selector is N, N-M, a comma separated list such as 1,3,5-6, next, or all. all sends the whole plan without step selection and ticks off no step. Finished steps are ticked off in the plan after a successful write
   -b, --batch                          Submit the request as a batch job, allows one pending job at a time, skips post-processing. The output flags (--output, --strict) are saved with the job and applied when the result is fetched with 'y batch'
-  -d, --download                       Download the system prompt for the command and the skills given with --skill
   --skill <name>                       Attach the skill file ~/.yact/skills/<name>.md verbatim to the messages sent to the LLM. Can be repeated or comma separated
   --no-progress                        Hide progress indicator
   --verbose                            Print all file paths and the prompt sent to the LLM

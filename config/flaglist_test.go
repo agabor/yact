@@ -11,15 +11,14 @@ func pointerTo[T any](value T) *T {
 
 func TestResolveFlags(t *testing.T) {
 	tests := []struct {
-		name         string
-		user         Flaglist
-		defaults     PromptDefaults
-		wantErr      bool
-		wantModel    *ModelName
-		wantIndex    *IndexSetting
-		wantOutput   OutputName
-		wantStrict   bool
-		wantDownload bool
+		name       string
+		user       Flaglist
+		defaults   PromptDefaults
+		wantErr    bool
+		wantModel  *ModelName
+		wantIndex  *IndexSetting
+		wantOutput OutputName
+		wantStrict bool
 	}{
 		{
 			name:       "defaults fill unset model index and output",
@@ -60,22 +59,16 @@ func TestResolveFlags(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "strict with a print default fails",
-			user:    Flaglist{Strict: true},
+			name:     "strict with a print default fails",
+			user:     Flaglist{Strict: true},
 			defaults: PromptDefaults{Output: pointerTo(OutputNamePrint)},
-			wantErr: true,
+			wantErr:  true,
 		},
 		{
 			name:       "strict default applies when output is apply",
 			defaults:   PromptDefaults{Strict: true},
 			wantOutput: OutputNameApply,
 			wantStrict: true,
-		},
-		{
-			name:         "download default is added",
-			defaults:     PromptDefaults{Download: true},
-			wantOutput:   OutputNameApply,
-			wantDownload: true,
 		},
 	}
 
@@ -102,9 +95,6 @@ func TestResolveFlags(t *testing.T) {
 			}
 			if got.Strict != tc.wantStrict {
 				t.Errorf("Strict = %v, want %v", got.Strict, tc.wantStrict)
-			}
-			if got.Download != tc.wantDownload {
-				t.Errorf("Download = %v, want %v", got.Download, tc.wantDownload)
 			}
 		})
 	}
@@ -171,14 +161,13 @@ func TestFlagStringUsesNewNames(t *testing.T) {
 		{
 			name: "named flags",
 			flags: Flaglist{
-				Model:    pointerTo(ModelHaiku),
-				Index:    pointerTo(IndexPrivate),
-				Output:   pointerTo(OutputNamePlan),
-				Download: true,
-				Steps:    "1-3",
-				Skills:   []SkillName{SkillName("review")},
+				Model:  pointerTo(ModelHaiku),
+				Index:  pointerTo(IndexPrivate),
+				Output: pointerTo(OutputNamePlan),
+				Steps:  "1-3",
+				Skills: []SkillName{SkillName("review")},
 			},
-			want: "--model haiku --index all --output plan --download --steps 1-3 --skill review",
+			want: "--model haiku --index all --output plan --steps 1-3 --skill review",
 		},
 		{
 			name:  "apply output is not printed",

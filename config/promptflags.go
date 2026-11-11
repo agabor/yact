@@ -12,11 +12,10 @@ import (
 // PromptDefaults holds the options a system prompt sets in its flags line. A nil
 // pointer means the prompt does not set that option, so a user flag can fill it in.
 type PromptDefaults struct {
-	Model    *ModelName
-	Index    *IndexSetting
-	Output   *OutputName
-	Strict   bool
-	Download bool
+	Model  *ModelName
+	Index  *IndexSetting
+	Output *OutputName
+	Strict bool
 }
 
 const promptFlagsPrefix = "flags: "
@@ -45,7 +44,6 @@ func parseLongFlags(name PromptName, text string) (PromptDefaults, error) {
 	set.StringVar(&indexRaw, "index", "", "")
 	set.StringVar(&outputRaw, "output", "", "")
 	set.BoolVar(&defaults.Strict, "strict", false, "")
-	set.BoolVar(&defaults.Download, "download", false, "")
 
 	if err := set.Parse(strings.Fields(text)); err != nil {
 		return PromptDefaults{}, promptFlagError(name, err)
@@ -113,8 +111,6 @@ func applyLetterFlag(defaults *PromptDefaults, token string) {
 		defaults.Output = &output
 	case "v":
 		defaults.Strict = true
-	case "d":
-		defaults.Download = true
 	}
 }
 
