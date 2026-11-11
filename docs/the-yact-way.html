@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The YACT way: prompts you can lint</title>
+  <meta name="description" content="A prompt is a program in a very high-level language. YACT checks it for two properties, complete and no silent assumptions, before any code is written.">
+  <link rel="canonical" href="https://yact.dev/the-yact-way.html">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The YACT way">
+  <meta property="og:description" content="A prompt is a program in a very high-level language. YACT checks it for two properties, complete and no silent assumptions, before any code is written.">
+  <meta property="og:url" content="https://yact.dev/the-yact-way.html">
+  <meta property="og:image" content="https://yact.dev/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html#how">How it works</a></li>
+          <li><a href="index.html#compare">Compare</a></li>
+          <li><a href="the-yact-way.html" aria-current="page">The YACT way</a></li>
+          <li><a href="workflows.html">Workflows</a></li>
+          <li><a href="getting-started.html">Docs</a></li>
+          <li><a href="https://github.com/agabor/yact">GitHub</a></li>
+          <li><span class="ver">v0.9.0</span></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <h1 class="page-title">The YACT way</h1>
+      <p class="lede">A prompt is a program in a very high-level language. YACT is a tool that carries a method for writing one well.</p>
+      <ul class="jump" aria-label="On this page">
+        <li><a href="#principle">The principle</a></li>
+        <li><a href="#complete">Complete</a></li>
+        <li><a href="#assumptions">No silent assumptions</a></li>
+        <li><a href="#loop">The loop</a></li>
+        <li><a href="#limits">What it does not do</a></li>
+        <li><a href="#habits">Habits that follow</a></li>
+      </ul>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="principle" aria-labelledby="principle-h">
+      <div class="wrap">
+        <h2 id="principle-h">The principle</h2>
+        <p>When you ask a model to change code, the prompt is the program: it says what should happen, and the model compiles it into files. Like any program, it can be wrong in two ways that a tool can look for without running anything.</p>
+        <ul>
+          <li>It can <strong>refer to something that is not there</strong>: a type, a caller, a file the model has not been shown.</li>
+          <li>It can <strong>leave a choice open</strong>, so the model fills it in without telling you.</li>
+        </ul>
+        <p>The plan is the same prompt, written out more explicitly: the goal, then the steps. So YACT uses one word for both and holds both to the same two properties. A prompt is <strong>complete</strong> when every reference resolves, and it has <strong>no silent assumptions</strong> when every default is visible.</p>
+        <p>YACT works like a linter for these properties. It reports them before any code exists, when fixing them costs a sentence instead of a review.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="complete" aria-labelledby="complete-h">
+      <div class="wrap">
+        <h2 id="complete-h">Complete: an error</h2>
+        <p>If the planner has to guess what is inside a file it cannot see, the plan gets a <code>## Missing context</code> section. YACT treats that as an error: it will not implement a plan that still has the section. Facts about code the model has not seen belong here, such as who calls a function or what a type contains.</p>
+        <p>You settle it by giving the model the files. Link them with <code>y read</code>, select them by keyword with <code>y keyword</code> or <code>((keyword))</code>, or run <code>y plan</code> again, which sends the files the section lists.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="assumptions" aria-labelledby="assumptions-h">
+      <div class="wrap">
+        <h2 id="assumptions-h">No silent assumptions: a warning</h2>
+        <p>Where the prompt is open about what you want, the planner picks an answer and lists it under <code>## Assumptions</code>. YACT never blocks on this section, because the choice is yours. But each entry marks a decision you did not make, and the plan is easier to trust when there are none.</p>
+        <p>The two lists differ in kind. <strong>Missing context</strong> holds facts the model could not see. <strong>Assumptions</strong> holds choices about what you want. Keeping them apart keeps the first one a reliable gate.</p>
+        <p>You settle an entry by stating the answer in the prompt, or by changing it if the model chose wrong.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="loop" aria-labelledby="loop-h">
+      <div class="wrap">
+        <h2 id="loop-h">The loop</h2>
+        <ol class="steps">
+          <li><h3>Write the prompt</h3><p>Say what you want in plain words, and link the files you know matter.</p></li>
+          <li><h3>Plan</h3><p><code>y plan</code> writes the steps and lists what is missing and what it assumed.</p></li>
+          <li><h3>Settle the lists</h3><p>Sharpen the prompt or link the files, then plan again.</p></li>
+          <li><h3>Act, one step at a time</h3><p>The prompt is ready when both lists are empty. <code>y -s next act</code> writes one file per call, and you read each diff.</p></li>
+        </ol>
+        <p>If <code>act</code> still finds a problem in the plan, it writes a note to <code>.yact/temp/feedback.md</code> and YACT prints it. Treat it as a bug report on the prompt: fix the prompt, not only the code.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="limits" aria-labelledby="limits-h">
+      <div class="wrap">
+        <h2 id="limits-h">What it does not do</h2>
+        <p>The lint does not prove that the change is correct. No checker does: proving even a short ordinary program right is extremely hard, and nobody expects that of a linter. What YACT gives you is narrower and still useful. It surfaces gaps that would otherwise stay hidden until review.</p>
+        <p>It is also limited by the model. The lists show what the model noticed, so an entry can be missed. You still read the plan and the diff, and you still run the tests.</p>
+        <p>One more guard is possible and not built yet: a strict mode that treats assumptions as errors too, the way a linter can be told to fail on any warning. For now, assumptions are yours to read.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="habits" aria-labelledby="habits-h">
+      <div class="wrap">
+        <h2 id="habits-h">Habits that follow</h2>
+        <dl class="defs">
+          <dt>Read the lists before the steps</dt>
+          <dd>They are the shortest way to see where the prompt is weak.</dd>
+          <dt>Fix the prompt, not the output</dt>
+          <dd>If a diff is wrong because something was open, change the prompt and run again. The fix then applies to the next task as well.</dd>
+          <dt>Keep files small</dt>
+          <dd>A complete file is easier to link, to read and to write back whole.</dd>
+          <dt>Put the plan in front of reviewers</dt>
+          <dd>Commit it or paste it into the pull request. The assumptions are the first things a reviewer should check, and the workflows already do this.</dd>
+        </dl>
+        <div class="actions">
+          <a class="btn btn-primary" href="getting-started.html">Try the loop</a>
+          <a class="btn" href="index.html#how">See how it works</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+          <p>Lint the prompt. Review a small diff.</p>
+        </div>
+        <div class="foot-cols">
+          <div class="foot-col">
+            <span>DOCS</span>
+            <a href="getting-started.html">Getting started</a>
+            <a href="the-yact-way.html">The YACT way</a>
+            <a href="workflows.html">GitHub workflows</a>
+            <a href="https://github.com/agabor/yact#readme">README</a>
+          </div>
+          <div class="foot-col">
+            <span>PROJECT</span>
+            <a href="https://github.com/agabor/yact">Source</a>
+            <a href="https://github.com/agabor/yact/releases">Releases</a>
+            <a href="https://github.com/agabor/yact/issues">Issues</a>
+          </div>
+        </div>
+      </div>
+      <div class="legal">
+        <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal.</p>
+        <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls. Fonts (Inter, Space Grotesk, JetBrains Mono) are served from this site under the SIL Open Font License; see <a href="fonts/LICENSES.txt">the licences</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+</body>
+</html>

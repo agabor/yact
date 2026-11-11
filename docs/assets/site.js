@@ -8,7 +8,8 @@
     button.className = 'copy';
     button.textContent = 'Copy';
     button.addEventListener('click', function () {
-      navigator.clipboard.writeText(pre.querySelector('code').innerText.replace(/\n$/, '')).then(function () {
+      var code = pre.querySelector('code');
+      navigator.clipboard.writeText(code.innerText.replace(/\n$/, '')).then(function () {
         button.textContent = 'Copied';
         setTimeout(function () { button.textContent = 'Copy'; }, 1600);
       });

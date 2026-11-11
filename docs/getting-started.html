@@ -9,14 +9,12 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Getting started with yact">
-  <meta property="og:description" content="Install YACT, add your Anthropic API key and make a first change with a reviewable plan.">
+  <meta property="og:description" content="Install YACT, add your Anthropic API key and make a first change with a reviewable plan. About ten minutes.">
   <meta property="og:url" content="https://yact.dev/getting-started.html">
   <meta property="og:image" content="https://yact.dev/assets/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/docs.css">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -28,6 +26,7 @@
         <ul>
           <li><a href="index.html#how">How it works</a></li>
           <li><a href="index.html#compare">Compare</a></li>
+          <li><a href="the-yact-way.html">The YACT way</a></li>
           <li><a href="workflows.html">Workflows</a></li>
           <li><a href="getting-started.html" aria-current="page">Docs</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
@@ -36,7 +35,6 @@
       </nav>
     </div>
   </header>
-
   <main id="main">
     <div class="wrap">
       <h1 class="page-title">Getting started</h1>
@@ -46,6 +44,7 @@
         <li><a href="#install">Install</a></li>
         <li><a href="#configure">Configure</a></li>
         <li><a href="#first-change">Make your first change</a></li>
+        <li><a href="#keywords">Choose files by keyword</a></li>
         <li><a href="#ask">Ask without changing anything</a></li>
         <li><a href="#sent">See what is sent and what it costs</a></li>
         <li><a href="#team">Use it with a team</a></li>
@@ -140,7 +139,7 @@ y read "commands/*.go"</code></pre>
           <li>
             <p><strong>Ask for a plan.</strong> The response is saved to <code>yact-prompt.md</code> instead of your source files. Open it, read it and edit anything you disagree with. Each step changes one file and ends with a <code>Context</code> line that links the files that step needs.</p>
             <pre data-copy><code>y plan "add a --version flag"</code></pre>
-            <p>If the plan ends with a <code>## Missing context</code> section, the planner had to guess what is in those files. Run <code>y plan</code> once more: the files listed there are sent this time, and the plan is revised. YACT will not implement a plan that still has that section.</p>
+            <p>A plan can end with two lists, and they are the point of the tool. <code>## Missing context</code> names what the planner could not see, so it guessed. It is an error: YACT will not implement a plan that still has it. Run <code>y plan</code> once more and the files listed there are sent this time. <code>## Assumptions</code> names the choices the planner made for you. It never blocks a run, but read it: each entry is a place the prompt left something open. Settle an entry by sharpening the prompt, then run <code>y plan</code> again. The prompt is ready when both lists are empty. <a href="the-yact-way.html">Why this matters</a>.</p>
           </li>
           <li>
             <p><strong>Implement the first step.</strong> YACT sends the goal and that one step, makes one API call, writes the files and ticks the step off in the plan.</p>
@@ -155,6 +154,8 @@ y read "commands/*.go"</code></pre>
           </li>
         </ol>
 
+        <p>If <code>act</code> finds a problem in the plan or the context, it can say so in <code>.yact/temp/feedback.md</code>. YACT prints that file after the call, so read it before you review the diff.</p>
+
         <h3>A quicker path for small changes</h3>
         <p>You can skip the plan and give the task directly. The files you added with <code>y read</code> are sent as context.</p>
         <pre data-copy><code>y read main.go
@@ -168,6 +169,24 @@ y act "add a --version flag"</code></pre>
 
         <h3>Choose a model</h3>
         <p><code>act</code> uses Haiku by default. Add <code>-m sonnet</code>, <code>-m opus</code> or <code>-m fable</code> to pick another model. Which models you can use depends on your Anthropic account. To change the default, run <code>y config claude_model &lt;name&gt;</code>.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="keywords" aria-labelledby="keywords-h">
+      <div class="wrap">
+        <h2 id="keywords-h">Choose files by keyword</h2>
+        <p>Naming files works when you know where the code is. When you only know what it is called, pick files by keyword. There are two ways, and they differ in when the search happens.</p>
+        <dl class="defs">
+          <dt><code>y keyword PlanStep</code></dt>
+          <dd>Searches the project once and adds a link to every file that contains the word. The links are a snapshot: files created later are not included until you run it again.</dd>
+          <dt><code>((PlanStep))</code> in your prompt</dt>
+          <dd>Searches at call time, every time you run a command. The marker is removed before the model sees your text, so the prompt still reads naturally.</dd>
+        </dl>
+        <pre data-copy><code>y act "Rename PlanStep to Step and update every use. ((PlanStep))"</code></pre>
+        <p>A keyword matches whole words, in any casing or separator style, so <code>plan step</code> finds <code>PlanStep</code> and <code>plan_step</code>. Only files with the extensions in your settings are searched; add one with <code>y config ext vue</code>. Markers are read from your own prompt, not from system prompts. To see which files a keyword picked, run with <code>--dry-run --verbose</code>.</p>
+        <p>Keywords select files by what they contain, so they help most with the task type that is hardest to scope by hand: renames and changes to something that is used in many places.</p>
       </div>
     </section>
 
@@ -239,7 +258,7 @@ y review "add a --version flag"</code></pre>
           <dt>--steps cannot be combined with a prompt argument</dt>
           <dd><code>-s</code> implements steps that are already in the plan, so it takes no task text. Put the instruction in the plan, or leave out <code>-s</code>.</dd>
           <dt>Files needed as context are missing</dt>
-          <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more.</dd>
+          <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more, or add the files yourself with <code>y read</code> or <code>y keyword</code>.</dd>
           <dt>no steps remain</dt>
           <dd>Every step of the plan is ticked. Untick a step to run it again, extend the plan with <code>y plan "…"</code>, or start over with <code>y new</code>.</dd>
           <dt>A file was not sent</dt>
@@ -252,11 +271,34 @@ y review "add a --version flag"</code></pre>
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal. <a href="https://github.com/agabor/yact">Source</a>, <a href="https://github.com/agabor/yact/releases">releases</a> and <a href="https://github.com/agabor/yact/issues">issues</a> are on GitHub.</p>
-      <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls.</p>
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+          <p>Lint the prompt. Review a small diff.</p>
+        </div>
+        <div class="foot-cols">
+          <div class="foot-col">
+            <span>DOCS</span>
+            <a href="getting-started.html">Getting started</a>
+            <a href="the-yact-way.html">The YACT way</a>
+            <a href="workflows.html">GitHub workflows</a>
+            <a href="https://github.com/agabor/yact#readme">README</a>
+          </div>
+          <div class="foot-col">
+            <span>PROJECT</span>
+            <a href="https://github.com/agabor/yact">Source</a>
+            <a href="https://github.com/agabor/yact/releases">Releases</a>
+            <a href="https://github.com/agabor/yact/issues">Issues</a>
+          </div>
+        </div>
+      </div>
+      <div class="legal">
+        <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal.</p>
+        <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls. Fonts (Inter, Space Grotesk, JetBrains Mono) are served from this site under the SIL Open Font License; see <a href="fonts/LICENSES.txt">the licences</a>.</p>
+      </div>
     </div>
   </footer>
 
-  <script src="assets/docs.js"></script>
+  <script src="assets/site.js"></script>
 </body>
 </html>

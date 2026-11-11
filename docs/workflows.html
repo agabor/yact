@@ -9,14 +9,12 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:title" content="GitHub workflows for yact">
-  <meta property="og:description" content="Label an issue, get a pull request. Label a pull request, get a review.">
+  <meta property="og:description" content="Label an issue and get a planned, implemented pull request. Label a pull request and get a review or a fix. Set up the YACT GitHub workflows.">
   <meta property="og:url" content="https://yact.dev/workflows.html">
   <meta property="og:image" content="https://yact.dev/assets/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/docs.css">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -28,6 +26,7 @@
         <ul>
           <li><a href="index.html#how">How it works</a></li>
           <li><a href="index.html#compare">Compare</a></li>
+          <li><a href="the-yact-way.html">The YACT way</a></li>
           <li><a href="workflows.html" aria-current="page">Workflows</a></li>
           <li><a href="getting-started.html">Docs</a></li>
           <li><a href="https://github.com/agabor/yact">GitHub</a></li>
@@ -36,7 +35,6 @@
       </nav>
     </div>
   </header>
-
   <main id="main">
     <div class="wrap">
       <h1 class="page-title">GitHub workflows</h1>
@@ -123,7 +121,7 @@ done</code></pre>
           <li><p><strong>Plan.</strong> <code>y plan</code> turns the issue into a plan. If the plan has a <code>## Missing context</code> section, it runs once more with those files; if the section is still there, the run stops instead of guessing.</p></li>
           <li><p><strong>Implement.</strong> On a new branch, <code>yact/issue-&lt;number&gt;</code>, <code>y act</code> implements every step. If the response cannot be applied, the raw response is uploaded as a run artifact so you can see why.</p></li>
           <li><p><strong>Commit.</strong> After formatting, the staged diff is sent to <code>y query</code>, which writes the commit message. If that call fails, the issue title is used.</p></li>
-          <li><p><strong>Open the pull request.</strong> Its description is the plan followed by <code>Closes #&lt;number&gt;</code>, so the reviewer sees what was meant to change, and the later workflows can read it back.</p></li>
+          <li><p><strong>Open the pull request.</strong> Its description is the plan followed by <code>Closes #&lt;number&gt;</code>. The reviewer sees what was meant to change, including any <code>## Assumptions</code> the planner listed, which are the first things to check. The later workflows read the plan back.</p></li>
         </ol>
         <p>The heart of it is five commands:</p>
         <pre><code>y new
@@ -226,11 +224,34 @@ y --skill workflow act "add a workflow that runs y analyze on pull requests labe
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal. <a href="https://github.com/agabor/yact">Source</a>, <a href="https://github.com/agabor/yact/releases">releases</a> and <a href="https://github.com/agabor/yact/issues">issues</a> are on GitHub.</p>
-      <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls.</p>
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="wordmark" href="./" aria-label="yact, home">yact</a>
+          <p>Lint the prompt. Review a small diff.</p>
+        </div>
+        <div class="foot-cols">
+          <div class="foot-col">
+            <span>DOCS</span>
+            <a href="getting-started.html">Getting started</a>
+            <a href="the-yact-way.html">The YACT way</a>
+            <a href="workflows.html">GitHub workflows</a>
+            <a href="https://github.com/agabor/yact#readme">README</a>
+          </div>
+          <div class="foot-col">
+            <span>PROJECT</span>
+            <a href="https://github.com/agabor/yact">Source</a>
+            <a href="https://github.com/agabor/yact/releases">Releases</a>
+            <a href="https://github.com/agabor/yact/issues">Issues</a>
+          </div>
+        </div>
+      </div>
+      <div class="legal">
+        <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal.</p>
+        <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls. Fonts (Inter, Space Grotesk, JetBrains Mono) are served from this site under the SIL Open Font License; see <a href="fonts/LICENSES.txt">the licences</a>.</p>
+      </div>
     </div>
   </footer>
 
-  <script src="assets/docs.js"></script>
+  <script src="assets/site.js"></script>
 </body>
 </html>
