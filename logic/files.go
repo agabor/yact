@@ -39,13 +39,17 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 			if isRoot {
 				return nil
 			}
-			if IsInIgnoredFolder(relativePath, ignoredFolders) {
+			if IsFolderIgnored(relativePath, ignoredFolders) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
 		if !entry.Type().IsRegular() {
+			return nil
+		}
+
+		if IsInIgnoredFolder(relativePath, ignoredFolders) {
 			return nil
 		}
 
@@ -71,11 +75,22 @@ func isIncludedHiddenPath(relativePath string) bool {
 	return firstSegment == ".github"
 }
 
+// The last segment of a directory path is a folder itself and must be matched
+// too, unlike a file path where the last segment is the file name.
+func IsFolderIgnored(relativeFolderPath string, ignoredFolders []config.IgnorePattern) bool {
+	folders := strings.Split(filepath.ToSlash(relativeFolderPath), "/")
+	return matchesAnyFolderPrefix(folders, ignoredFolders)
+}
+
 // Patterns are anchored at the project root, and a file is ignored when one of
 // the folders leading to it matches, so ignoring "vendor" also hides "vendor/a/b.go".
 func IsInIgnoredFolder(relativePath string, ignoredFolders []config.IgnorePattern) bool {
 	segments := strings.Split(filepath.ToSlash(relativePath), "/")
 	folders := segments[:len(segments)-1]
+	return matchesAnyFolderPrefix(folders, ignoredFolders)
+}
+
+func matchesAnyFolderPrefix(folders []string, ignoredFolders []config.IgnorePattern) bool {
 	for _, pattern := range ignoredFolders {
 		for depth := 1; depth <= len(folders); depth++ {
 			if matchesFolderSegments(pattern.Segments(), folders[:depth]) {
