@@ -111,8 +111,8 @@ mv yact-linux-amd64 ~/.local/bin/y</code></pre>
         <pre data-copy><code>y config anthropic_api_key &lt;your-own-anthropic-key&gt;
 y config</code></pre>
         <p>The second command shows your current settings, so you can check that it worked. YACT reads the key only from this file, not from the <code>ANTHROPIC_API_KEY</code> environment variable.</p>
-        <p>YACT downloads the system prompt of a command from the YACT repository the first time you use that command. Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there is a command: <code>plan</code> writes a plan, <code>act</code> writes code, <code>ask</code> answers questions, <code>review</code> reviews a diff, <code>analyze</code> checks code against the <a href="code-principles.html">code principles</a> and <code>bash</code> writes shell commands. You can read these files at any time. To replace your copy of one with the latest version, add <code>-d</code>. This overwrites any edits you made to that file.</p>
-        <pre data-copy><code>y -d act</code></pre>
+        <p>YACT downloads the system prompt of a command from the YACT repository the first time you use that command. Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there is a command: <code>plan</code> writes a plan, <code>act</code> writes code, <code>ask</code> answers questions, <code>review</code> reviews a diff, <code>analyze</code> checks code against the <a href="code-principles.html">code principles</a> and <code>bash</code> writes shell commands. You can read these files at any time. To replace your copy of one with the latest version, download it again. This overwrites any edits you made to that file.</p>
+        <pre data-copy><code>y download prompt act</code></pre>
         <p>Finally, keep YACT's working files out of your commits. In the repository you work on, add this to <code>.gitignore</code>:</p>
         <pre data-copy><code>.yact/temp
 .yact/batch_job_id.txt</code></pre>
@@ -142,8 +142,14 @@ y read "commands/*.go"</code></pre>
             <pre data-copy><code>y plan "add a --version flag"</code></pre>
             <p>A plan can end with two sections. Together they are the lint of your prompt.</p>
             <p><code>## Missing context</code> lists code that the model needed and was not given. The model does not guess; it asks. This is an error: <code>act</code> refuses to run while the plan has this section. Run <code>y plan</code> once more, and the listed files are sent this time.</p>
-            <p><code>## Assumptions</code> lists the decisions the model made where the prompt left them open. This is a warning and never blocks <code>act</code>, but check each entry. If you agree with it, leave it in the plan. If you disagree, state what you want in the prompt and run <code>y plan</code> again.</p>
-            <p>The plan is ready when it has no Missing context section and you agree with every assumption. <a href="the-yact-way.html">Why this matters</a>.</p>
+            <p><code>## Assumptions</code> lists the decisions the model made where the prompt left them open. This is an error too: every entry has a checkbox, and <code>act</code> refuses to run while one is open.</p>
+            <pre><code>## Assumptions
+
+- [ ] **A1. Unclear:** the prompt does not say where the version comes from.
+  Taken: a variable set at build time.</code></pre>
+            <p>If you agree with an entry, tick it: change <code>[ ]</code> to <code>[x]</code> in your editor. If you disagree, write a line that starts with <code>Answer:</code> under the entry and run <code>y plan</code> again. The model changes the steps and rewrites the entry with <code>Decided:</code>. Read it, then tick it.</p>
+            <p>Only you tick a box. When you plan again, YACT keeps your tick as long as the wording of the entry has not changed.</p>
+            <p>The plan is ready when it has no Missing context section and every assumption is ticked. <a href="the-yact-way.html">Why this matters</a>.</p>
           </li>
           <li>
             <p><strong>Implement the first step.</strong> YACT sends the goal and that one step, makes one API call, writes the files and ticks the step off in the plan.</p>
@@ -245,7 +251,7 @@ y review "add a --version flag"</code></pre>
         <h2 id="team-h">Use it with a team</h2>
         <p><strong>Plans in reviews.</strong> A plan shows what a change was meant to do, step by step: the file each step changes, the files the model received and what it assumed. With the plan next to the pull or merge request, the reviewer compares the change with what was asked. YACT does not attach the plan, so your team decides whether to commit it or copy it into the request.</p>
         <p><strong>Mentoring.</strong> If you are learning, write down what you expect each step of a plan to change before you run it, then compare with the diff. If you are mentoring, ask for the plan with the pull request and review the change against it. That review is where a junior learns.</p>
-        <p><strong>Shared commands.</strong> A command is a text file in <code>~/.yact/systemprompts/</code>, so a team can share its own commands, such as an <code>explain.txt</code>, like any other file. To tune a command that came with YACT, copy it to a new name first, because <code>-d</code> overwrites the original. <a href="index.html#make-it-yours">See how</a>.</p>
+        <p><strong>Shared commands.</strong> A command is a text file in <code>~/.yact/systemprompts/</code>, so a team can share its own commands, such as an <code>explain.txt</code>, like any other file. To tune a command that came with YACT, copy it to a new name first, because <code>y download prompt</code> overwrites the original. <a href="index.html#make-it-yours">See how</a>.</p>
         <p><strong>Shared code principles.</strong> <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> follow one list of <a href="code-principles.html">code principles</a>. It is a text file too, so a team can agree on one version and share it.</p>
       </div>
     </section>
@@ -268,6 +274,12 @@ y review "add a --version flag"</code></pre>
           <dd><code>-s</code> implements steps that are already in the plan, so it takes no prompt text. Put the instruction in the plan, or leave out <code>-s</code>.</dd>
           <dt>Files needed as context are missing</dt>
           <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more, or add the files yourself with <code>y read</code> or <code>y keyword</code>.</dd>
+          <dt>Assumptions are still open</dt>
+          <dd>An entry under <code>## Assumptions</code> has an open box and no answer. Tick the box if you accept the entry, or write an <code>Answer:</code> line under it and run <code>y plan</code>.</dd>
+          <dt>Answers under assumptions are not applied yet</dt>
+          <dd>You answered an assumption but have not planned again. Run <code>y plan</code>, read the rewritten entry and tick it.</dd>
+          <dt>An assumption I ticked is open again</dt>
+          <dd>The model reworded the entry, so YACT did not keep your tick. Read the new wording and tick it again.</dd>
           <dt>no steps remain</dt>
           <dd>Every step of the plan is ticked. Untick a step to run it again, extend the plan with <code>y plan "…"</code>, or start over with <code>y new</code>.</dd>
           <dt>A file was not sent</dt>

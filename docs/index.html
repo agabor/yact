@@ -60,11 +60,11 @@
                 <p class="lint-item">**Context:** internal/signup/signup.go</p>
               </div>
               <div class="lint-block">
-                <div class="lint-title">## Assumptions <span class="tag warn">warning · you check it</span></div>
-                <p class="lint-item">- Invalid addresses return an error. They are not silently dropped.</p>
+                <div class="lint-title">## Assumptions <span class="tag error">error · you accept or answer it</span></div>
+                <p class="lint-item">- [ ] **A1. Unclear:** the prompt does not say what happens to an invalid address. Taken: signup returns an error.</p>
               </div>
             </div>
-            <p class="seq">read the plan, then act</p>
+            <p class="seq">read the plan, tick the box, then act</p>
             <div class="diff">
               <div class="diff-head"><b>internal/signup/validate.go</b><span><span class="add-n">+4</span> <span class="del-n">−1</span></span></div>
               <div class="diff-body">
@@ -114,22 +114,22 @@
           <div class="topline">
             <div class="num">2</div>
             <h3>No silent assumptions</h3>
-            <p>Where the prompt leaves a decision open, the model writes down the decision it made under <code>## Assumptions</code>. This is a warning, so <code>act</code> still runs. Read each entry. If you agree with it, leave it in the plan. If you disagree, state what you want in the prompt and run <code>y plan</code> again.</p>
+            <p>Where the prompt leaves a decision open, the model writes down the decision it made under <code>## Assumptions</code>. This is an error too. Every entry has a checkbox, and <code>act</code> refuses to run while one is open. If you agree with an entry, tick its box. If you disagree, write an <code>Answer:</code> line under it and run <code>y plan</code> again.</p>
           </div>
         </div>
         <div class="split">
           <div>
-            <p class="say">A plan is ready when it has no Missing context section and you agree with every assumption.</p>
+            <p class="say">A plan is ready when it has no Missing context section and you have ticked every assumption.</p>
             <p class="fine">The lint is not a proof. The model does the checking and can overlook something, so a plan without an Assumptions section may still contain an assumption. A stronger model overlooks less, and <code>-m</code> lets you plan with one. You still read the plan and check the change.</p>
             <p class="more"><a class="arrow-link" href="the-yact-way.html">Read The YACT way</a></p>
           </div>
           <div class="ready">
-            <span class="cap">y plan, after linking the missing file</span>
+            <span class="cap">the plan, after linking the missing file and ticking A1</span>
             <span class="row"># Goal</span>
             <span class="row">## Steps</span>
             <span class="row">### [ ] 1. Add email validation</span>
             <span class="row">## Assumptions</span>
-            <span class="row">- Invalid addresses return an error.</span>
+            <span class="row">- [x] **A1. Unclear:** ... Taken: signup returns an error.</span>
             <span class="row dim">(no ## Missing context)</span>
             <span class="ok">Ready: y -s next act</span>
           </div>
@@ -146,7 +146,7 @@
           <div class="topline"><div class="num">01</div><h3>The intent</h3><p>The goal in your words, followed by the steps that reach it.</p></div>
           <div class="topline"><div class="num">02</div><h3>The change</h3><p>Each step names the one file it changes, so you see the scope before any code is written.</p></div>
           <div class="topline"><div class="num">03</div><h3>The context</h3><p>Each step links the files the model receives when it implements that step.</p></div>
-          <div class="topline"><div class="num">04</div><h3>The assumptions</h3><p>The decisions the model made where your prompt left them open.</p></div>
+          <div class="topline"><div class="num">04</div><h3>The assumptions</h3><p>The decisions the model made where your prompt left them open, each one accepted or answered by you.</p></div>
         </div>
         <p class="pull">This is what helps a reviewer. With the plan next to the pull request, the reviewer compares the change with what was asked.</p>
         <p class="more">YACT keeps the plan in <code>yact-prompt.md</code> and does not attach it for you. <code>y new</code> deletes that file, so commit the plan or copy it into the pull request before you start the next change. Your team decides which of the two.</p>
@@ -160,10 +160,10 @@
         <div class="split">
           <ol class="steps">
             <li><h3>Write the prompt and link the files</h3><p><code>y new</code> starts an empty prompt. <code>y read</code> links files by path or glob. <code>y keyword Signup</code> links every file that contains the word, and <code>((Signup))</code> in the prompt runs the same search each time you run a command. The linked files are the context: they are the only code the model sees.</p></li>
-            <li><h3>Plan, then read the two sections</h3><p><code>y plan</code> turns the prompt into a plan with one file per step. Link the files that <code>## Missing context</code> lists and check each entry under <code>## Assumptions</code>. If you changed anything, run <code>y plan</code> again.</p></li>
+            <li><h3>Plan, then resolve the two sections</h3><p><code>y plan</code> turns the prompt into a plan with one file per step. Link the files that <code>## Missing context</code> lists. Under <code>## Assumptions</code>, tick each entry you accept and write an answer under each one you do not. If you linked a file or wrote an answer, run <code>y plan</code> again.</p></li>
             <li><h3>Implement one step</h3><p><code>y -s next act</code> implements the next unticked step: it writes the complete file and ticks the step. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
             <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the step and run your tests. Then implement the next step.</p></li>
-            <li><h3>Open the pull request</h3><p>Include the plan, so the reviewer has the intent, the files and the assumptions.</p></li>
+            <li><h3>Open the pull request</h3><p>Include the plan, so the reviewer has the intent, the files and the assumptions you accepted.</p></li>
           </ol>
           <div class="stack">
             <div class="term">
@@ -237,9 +237,10 @@
             <tbody>
               <tr><th scope="row">Method</th><td class="us">Built in: lint the prompt, plan, then act</td><td>Your choice; many offer a plan mode</td><td>Your choice</td></tr>
               <tr><th scope="row">Who sets the context</th><td class="us">You link the files; the plan lists what else is needed</td><td>Usually the agent, by exploring</td><td>You, by selecting code</td></tr>
-              <tr><th scope="row">Gaps in the prompt</th><td class="us">Listed in the plan before code is written</td><td>Usually filled in during the work</td><td>Usually filled in during the work</td></tr>
+              <tr><th scope="row">Gaps in the prompt</th><td class="us">Listed in the plan; you accept or answer each one before code is written</td><td>Usually filled in during the work</td><td>Usually filled in during the work</td></tr>
               <tr><th scope="row">Model calls</th><td class="us">One per command</td><td>Many, in a loop</td><td>Many, interactive</td></tr>
               <tr><th scope="row">Runs tests and retries</th><td class="us">No</td><td>Yes</td><td>Limited</td></tr>
+              <tr><th scope="row">Runs unattended</th><td class="us">No: a person resolves every plan</td><td>Yes</td><td>No</td></tr>
               <tr><th scope="row">What the reviewer gets</th><td class="us">The change and the plan it was made from</td><td>The change</td><td>The change</td></tr>
               <tr><th scope="row">Cost</th><td class="us">Estimate printed after every call</td><td>Varies with the run</td><td>Usually a subscription</td></tr>
               <tr><th scope="row">Best for</th><td class="us">Planned changes in code you know</td><td>Open-ended and exploratory work</td><td>Everyday typing</td></tr>
@@ -257,7 +258,7 @@
         <div class="grid c2">
           <div class="topline"><h3>Developers who know their code</h3><p>You decide what changes, and the model does the typing. Because you write the prompt, link the files and read the plan, you stay familiar with your code.</p></div>
           <div class="topline"><h3>Team leads</h3><p>You decide how your team works with AI. With YACT, every AI-assisted pull request can include the plan it was made from.</p></div>
-          <div class="topline"><h3>Teams where review is the bottleneck</h3><p>Comparing a change with its plan takes less effort than working out the intent from a diff, and the model's assumptions are already listed.</p></div>
+          <div class="topline"><h3>Teams where review is the bottleneck</h3><p>Comparing a change with its plan takes less effort than working out the intent from a diff, and the model's assumptions are already listed, with the author's decision on each.</p></div>
           <div class="topline"><h3>Seniors who mentor juniors</h3><p>When a junior's pull request includes its plan, you can review the junior's thinking as well as the code. That review is where the junior learns.</p></div>
         </div>
       </div>
@@ -271,15 +272,16 @@
         <div class="split">
           <div class="costs">
             <div class="cost"><b>−</b><span><strong>You link the files.</strong> YACT does not explore the code for you, so you need to know roughly where a change belongs. Keywords find files by name, <code>ask</code> answers questions about the code you link, and the plan lists what is still missing.</span></div>
-            <div class="cost"><b>−</b><span><strong>You read the plan.</strong> You have to supply the missing context and check every assumption. That is work. If you skip it, the same work comes back in review.</span></div>
+            <div class="cost"><b>−</b><span><strong>You resolve the plan.</strong> You have to supply the missing context and accept or answer every assumption, and <code>act</code> does not run until you have. That is work. Without it, the same work comes back in review.</span></div>
             <div class="cost"><b>−</b><span><strong>Files must be small.</strong> <code>act</code> writes every file it changes back in full. A long file makes the call slow and expensive, and gives the model more room for edits you did not ask for. Keep files under about 200 lines. YACT warns above 300.</span></div>
             <div class="cost"><b>−</b><span><strong>Legacy code is hard.</strong> YACT is easy to introduce on a new project or a clean codebase. On a legacy codebase with very large files it is hard: every step rewrites a long file and needs a lot of context, and YACT does not refactor code that the prompt did not mention.</span></div>
             <div class="cost"><b>−</b><span><strong>You run the tests.</strong> YACT never runs anything and never retries. If a test fails, pipe the output to <code>y output</code> and write the next prompt.</span></div>
+            <div class="cost"><b>−</b><span><strong>No automation.</strong> YACT does not run unattended. A plan needs a person to accept or answer its assumptions, so there are no CI workflows that plan and implement by themselves.</span></div>
             <div class="cost"><b>−</b><span><strong>Anthropic models only, for now.</strong></span></div>
           </div>
           <div class="stack">
             <div class="verdict fit"><b>+</b><span><strong>A good fit.</strong> You know your codebase, its files are small, and you want every change to start from a plan you have read.</span></div>
-            <div class="verdict nofit"><b>−</b><span><strong>Not a fit.</strong> You want a tool that finds the files, runs the tests and fixes the failures by itself, or most of your code is in very large files.</span></div>
+            <div class="verdict nofit"><b>−</b><span><strong>Not a fit.</strong> You want a tool that finds the files, runs the tests and fixes the failures by itself, you want changes made unattended, or most of your code is in very large files.</span></div>
           </div>
         </div>
       </div>
@@ -300,7 +302,7 @@
               <dt>analyze</dt><dd>Checks code against the <a href="code-principles.html">code principles</a></dd>
               <dt>bash</dt><dd>Prints shell commands for you to read and run yourself</dd>
             </dl>
-            <p class="small">Before you change a prompt that came with YACT, copy it to a new name. <code>-d</code> downloads the original again and overwrites your edits.</p>
+            <p class="small">Before you change a prompt that came with YACT, copy it to a new name. <code>y download prompt &lt;command&gt;</code> downloads the original again and overwrites your edits.</p>
           </div>
           <div class="term">
             <span class="cap">~/.yact/systemprompts/ask.txt, the first lines</span>
@@ -322,7 +324,9 @@
         <div class="hunk">@@ <b>11 · Questions</b> @@</div>
         <h2 class="big" id="faq-h">Common questions.</h2>
         <div class="grid c2">
-          <div><h3>What if the plan lists assumptions?</h3><p>Read each one. An assumption is a decision the model made because the prompt left it open. If you agree, leave it in the plan. If you disagree, state what you want in the prompt and run <code>y plan</code> again. Assumptions never block <code>act</code>.</p></div>
+          <div><h3>What if the plan lists assumptions?</h3><p>Resolve each one. An assumption is a decision the model made because the prompt left it open. If you agree, tick its box. If you disagree, write an <code>Answer:</code> line under it and run <code>y plan</code> again: the model changes the steps and records your decision, and you tick the entry once you have read it. <code>act</code> refuses to run while an assumption is open.</p></div>
+          <div><h3>Can the model tick an assumption itself?</h3><p>No. YACT decides every box after a plan call. A box stays ticked only if you ticked that entry before and its wording has not changed. If the model rewords an entry, you accept it again.</p></div>
+          <div><h3>Can I run it in CI, without a person?</h3><p>No, and this is deliberate. A plan needs a person to accept or answer its assumptions. YACT has no workflows that plan and implement by themselves.</p></div>
           <div><h3>Does the lint prove the code is right?</h3><p>No. The model does the lint during the plan call, and the two sections show only what the model noticed. It can overlook something, so you still read the plan, check the change and run your tests. What the lint gives you is the open decisions before any code is written, when changing one costs a sentence.</p></div>
           <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and two optional inputs if you use them: <code>.yact/domain.txt</code> and output captured with <code>y output</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run --verbose</code> shows what would be sent.</p></div>
           <div><h3>Do I always need a plan?</h3><p>No. For a trivial change, such as a rename, give the prompt directly to <code>act</code>. For any change that a reviewer will need to understand, plan first.</p></div>
