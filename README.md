@@ -639,45 +639,6 @@ yact-prompt.md
 Whether you keep `yact-prompt.md` is up to you. A reviewed and ticked-off plan makes a good
 pull request description.
 
-## Running YACT in GitHub Actions
-
-All state is in files and every call is one command, so YACT scripts easily. This
-repository is developed with these workflows. Each one starts when an **action label** is
-added to an issue or pull request:
-
-| Workflow | Label | What it does |
-| --- | --- | --- |
-| [`yact-issue.yml`](.github/workflows/yact-issue.yml) | `implement` on an issue | Plans the issue, refines the plan if context is missing, implements it, commits with a generated message and opens a pull request with the plan as its description |
-| [`yact-update.yml`](.github/workflows/yact-update.yml) | `update` on a PR | Updates the plan from the PR description and the latest comment, implements it and pushes |
-| [`yact-fix.yml`](.github/workflows/yact-fix.yml) | `fix` on a PR | Feeds failing `go build`, `go test` and `go vet` output to `act` and pushes the fixes |
-| [`yact-review.yml`](.github/workflows/yact-review.yml) | `review` on a PR | Sends the diff, the changed files and the linked issues to `review` and posts the result as a comment |
-
-A second, optional label picks the model: `haiku`, `sonnet` or `opus`.
-
-- Without a model label, `implement`, `update` and `fix` use Haiku and `review` uses
-  Sonnet. If an issue or pull request has more than one model label, the strongest wins.
-- The model label stays where you put it, so one `sonnet` label on a pull request applies
-  to every later run on it.
-- The workflow reads the labels when it starts, so add the model label first.
-- The action label is removed when the run ends, whether it succeeded or not. Add it
-  again to run the workflow again.
-
-Create the labels once:
-
-```
-for label in implement update fix review haiku sonnet opus; do gh label create "$label"; done
-```
-
-They need an `ANTHROPIC_API_KEY` repository secret, and the runner needs access to
-`raw.githubusercontent.com` to download the system prompts. Tips for CI:
-
-- Pass `--no-progress`.
-- Post `.yact/temp/buffer.txt` rather than scraping standard output.
-- Debug a workflow without spending tokens with `--dry-run --verbose`.
-
-To write your own workflow, use the [`workflow` skill](skills/workflow.md):
-`y --skill workflow act "..."`.
-
 ## Troubleshooting
 
 **"Claude API key not configured"**
