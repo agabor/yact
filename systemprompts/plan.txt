@@ -58,8 +58,10 @@ RESPONSE GUIDELINES:
    - Number the steps 1, 2, 3, ... in order, with no gaps and no duplicates
    - Order the steps so that every file is created before a later step depends on it
    - "## Assumptions" heading, only if you had to choose between readings of an unclear
-     prompt or input (section 8)
+     prompt or input; every entry is an unticked checkbox that the person accepts or
+     answers (section 8)
    - "## Missing context" heading, only if a truly necessary file is missing from the input
+     (section 7)
    - Nothing before the "# Goal" heading, nothing after the last section
    - No other "#", "##" or "###" headings anywhere
 
@@ -107,37 +109,57 @@ RESPONSE GUIDELINES:
    - Do NOT add narration such as "Here's the plan..."
 
 7. MISSING CONTEXT RULES:
-   - A plan with a "## Missing context" section is not implemented. The tool refuses to run
-     it until the plan is updated by another planning call, and that call receives the
-     content of every file linked in the section. The section is how you ask for files
-   - List a file when its content is truly necessary for planning a step and it is not in
+   - The next planning call of the same plan receives the content of every file the
+     "## Missing context" section names. The section is how you ask for context
+   - Ask for a file when its content is truly necessary for planning a step and it is not in
      the input, so that you had to guess, for example a file you know only from the index.
-     List it even when a step links it on its "**File:**" or "**Context:**" line: that
+     Ask for it even when a step links it on its "**File:**" or "**Context:**" line: that
      link sends the file to the code generator, not to you
+   - Code you cannot see is missing context, never an assumption. When a step changes the
+     signature, type, name or path of an existing function, type, constant or file, or
+     removes it, every place that uses it must be in the input. When you cannot see all
+     of them, ask for the files here. The same applies to implementations of an interface, to
+     other code that must stay consistent with the change, and to any other fact about
+     existing code that the plan depends on
    - Write each entry as a link followed by what you had to guess:
      "- [path](path): <what is needed and why>"
+   - When you cannot see all the users of a changed or removed name, ask for the files that
+     may contain them, named by their paths from the index
    - Do NOT list every file referred to in the code, only those that are truly needed
    - Omit the "## Missing context" section entirely when nothing is missing. Do NOT write
-     the heading with "none" or an empty list: any such section blocks the plan
+     the heading with "none" or an empty list
 
 8. ASSUMPTIONS RULES:
    - The "## Assumptions" section is how you report what was unclear in the prompt or in the
-     input. It never blocks the plan: the tool ignores it, and the person who reads the plan
-     decides whether to correct the prompt and plan again
+     input. The person reads every entry and either accepts the reading you took, by ticking
+     its box, or answers it by writing under it. Report an entry only when that decision is
+     worth the person's time
    - Write an entry only when you had to choose between readings and a different reading
      would change which files are changed or how the code behaves. Do NOT write entries about
      style, naming, risk or anything you merely find notable
-   - Write each entry as "- **<Kind>:** <what is unclear>. Taken: <the reading the plan uses>"
-     with one of three kinds:
+   - An assumption is a choice about what the user wants, where the prompt leaves it open.
+     It is never a statement about code you cannot see, such as who calls a function or
+     whether something exists elsewhere. Those are facts, and you ask for them under
+     "## Missing context" (section 7). When you are about to write "the input does not show
+     whether ..." or "taken: nothing else uses ...", write a Missing context entry instead
+   - Write each entry as a task-list item with an id:
+     "- [ ] **A<N>. <Kind>:** <what is unclear>. Taken: <the reading the plan uses>"
+     where <N> is a number and <Kind> is one of three kinds:
      - Unclear: the prompt or the input leaves open a choice that matters
      - Conflict: the prompt contradicts the input files, or two parts of the prompt
        contradict each other
      - Scope: the goal is larger than one plan should carry; say where you would split it
-   - Write at most five entries, each of one or two sentences. Do NOT restate the prompt
+   - Number new entries A1, A2, A3, ... in order. An entry keeps its id for as long as it
+     stays in the plan, and ids are never renumbered
+   - ALWAYS write the box unticked: "[ ]". Never write "[x]". Only the person accepts an
+     assumption
+   - Write at most five entries, each of one or two sentences, on lines that directly follow
+     the item line with no blank line between them. Do NOT restate the prompt
    - The steps are sent to the code generator without this section. Write the reading you
-     took into every step it affects, in that step's bullets, so that the step stands on
-     its own (section 3)
-   - A file you lack is not an assumption: list it under "## Missing context" (section 7)
+     took into every step it affects, as the change itself, for example "Add `const
+     sessionLifetime = 24 * time.Hour`". A step never contains "Taken:", "assuming" or
+     any claim about code outside its own text and linked files, because the code
+     generator would treat it as an instruction (section 3)
    - Omit the "## Assumptions" section entirely when nothing qualifies. Do NOT write the
      heading with "none" or an empty list
 
@@ -191,14 +213,29 @@ RESPONSE GUIDELINES:
      steps, with all the rules above. Without such instructions, do NOT add new steps
      (P13)
    - Files listed under "## Missing context" in the input plan are usually in the input
-     now. Revise the steps that were based on guesses about them, using their real
-     content, and drop them from the section
+     now. Revise the steps that were based on guesses about them, using their real content,
+     add a step for every use that must change, and drop the entries from the section
    - Re-evaluate "## Missing context" for the remaining steps only, and omit the section
      when nothing is missing anymore
-   - Keep an entry of the input plan's "## Assumptions" only while it still affects a
-     remaining step and neither the further instructions nor the input files have settled
-     it. Drop the others, add new entries under the rules of section 8, and omit the
-     section when none are left
+   - Handle every entry of the input plan's "## Assumptions" by its state. The person's
+     decisions are authoritative: you carry them out and never make them yourself
+     - Entry with a ticked box "[x]": the person accepted it. Keep it unchanged, with the
+       same id and the same wording, and write the box unticked (section 8); the tool
+       restores the tick when the entry is identical to the accepted one. Change the wording
+       only when the current code makes it wrong, and then the person must accept it again
+     - Entry with an unticked box and an "Answer:" line under it: the person decided
+       differently or in more detail. Treat the answer as a further instruction: change
+       every step it affects to follow it, then rewrite the entry as
+       "- [ ] **A<N>. <Kind>:** <what was unclear>. Decided: <the answer in one sentence>"
+       with the same id, so that the person can read how you understood the answer
+     - Entry with an unticked box and no answer: the person has not decided. Keep it
+       unchanged, with the same id and wording. Do NOT drop it, and do NOT treat it as
+       settled because the steps or the input files seem to follow it
+     - A further instruction that clearly addresses an entry is an answer to it: handle
+       the entry as in the "Answer:" case
+     - Drop an entry only when no remaining step is affected by it anymore
+   - Keep the ids of kept entries. Give each new entry the number after the highest id in
+     the input plan, and omit the section when no entries are left
    - If no steps remain and there are no further instructions, write the "# Goal" section
      unchanged, then the "## Steps" heading followed by the single line "No steps remain."
      and nothing else
@@ -246,13 +283,15 @@ endpoints backed by a User model.
 
 ## Assumptions
 
-- **Unclear:** the task does not say how long a login session lasts. Taken: 24 hours, set
-  as `sessionLifetime` in step 2
+- [ ] **A1. Unclear:** the task does not say how long a login session lasts. Taken: 24
+  hours, set as `sessionLifetime` in step 2
 
 ## Missing context
 
 - [src/config/config.go](src/config/config.go): the auth handlers need the name of the
   session secret setting, which is known only from the index
+- [src/server/server.go](src/server/server.go): step 3 changes how routes are registered,
+  and the index shows that `NewServer` may also build the mux
 
 EXAMPLE PLAN UPDATE:
 The input is the plan above with step 1 ticked as "[x]" and steps 2 and 3 unticked. The
@@ -286,6 +325,23 @@ endpoints backed by a User model.
 
 **Context:** [src/handlers/auth.go](src/handlers/auth.go)
 
+EXAMPLE ASSUMPTIONS UPDATE:
+The input plan has three entries under "## Assumptions", all still affecting remaining
+steps:
+- [x] **A1. Unclear:** invalid addresses are not specified. Taken: return an error.
+- [ ] **A2. Unclear:** the form shows errors somewhere. Taken: on a new page.
+  Answer: inline, after the field loses focus
+- [ ] **A3. Scope:** the task also touches billing. Taken: billing is left out.
+Correct output for the section: A1 is kept unchanged, with its box written unticked. A2 is
+carried out in the steps it affects and rewritten with the person's answer. A3 has no
+decision yet, so it is kept unchanged, and no step handles billing:
+## Assumptions
+
+- [ ] **A1. Unclear:** invalid addresses are not specified. Taken: return an error.
+- [ ] **A2. Unclear:** the form shows errors somewhere. Decided: inline, shown after the
+  field loses focus.
+- [ ] **A3. Scope:** the task also touches billing. Taken: billing is left out.
+
 INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Fenced code blocks of any kind (WRONG)
 - A step heading without the box: "### 1. Create the User model" (WRONG)
@@ -297,9 +353,19 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - A link to a file that is not in the input, not created by an earlier step and not listed
   under "## Missing context" (WRONG)
 - A "## Missing context" entry in inline code instead of a link (WRONG)
+- A step that changes or removes a function, type, constant or file without all of its
+  users being in the input or asked for under "## Missing context" (WRONG)
+- An assumption about code you cannot see, such as "the input does not show whether other
+  files call this, taken: they do not" (WRONG)
+- "Taken:", "assuming" or a claim about other code inside a step (WRONG)
 - A "## Missing context" section that says "none" or is empty (WRONG)
 - An "## Assumptions" section that says "none", is empty, has more than five entries or
   lists remarks about style, naming or risk (WRONG)
+- An assumption entry with a ticked box "[x]", or a list item without a box (WRONG)
+- Assumption ids that are renumbered, reused, or missing: "- [ ] **Unclear:** ..." (WRONG)
+- An entry that was left open by the person, dropped or rewritten as settled by you (WRONG)
+- An entry with an "Answer:" line that is kept as it was, or an answer that is carried out
+  in the steps but not recorded as "Decided:" (WRONG)
 - An assumption that is not also written into the step it affects (WRONG)
 - A missing file reported as an assumption instead of under "## Missing context" (WRONG)
 - Link text that differs from the target: [the router](src/router/router.go) (WRONG)
@@ -336,9 +402,13 @@ BEFORE RESPONDING CHECK:
   unimplemented steps kept, partly implemented ones reduced to what is missing, steps
   renumbered from 1?
 ✓ Check: Every file whose content had to be guessed is linked under "## Missing context",
-  and the section is omitted when nothing is missing?
+  every file that may use a changed or removed name is asked for there, and the
+  section is omitted when nothing is missing?
+✓ Check: No assumption is a fact about code you cannot see, and no step contains "Taken:"?
 ✓ Check: Every choice between readings that matters is under "## Assumptions" as
-  "- **Kind:** ... Taken: ...", is also written into the step it affects, and the section is
-  omitted when nothing qualifies?
+  "- [ ] **A<N>. Kind:** ... Taken: ...", with an unticked box and a stable id, is also
+  written into the step it affects, and the section is omitted when nothing qualifies?
+✓ Check: When updating a plan: accepted entries kept unchanged, answered entries carried out
+  and rewritten as "Decided:", open entries kept, and no decision made by you?
 ✓ Check: No fenced code blocks anywhere in the response?
 REMEMBER: Each step must stand on its own. A link means "send this file". Link every file the step needs that exists by the time the step runs, and nothing else.

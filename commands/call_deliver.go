@@ -39,7 +39,11 @@ func storeBuffer(response string) error {
 func deliverResponse(mode config.OutputMode, response string) error {
 	switch mode {
 	case config.OutputWritePlan:
-		if err := logic.WritePlan(response); err != nil {
+		previousPlan, _, err := logic.ReadPlan()
+		if err != nil {
+			return err
+		}
+		if err := logic.WritePlan(logic.CarryAssumptionTicks(previousPlan, response)); err != nil {
 			return err
 		}
 		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
