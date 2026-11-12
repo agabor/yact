@@ -82,10 +82,22 @@
 
     <section class="section" id="assumptions" aria-labelledby="assumptions-h">
       <div class="wrap">
-        <h2 id="assumptions-h">No silent assumptions: a warning</h2>
-        <p>Where the prompt does not say what you want, the model decides and lists its decision under <code>## Assumptions</code>. YACT never blocks on this section, because only you can say whether a decision is right.</p>
-        <p>Each entry is a decision that you did not make, so check every one. If you agree with it, leave it in the plan. If you disagree, state what you want in the prompt and run <code>y plan</code> again.</p>
-        <p>The two sections hold different kinds of things. <strong>Missing context</strong> holds facts about code that the model could not see. <strong>Assumptions</strong> holds decisions about what you want. A fact can be looked up, so it blocks <code>act</code> until the file is linked. A decision is yours, so it only warns.</p>
+        <h2 id="assumptions-h">No silent assumptions: an error you resolve</h2>
+        <p>Where the prompt does not say what you want, the model decides and lists its decision under <code>## Assumptions</code>. Each entry is a decision that you did not make, so YACT makes you decide: every entry has a checkbox, and <code>act</code> refuses to run while one is open.</p>
+        <pre><code>## Assumptions
+
+- [x] **A1. Unclear:** the prompt does not say what happens to an invalid
+  address. Taken: signup returns an error.
+- [ ] **A2. Unclear:** the prompt does not say where the error is shown.
+  Taken: on a new page.
+  Answer: inline, after the field loses focus</code></pre>
+        <p>You resolve an entry in one of two ways.</p>
+        <ul>
+          <li><strong>Accept it.</strong> If the model decided what you would have decided, tick the box by hand, as in A1.</li>
+          <li><strong>Answer it.</strong> If you want something else, write an <code>Answer:</code> line under the entry, as in A2, and run <code>y plan</code> again. The model changes the steps to follow your answer and rewrites the entry with <code>Decided:</code> in place of <code>Taken:</code>. The box is still open. Read how the model understood you, then tick it.</li>
+        </ul>
+        <p>Only you tick a box. The model always writes open boxes, and after each plan call YACT keeps a tick only if you ticked that entry before and its wording has not changed. If the model rewords an entry you accepted, you accept it again.</p>
+        <p>The two sections hold different kinds of things. <strong>Missing context</strong> holds facts about code that the model could not see. <strong>Assumptions</strong> holds decisions about what you want. Both block <code>act</code>, but you resolve them differently. A fact can be looked up, so you link the file. A decision is yours, so you make it.</p>
       </div>
     </section>
 
@@ -94,12 +106,12 @@
     <section class="section" id="plan" aria-labelledby="plan-h">
       <div class="wrap">
         <h2 id="plan-h">The plan ties the change to its intent</h2>
-        <p>A plan that has no missing context, and whose assumptions you have checked, is more than a to-do list. Each step names the one file it changes and links the files the model receives to implement it. The plan therefore records four things in one place:</p>
+        <p>A plan that has no missing context, and whose assumptions you have resolved, is more than a to-do list. Each step names the one file it changes and links the files the model receives to implement it. The plan therefore records four things in one place:</p>
         <ul>
           <li><strong>the intent</strong>: the goal in your words, followed by the steps that reach it</li>
           <li><strong>the change</strong>: the file each step changes</li>
           <li><strong>the context</strong>: the files the model received for each step</li>
-          <li><strong>the assumptions</strong>: the decisions the model made where the prompt left them open</li>
+          <li><strong>the assumptions</strong>: the decisions the model made where the prompt left them open, each one accepted or answered by you</li>
         </ul>
         <p>This is what helps a reviewer. When a pull or merge request includes its plan, the reviewer compares the change with what was asked and does not have to work out the intent from the diff.</p>
         <p>YACT does not attach the plan for you. The plan is in <code>yact-prompt.md</code>, and <code>y new</code> deletes that file. Commit the plan or copy it into the pull request before you start the next change.</p>
@@ -114,8 +126,8 @@
         <ol class="steps">
           <li><h3>Write the prompt</h3><p>Say what you want in plain words, and link the files that you know the change needs.</p></li>
           <li><h3>Plan</h3><p><code>y plan</code> writes the steps. The two sections list what is missing and what the model assumed.</p></li>
-          <li><h3>Read the two sections</h3><p>Link the files that Missing context lists, and check each assumption. If you changed anything, plan again.</p></li>
-          <li><h3>Act, one step at a time</h3><p>When the plan has no Missing context section and you agree with every assumption, run <code>y -s next act</code>. It implements one step per call. Compare each change with its step.</p></li>
+          <li><h3>Resolve the two sections</h3><p>Link the files that Missing context lists. Tick each assumption you accept, and write an answer under each one you do not. If you linked a file or wrote an answer, plan again.</p></li>
+          <li><h3>Act, one step at a time</h3><p>When the plan has no Missing context section and every assumption is ticked, run <code>y -s next act</code>. It implements one step per call. Compare each change with its step.</p></li>
           <li><h3>Hand over the change with its plan</h3><p>Include the plan in the pull request, so that the reviewer can compare the change with it.</p></li>
         </ol>
         <p><code>act</code> can still find a problem in the plan while it writes the code. It then writes a note to <code>.yact/temp/feedback.md</code>, and YACT prints the note. Treat the note as a bug report on the prompt: correct the prompt as well as the code.</p>
@@ -141,7 +153,8 @@
         <p><strong>It does not prove that a change is correct.</strong> No linter does. What YACT gives you is narrower: it shows gaps in the prompt that would otherwise stay hidden until review.</p>
         <p><strong>It does not find every gap.</strong> The model does the checking, and the two sections show what the model noticed. It can overlook an entry, so a plan without an Assumptions section may still contain an assumption. You still read the plan, check the change and run the tests.</p>
         <p><strong>It does not limit which files <code>act</code> writes.</strong> The plan names one file per step, but inside the project the model can write or delete other files. <code>git diff</code> shows you if it did.</p>
-        <p><strong>It does not fail on assumptions.</strong> A strict mode that treats assumptions as errors, the way a linter can be told to fail on warnings, is not built yet. For now, you check the assumptions yourself.</p>
+        <p><strong>It does not make you think.</strong> Ticking a box takes one keystroke. YACT makes each decision explicit and records it in the plan, but it cannot tell whether you read the entry.</p>
+        <p><strong>It does not run unattended.</strong> A plan needs a person to accept or answer its assumptions, so YACT has no workflows that plan and implement by themselves.</p>
       </div>
     </section>
 
@@ -158,7 +171,7 @@
           <dt>Keep files small</dt>
           <dd><code>act</code> writes each changed file back in full. A small file is quicker and cheaper to rewrite, and its diff is easier to check.</dd>
           <dt>Put the plan in front of reviewers</dt>
-          <dd>Commit it or copy it into the pull request, whichever your team prefers. A reviewer should check the assumptions first.</dd>
+          <dd>Commit it or copy it into the pull request, whichever your team prefers. A reviewer should read the assumptions first: they are the decisions the author accepted.</dd>
         </dl>
         <div class="actions">
           <a class="btn btn-primary" href="getting-started.html">Try the loop</a>
