@@ -28,12 +28,6 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 		}
 
 		isRoot := path == root
-		if !isRoot && strings.HasPrefix(entry.Name(), ".") && !isIncludedHiddenPath(relativePath) {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
 
 		if entry.IsDir() {
 			if isRoot {
@@ -66,13 +60,6 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 		return nil
 	})
 	return files, err
-}
-
-// GitHub workflow and action files are part of the project source, unlike the
-// other hidden tool directories such as .yact, which stay excluded.
-func isIncludedHiddenPath(relativePath string) bool {
-	firstSegment := strings.SplitN(filepath.ToSlash(relativePath), "/", 2)[0]
-	return firstSegment == ".github"
 }
 
 // The last segment of a directory path is a folder itself and must be matched

@@ -117,7 +117,7 @@ func DefaultExtensions() []string {
 }
 
 func DefaultIgnoredFolders() []string {
-	return []string{"vendor", "node_modules"}
+	return []string{"vendor", "node_modules", ".yact", ".git"}
 }
 
 func Load() (*Config, error) {
