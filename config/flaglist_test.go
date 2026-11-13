@@ -165,9 +165,8 @@ func TestFlagStringUsesNewNames(t *testing.T) {
 				Index:  pointerTo(IndexPrivate),
 				Output: pointerTo(OutputNamePlan),
 				Steps:  "1-3",
-				Skills: []SkillName{SkillName("review")},
 			},
-			want: "--model haiku --index all --output plan --steps 1-3 --skill review",
+			want: "--model haiku --index all --output plan --steps 1-3",
 		},
 		{
 			name:  "apply output is not printed",

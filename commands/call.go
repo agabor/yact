@@ -8,7 +8,7 @@ import (
 	"yact/logic"
 )
 
-func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string, skills []logic.Skill) error {
+func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
 	mode := config.ParseOutputMode(flags)
 
 	if flags.Batch {
@@ -90,7 +90,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	if err != nil {
 		return err
 	}
-	requestContentForLLM.Skills = skills
 
 	fileCounts, err := countFileLines(requestContentForLLM)
 	if err != nil {

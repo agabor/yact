@@ -17,7 +17,6 @@ type CLIFlags struct {
 	Verbose    bool
 	DryRun     bool
 	Batch      bool
-	Skills     []string
 }
 
 func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
@@ -33,7 +32,6 @@ func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
 	set.BoolVar(&cli.Verbose, "verbose", false, "Print all file paths and the prompt sent to the LLM")
 	set.BoolVar(&cli.DryRun, "dry-run", false, "Skip the LLM call, only build and check the request")
 	set.BoolVarP(&cli.Batch, "batch", "b", false, "Submit the request as a batch job instead of streaming it")
-	set.StringSliceVar(&cli.Skills, "skill", nil, "Attach a skill file to the messages sent to the LLM. Can be repeated or comma separated")
 	return cli
 }
 
@@ -68,13 +66,6 @@ func (c *CLIFlags) ToFlaglist(set *pflag.FlagSet) (Flaglist, error) {
 			return Flaglist{}, err
 		}
 		flags.Index = &index
-	}
-	for _, raw := range c.Skills {
-		name, err := ParseSkillName(raw)
-		if err != nil {
-			return Flaglist{}, err
-		}
-		flags.Skills = append(flags.Skills, name)
 	}
 	return flags, nil
 }

@@ -15,7 +15,6 @@ type Flaglist struct {
 	Verbose    bool
 	DryRun     bool
 	Steps      string
-	Skills     []SkillName
 }
 
 // OutputApply is the zero value, so a batch job stored without a mode is applied.
@@ -122,9 +121,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Steps != "" {
 		parts = append(parts, fmt.Sprintf("--steps %s", f.Steps))
-	}
-	for _, skill := range f.Skills {
-		parts = append(parts, fmt.Sprintf("--skill %s", skill))
 	}
 
 	return strings.Join(parts, " ")

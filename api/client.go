@@ -34,7 +34,7 @@ func Serialize(path string) (string, error) {
 
 func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error) {
 	messagePaths := requestContent.MessagePaths()
-	blocks := make([]string, 0, len(messagePaths)+len(requestContent.Skills)+len(requestContent.Files)+1)
+	blocks := make([]string, 0, len(messagePaths)+len(requestContent.Files)+1)
 	fileCount := 0
 
 	for _, messagePath := range messagePaths {
@@ -43,10 +43,6 @@ func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error)
 			return nil, 0, err
 		}
 		blocks = append(blocks, string(messageContent))
-	}
-
-	for _, skill := range requestContent.Skills {
-		blocks = append(blocks, skill.Content)
 	}
 
 	for _, filePath := range requestContent.Files {

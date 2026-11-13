@@ -13,14 +13,6 @@ type RequestContent struct {
 	Domain projectpath.Path
 	Index  projectpath.Path
 	Output projectpath.Path
-	// Set by the caller for a single call and never persisted, so the skills of one
-	// call cannot leak into the next one.
-	Skills []Skill
-}
-
-type Skill struct {
-	Name    string
-	Content string
 }
 
 const (

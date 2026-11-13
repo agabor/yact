@@ -19,15 +19,10 @@ func TestParseDownloadArgs(t *testing.T) {
 			args: []string{"prompt", "review"},
 			want: PromptDownload{Name: config.PromptName("review")},
 		},
-		{
-			name: "skill target",
-			args: []string{"skill", "review"},
-			want: SkillDownload{Name: config.SkillName("review")},
-		},
 		{name: "no arguments", args: []string{}, wantErr: true},
 		{name: "prompt without a name", args: []string{"prompt"}, wantErr: true},
-		{name: "skill with a path", args: []string{"skill", "../x"}, wantErr: true},
 		{name: "prompt with two names", args: []string{"prompt", "a", "b"}, wantErr: true},
+		{name: "skill is no longer a download target", args: []string{"skill", "review"}, wantErr: true},
 		{name: "unknown kind", args: []string{"model", "x"}, wantErr: true},
 	}
 

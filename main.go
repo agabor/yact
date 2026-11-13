@@ -9,7 +9,6 @@ import (
 
 	"yact/commands"
 	"yact/config"
-	"yact/logic"
 
 	flag "github.com/spf13/pflag"
 )
@@ -64,32 +63,6 @@ func loadSystemPrompt(command config.PromptName) (string, config.PromptDefaults,
 		return downloadAndLoadSystemPrompt(command)
 	}
 	return systemPrompt, defaults, err
-}
-
-func loadSkill(name config.SkillName) (logic.Skill, error) {
-	content, err := config.LoadSkill(name)
-	if errors.Is(err, fs.ErrNotExist) {
-		if err := config.DownloadSkill(name); err != nil {
-			return logic.Skill{}, err
-		}
-		content, err = config.LoadSkill(name)
-	}
-	if err != nil {
-		return logic.Skill{}, err
-	}
-	return logic.Skill{Name: string(name), Content: content}, nil
-}
-
-func loadSkills(names []config.SkillName) ([]logic.Skill, error) {
-	skills := make([]logic.Skill, 0, len(names))
-	for _, name := range names {
-		skill, err := loadSkill(name)
-		if err != nil {
-			return nil, err
-		}
-		skills = append(skills, skill)
-	}
-	return skills, nil
 }
 
 func main() {
@@ -164,12 +137,7 @@ func main() {
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		skills, err := loadSkills(resolved.Skills)
-		if err != nil {
-			commandErr = err
-			break
-		}
-		commandErr = commands.HandleCommand(resolved, cfg, "", getOptionalPrompt(commandArgs), skills)
+		commandErr = commands.HandleCommand(resolved, cfg, "", getOptionalPrompt(commandArgs))
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
@@ -210,16 +178,10 @@ func main() {
 			}
 		}
 
-		skills, err := loadSkills(resolved.Skills)
-		if err != nil {
-			commandErr = err
-			break
-		}
-
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt, getOptionalPrompt(commandArgs), skills)
+		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt, getOptionalPrompt(commandArgs))
 	}
 
 	if commandErr != nil {
