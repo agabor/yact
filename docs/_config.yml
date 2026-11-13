@@ -1,0 +1,11 @@
+title: yact
+markdown: kramdown
+url: "https://yact.dev"
+
+# Pages carry their own <title>/description/canonical/og fields as front matter
+# (see any page's front matter), so nothing here drives per-page metadata.
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

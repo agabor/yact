@@ -1,42 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Code principles: the rules YACT applies to code</title>
-  <meta name="description" content="The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code.">
-  <link rel="canonical" href="https://yact.dev/code-principles.html">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="YACT code principles">
-  <meta property="og:description" content="The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code.">
-  <meta property="og:url" content="https://yact.dev/code-principles.html">
-  <meta property="og:image" content="https://yact.dev/assets/og.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/site.css">
-</head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
+---
+layout: default
+title: "Code principles: the rules YACT applies to code"
+description: "The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code."
+canonical: code-principles.html
+og_title: "YACT code principles"
+nav: principles
+---
 
-  <header class="site-header">
-    <div class="wrap">
-      <a class="wordmark" href="./" aria-label="yact, home">yact</a>
-      <nav class="site-nav" aria-label="Main">
-        <ul>
-          <li><a href="index.html#how">How it works</a></li>
-          <li><a href="index.html#compare">Compare</a></li>
-          <li><a href="the-yact-way.html">The YACT way</a></li>
-          <li><a href="code-principles.html" aria-current="page">Code principles</a></li>
-          <li><a href="getting-started.html">Docs</a></li>
-          <li><a href="https://github.com/agabor/yact">GitHub</a></li>
-          <li><span class="ver">v0.10.0</span></li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-
-  <main id="main">
     <div class="wrap">
       <h1 class="page-title">Code principles</h1>
       <p class="lede">YACT has sixteen principles for the code it plans, writes and reviews. They have one goal: every piece of code can be understood from what is visible in one place, and mistakes are caught by types, the compiler and tests rather than by careful reading.</p>
@@ -179,39 +149,3 @@
         </div>
       </div>
     </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="foot-top">
-        <div class="foot-brand">
-          <a class="wordmark" href="./" aria-label="yact, home">yact</a>
-          <p>Lint the prompt. Review the change against its plan.</p>
-        </div>
-        <div class="foot-cols">
-          <div class="foot-col">
-            <span>DOCS</span>
-            <a href="getting-started.html">Getting started</a>
-            <a href="the-yact-way.html">The YACT way</a>
-            <a href="code-principles.html">Code principles</a>
-            <a href="known-issues.html">Known issues</a>
-            <a href="https://github.com/agabor/yact#readme">README</a>
-          </div>
-          <div class="foot-col">
-            <span>PROJECT</span>
-            <a href="https://github.com/agabor/yact">Source</a>
-            <a href="https://github.com/agabor/yact/releases">Releases</a>
-            <a href="https://github.com/agabor/yact/issues">Issues</a>
-          </div>
-        </div>
-      </div>
-      <div class="legal">
-        <p>YACT is free software under the <a href="https://github.com/agabor/yact/blob/main/LICENSE">GNU GPL v3</a>, created by Gábor Angyal.</p>
-        <p>YACT is not affiliated with Anthropic PBC. "Claude" and "Anthropic" are trademarks of Anthropic PBC, used here only to describe which API the tool calls. Fonts (Inter, Space Grotesk, JetBrains Mono) are served from this site under the SIL Open Font License; see <a href="fonts/LICENSES.txt">the licences</a>.</p>
-      </div>
-    </div>
-  </footer>
-
-  <script src="assets/site.js"></script>
-</body>
-</html>

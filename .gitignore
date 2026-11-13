@@ -21,3 +21,10 @@ go.work
 .idea
 **/.yact/temp
 **/yact-prompt.md
+
+# Jekyll build output and local bundler state (docs/)
+docs/_site/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/.bundle/
+docs/Gemfile.lock
