@@ -1,0 +1,8 @@
+source "https://rubygems.org"
+
+# Pinned to what GitHub Pages actually builds with, so a local build matches
+# the live site. See https://pages.github.com/versions/
+gem "github-pages", group: :jekyll_plugins
+
+# Ruby 3.0+ dropped webrick from the standard library; jekyll serve needs it.
+gem "webrick"
