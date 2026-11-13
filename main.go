@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"slices"
 	"strings"
 
 	"yact/commands"
@@ -17,10 +18,8 @@ import (
 var version = "dev"
 
 func requireArgCount(command string, args []string, validCounts ...int) {
-	for _, count := range validCounts {
-		if len(args) == count {
-			return
-		}
+	if slices.Contains(validCounts, len(args)) {
+		return
 	}
 	if len(validCounts) == 1 {
 		fmt.Fprintf(os.Stderr, "Error: %s command requires %d argument(s)\n", command, validCounts[0])

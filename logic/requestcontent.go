@@ -75,10 +75,6 @@ func (r RequestContent) MessagePaths() []projectpath.Path {
 	return paths
 }
 
-func AddMessage(content string) (string, error) {
-	return writeFixedFile(string(projectpath.Join(config.GetProjectYactDir(), domainFileName)), content)
-}
-
 func AddOutput(content string) (string, error) {
 	return writeFixedFile(string(outputFilePath()), content)
 }
