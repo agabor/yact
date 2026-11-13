@@ -54,7 +54,7 @@ func getOptionalPrompt(args []string) string {
 func promptNotFoundMessage(command config.PromptName, err error) {
 	printError("Error: no system prompt found for command '%s'\n", command)
 	printError("Download failed: %v\n", err)
-	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
+	printError("Run 'y --help' for usage information.")
 }
 
 func downloadAndLoadSystemPrompt(command config.PromptName) (string, config.PromptDefaults, error) {
@@ -120,9 +120,6 @@ func main() {
 		return
 	case "read":
 		commandErr = commands.HandleReadCommand(commandArgs)
-	case "output":
-		requireNoArgs("output", commandArgs)
-		commandErr = commands.HandleOutputCommand()
 	case "keyword":
 		requireArgCount("keyword", commandArgs, 1)
 		commandErr = commands.HandleKeywordCommand(commandArgs)

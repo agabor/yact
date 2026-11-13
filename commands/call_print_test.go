@@ -26,7 +26,6 @@ func TestPrintWarnings(t *testing.T) {
 func TestPrintSentFiles(t *testing.T) {
 	requestContent := logic.RequestContent{
 		Domain: "domain.txt",
-		Output: "output.txt",
 		Files:  []projectpath.Path{"a.go", "b.go"},
 	}
 
@@ -34,7 +33,7 @@ func TestPrintSentFiles(t *testing.T) {
 		printSentFiles(requestContent)
 	})
 
-	want := "Sending: domain.txt\nSending: output.txt\nSending: a.go\nSending: b.go\n"
+	want := "Sending: domain.txt\nSending: a.go\nSending: b.go\n"
 	if got != want {
 		t.Errorf("printSentFiles() output = %q, want %q", got, want)
 	}
