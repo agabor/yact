@@ -31,6 +31,7 @@ Website and getting-started guide: [yact.dev](https://yact.dev)
 - [Storage](#storage)
 - [No automated workflows](#no-automated-workflows)
 - [Troubleshooting](#troubleshooting)
+- [Known issues](#known-issues)
 - [Security and privacy](#security-and-privacy)
 - [Contributing](#contributing)
 
@@ -96,10 +97,9 @@ Every prompt command and `query` sends one user message made of these parts, in 
 
 1. `.yact/domain.txt` — an optional description of your project, written by you
 2. `.yact/temp/index.txt` — the [code index](#code-index), when the call asks for one
-3. `.yact/temp/output.txt` — command output captured with [`y output`](#send-command-output)
-4. [Skills](#skills) attached with `--skill`
-5. Every linked project file, as a code block whose first line is the file path
-6. The prompt itself
+3. [Skills](#skills) attached with `--skill`
+4. Every linked project file, as a code block whose first line is the file path
+5. The prompt itself
 
 Use `--verbose` to print every file and the prompt, and `--dry-run` to build and check the
 request without calling the API.
@@ -205,13 +205,13 @@ command.
 `yact-prompt.md` is both the prompt and the list of context files.
 
 ```
-Add a --version flag that prints the version set at build time.
-Keep the output format of ((help text)) unchanged.
+[main.go](main.go)
+[[commands/*.go]]
 
 -----
 
-[main.go](main.go)
-[[commands/*.go]]
+Add a --version flag that prints the version set at build time.
+Keep the output format of ((help text)) unchanged.
 ```
 
 ### Selecting context files
@@ -234,12 +234,13 @@ folder. Folders listed in `.yact/ignore.txt` (by default
 `vendor` and `node_modules`) are skipped, and so is `yact-prompt.md` itself. URLs are never
 fetched.
 
-### The footer
+### Read links
 
-A line made only of dashes (such as `-----`) splits the file into a **body** and a
-**footer**. Links in the footer select files, but the footer text is **not sent** to the
-model. `y read` and `y keyword` add their links to the footer, creating it if needed, so
-the instructions you write stay clean.
+A line made only of dashes (such as `-----`) splits the file into **read links** above it
+and a **body** below it. Links above the line select files, but that block is **not sent**
+to the model; only the body below the line is sent (with keyword markers stripped). `y read`
+and `y keyword` add their links above the line, creating it if needed, so the instructions
+you write below stay clean.
 
 Note that any dash-only line counts, including a Markdown horizontal rule (`---`).
 
@@ -274,7 +275,7 @@ The official prompts:
 | `act` | `--model haiku --strict --index public` | Writes code. Responds with complete files only; fails on any free text |
 | `ask` | `--model sonnet --output print` | Answers questions about the code in plain text |
 | `analyze` | `--model sonnet --output print` | Reports where the code breaks the code principles, with fixes |
-| `review` | `--model sonnet --output print` | Reviews a diff sent with `y output` against the prompt |
+| `review` | `--model sonnet --output print` | Reviews a diff, linked with `y read`, against the prompt |
 | `bash` | `--model haiku --output print` | Prints a plain list of shell commands |
 
 `act`, `plan`, `analyze` and `review` share one set of code principles
@@ -446,8 +447,8 @@ naming steps the plan does not contain, and plans with duplicate step numbers, a
 rejected. Selecting a step that is already done prints a warning and sends it again. The
 two sections block `act` whichever steps you select.
 
-Links in the footer of a plan are part of its last step, so they are sent only when the
-last step is.
+Read links placed above a plan's separator are part of the preamble, so they are sent with
+every step selection, not only the last one.
 
 ### Updating a plan
 
@@ -476,9 +477,8 @@ y [flags] <command> [arguments]
 | `<prompt command> [prompt]` | Call the LLM with the command's system prompt |
 | `query [prompt]` | Call the LLM without a system prompt; the response is printed |
 | `new` | Start a new, empty prompt |
-| `read <file>...` | Link files into `yact-prompt.md` (glob patterns supported) |
+| `read <file>...` | Link files above the separator in `yact-prompt.md` (glob patterns supported) |
 | `keyword <keyword>` | Link every file containing the keyword |
-| `output` | Save standard input to be sent with every call |
 | `index <none\|public\|all>` | Write or remove the code index without calling the LLM |
 | `compact` | Reduce `yact-prompt.md` to its links |
 | `commit` | Write the code blocks of the last response to disk |
@@ -494,8 +494,8 @@ y [flags] <command> [arguments]
 y new
 ```
 
-Deletes `yact-prompt.md` (including any plan in it), `.yact/temp/index.txt` and
-`.yact/temp/output.txt`. `.yact/domain.txt` is kept.
+Deletes `yact-prompt.md` (including any plan in it) and `.yact/temp/index.txt`.
+`.yact/domain.txt` is kept.
 
 ### Link files
 
@@ -505,23 +505,32 @@ y read "commands/*.go"
 y keyword Transaction
 ```
 
-`y read` appends `[path](path)` links to the footer of `yact-prompt.md`. Quote glob
-patterns so the shell does not expand them. Directories are skipped and files already
-linked are not added twice.
+`y read` adds `[path](path)` links above the separator in `yact-prompt.md`, creating the
+separator if needed. Quote glob patterns so the shell does not expand them. Directories are
+skipped and files already linked are not added twice.
 
 `y keyword` links every project file whose content contains the keyword as whole
 words (see [Selecting context files](#selecting-context-files)). Use `((keyword))` in the
 prompt instead to search at call time without adding links.
 
-### Send command output
+### Sending command output
+
+There is no separate command for this; write the output to a file and link it like any
+other file:
 
 ```
-go test ./... 2>&1 | y output
-git diff | y output
+go test ./... 2>&1 > test-output.txt
+y read test-output.txt
 ```
 
-Saves standard input to `.yact/temp/output.txt`. It is sent with **every** call until it
-is overwritten by the next `y output` or removed by `y new`.
+```
+git diff main > yact-diff.patch
+y read yact-diff.patch
+y review
+```
+
+The file is sent like any linked file, and stays linked (and so is sent with **every**
+call) until you remove the link or run `y new`.
 
 ### Code index
 
@@ -586,9 +595,9 @@ selects steps, but no step is ticked off when the response is only printed.
 y compact
 ```
 
-Replaces `yact-prompt.md` with just its links, once each, in a footer. The instructions are
-dropped. Useful for reusing the context of a plan or a pull request description for a new
-instruction.
+Replaces `yact-prompt.md` with just its links, once each, above a separator. The
+instructions are dropped. Useful for reusing the context of a plan or a pull request
+description for a new instruction.
 
 ### Commit the buffer
 
@@ -710,7 +719,6 @@ Per project:
 - `.yact/batch_job_id.txt` — the pending batch job and its output mode
 - `.yact/temp/buffer.txt` — the last LLM response
 - `.yact/temp/index.txt` — the code index, when a call asks for one
-- `.yact/temp/output.txt` — output captured by `y output`
 - `.yact/temp/feedback.md` — the note `act` writes when it finds a problem in the plan
 
 A good `.gitignore` setup commits the `.yact/*.txt` settings so the whole team shares them,
@@ -796,7 +804,8 @@ standard error with exit code 1.
 
 - Only links select files. Run with `--dry-run --verbose` to see what would be sent. Check
   that the path is relative to the project root and not in a hidden or ignored folder.
-  Remember that `.yact/temp/output.txt` is sent with every call until `y new`.
+  Remember that a file linked with `y read` stays linked, and so is sent with every call,
+  until you remove the link or run `y new`.
 
 **The model keeps seeing old instructions**
 
@@ -816,6 +825,26 @@ standard error with exit code 1.
 
 - Check that your API key is valid in the Anthropic console, that your account has
   credits, and that the selected model is available to you.
+
+## Known issues
+
+### The missing-context loop
+
+In rare cases, `y plan` can get stuck re-listing the same files under `## Missing context`
+without changing the plan in any other way. YACT keeps no conversation history: each
+`y plan` call is a single, independent request, so the model has no memory of having asked
+for those files before. If the linked files already answer what it is asking for and it
+does not recognize that, it asks for the same files again instead of moving the plan
+forward.
+
+**Symptom:** running `y plan` repeatedly leaves `## Missing context` unchanged (the same
+files, sometimes reworded), while nothing else about the plan progresses.
+
+**Fix:** remove the `## Missing context` section from `yact-prompt.md` by hand, then run
+`y act` (or `y -s next act`) directly, skipping `y plan`. With the section gone, that gate
+no longer blocks `act`, and the steps proceed with whatever context is already linked. If a
+step then genuinely fails for lack of context, link the file yourself with `y read` or
+`y keyword` rather than asking `y plan` to find it again.
 
 ## Security and privacy
 
