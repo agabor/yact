@@ -1,0 +1,13 @@
+yact (`y`) is a command-line tool for AI-assisted coding. It is not a web service, an
+agent framework or an IDE plugin: it makes one API call per command and exits. There is
+no tool calling, no MCP and no multi-turn loop.
+
+Every command builds one user message, sent to Claude in this fixed order:
+1. .yact/domain.txt (this file) — the project description
+2. .yact/temp/index.txt — the code index, when the call asks for one
+3. every file linked in yact-prompt.md, as a code block headed by its file path
+4. the prompt itself (yact-prompt.md's body, or the selected plan steps under --steps)
+
+The command surface (commands, flags, defaults) is defined in commands/help.go; link it
+with `y read commands/help.go` for a task that touches command parsing or dispatch,
+rather than relying on this description, which is kept short on purpose.
