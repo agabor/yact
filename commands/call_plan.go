@@ -87,7 +87,7 @@ func joinPromptBody(fileBody string, cliPrompt string) string {
 	return fileText + "\n\n" + cliText
 }
 
-// The footer is never sent to the LLM, and keyword markers are removed only from the sent body.
+// The read link block above the separator is never sent as text, so only the body is sent, with keyword markers removed.
 func sentPromptText(promptText string) string {
 	return logic.StripKeywordMarkers(logic.SplitPromptFooter(promptText).Body)
 }

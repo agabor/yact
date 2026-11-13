@@ -146,19 +146,19 @@ func TestCompactPromptLinks(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "body is dropped and footer lists unique links",
+			name:   "body is dropped and the links of both parts are listed",
 			prompt: "body [a](a.go)\n-----\n[[logic/links.go]]\n",
-			want:   "-----\n\n[a](a.go)\n[[logic/links.go]]\n",
+			want:   "[a](a.go)\n[[logic/links.go]]\n\n-----\n\n",
 		},
 		{
-			name:   "same target in body and footer is listed once",
+			name:   "same target in read links and body is listed once",
 			prompt: "body [a](a.go)\n-----\n[[a.go]]\n",
-			want:   "-----\n\n[a](a.go)\n",
+			want:   "[a](a.go)\n\n-----\n\n",
 		},
 		{
-			name:   "links without separator get one in the footer",
+			name:   "links without separator are listed above a separator",
 			prompt: "body [a](a.go)\n",
-			want:   "-----\n\n[a](a.go)\n",
+			want:   "[a](a.go)\n\n-----\n\n",
 		},
 		{
 			name:   "prompt without links becomes empty",
@@ -166,9 +166,9 @@ func TestCompactPromptLinks(t *testing.T) {
 			want:   "",
 		},
 		{
-			name:   "footer keeps only links in order of first appearance",
+			name:   "links keep the order of first appearance",
 			prompt: "intro\n-----\nSome note\n[[c.go]] text\n[b](b.go)\n[[c.go]]\n",
-			want:   "-----\n\n[[c.go]]\n[b](b.go)\n",
+			want:   "[[c.go]]\n[b](b.go)\n\n-----\n\n",
 		},
 	}
 
@@ -189,12 +189,9 @@ func TestCompactPromptLinksLeavesOnlyFooter(t *testing.T) {
 	if sections.Body != "" {
 		t.Errorf("SplitPromptFooter(%q).Body = %q, want empty", compacted, sections.Body)
 	}
-	if sections.Separator != "-----" {
-		t.Errorf("SplitPromptFooter(%q).Separator = %q, want %q", compacted, sections.Separator, "-----")
-	}
-	wantFooter := "[a](a.go)\n[[logic/links.go]]\n"
-	if sections.Footer != wantFooter {
-		t.Errorf("SplitPromptFooter(%q).Footer = %q, want %q", compacted, sections.Footer, wantFooter)
+	wantReadLinks := "[a](a.go)\n[[logic/links.go]]\n"
+	if sections.ReadLinks != wantReadLinks {
+		t.Errorf("SplitPromptFooter(%q).ReadLinks = %q, want %q", compacted, sections.ReadLinks, wantReadLinks)
 	}
 }
 
@@ -208,7 +205,7 @@ func TestNormalizeLinkTargets(t *testing.T) {
 
 func TestCompactPromptLinksUsesSlashes(t *testing.T) {
 	prompt := "body [a\\b.go](a\\b.go)\n-----\n[[a/b.go]]\n"
-	want := "-----\n\n[a/b.go](a/b.go)\n"
+	want := "[a/b.go](a/b.go)\n\n-----\n\n"
 	got := CompactPromptLinks(prompt)
 	if got != want {
 		t.Errorf("CompactPromptLinks(%q) = %q, want %q", prompt, got, want)

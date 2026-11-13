@@ -61,15 +61,19 @@ func withTrailingNewline(content string) string {
 	return content + "\n"
 }
 
-// Links are added to the footer when one exists so that they stay out of the body the user writes.
-func appendPromptLinkToFooter(promptText string, path string) string {
+// Read links go above the separator so that they stay apart from the text the user writes below it.
+func appendReadLinkToPrompt(promptText string, path string) string {
 	sections := SplitPromptFooter(promptText)
-	sections.Separator = "-----"
-	sections.Footer = withTrailingNewline(sections.Footer) + withTrailingNewline(FormatPromptLink(path))
+	link := withTrailingNewline(FormatPromptLink(path))
+	if sections.ReadLinks == "" {
+		sections.ReadLinks = link
+	} else {
+		sections.ReadLinks = withTrailingNewline(sections.ReadLinks) + "\n" + link
+	}
 	return JoinPromptSections(sections)
 }
 
-func AppendPromptLink(path string) (bool, error) {
+func AddReadLink(path string) (bool, error) {
 	if err := os.MkdirAll(string(config.GetProjectYactDir()), 0755); err != nil {
 		return false, err
 	}
@@ -83,7 +87,7 @@ func AppendPromptLink(path string) (bool, error) {
 		return false, nil
 	}
 
-	updatedContent := appendPromptLinkToFooter(existingContent, path)
+	updatedContent := appendReadLinkToPrompt(existingContent, path)
 	if err := os.WriteFile(string(config.GetProjectPromptPath()), []byte(updatedContent), 0644); err != nil {
 		return false, err
 	}

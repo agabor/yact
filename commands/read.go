@@ -67,7 +67,7 @@ func readFile(filePath projectpath.Path) error {
 		return nil
 	}
 
-	added, err := logic.AppendPromptLink(string(filePath))
+	added, err := logic.AddReadLink(string(filePath))
 	if err != nil {
 		return err
 	}

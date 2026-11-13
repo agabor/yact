@@ -2,7 +2,7 @@ package logic
 
 import "testing"
 
-func TestAppendPromptLinkToFooter(t *testing.T) {
+func TestAppendReadLinkToPrompt(t *testing.T) {
 	tests := []struct {
 		name       string
 		promptText string
@@ -10,35 +10,35 @@ func TestAppendPromptLinkToFooter(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "no separator appends the link after the separator",
+			name:       "first link into an empty prompt is placed above the separator",
+			promptText: "",
+			path:       "a.go",
+			want:       "[a.go](a.go)\n\n-----\n\n",
+		},
+		{
+			name:       "second link is placed after the first with one empty line between",
+			promptText: "[a.go](a.go)\n\n-----\n\n",
+			path:       "b.go",
+			want:       "[a.go](a.go)\n\n[b.go](b.go)\n\n-----\n\n",
+		},
+		{
+			name:       "body text stays below the separator",
 			promptText: "# Plan\nbody\n",
 			path:       "a.go",
-			want:       "# Plan\nbody\n\n-----\n\n[a.go](a.go)\n",
+			want:       "[a.go](a.go)\n\n-----\n\n# Plan\nbody\n",
 		},
 		{
-			name:       "separator with footer appends the link to the footer",
-			promptText: "body\n-----\nfooter\n",
-			path:       "a.go",
-			want:       "body\n\n-----\n\nfooter\n[a.go](a.go)\n",
-		},
-		{
-			name:       "separator with empty footer appends the link to the footer",
-			promptText: "body\n-----\n",
-			path:       "a.go",
-			want:       "body\n\n-----\n\n[a.go](a.go)\n",
-		},
-		{
-			name:       "footer without trailing line break gets one before the link",
-			promptText: "body\n-----\nfooter",
-			path:       "a.go",
-			want:       "body\n\n-----\n\nfooter\n[a.go](a.go)\n",
+			name:       "link is added after existing links and above the body",
+			promptText: "[a.go](a.go)\n\n-----\n\nbody\n",
+			path:       "b.go",
+			want:       "[a.go](a.go)\n\n[b.go](b.go)\n\n-----\n\nbody\n",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := appendPromptLinkToFooter(tc.promptText, tc.path); got != tc.want {
-				t.Errorf("appendPromptLinkToFooter(%q, %q) = %q, want %q", tc.promptText, tc.path, got, tc.want)
+			if got := appendReadLinkToPrompt(tc.promptText, tc.path); got != tc.want {
+				t.Errorf("appendReadLinkToPrompt(%q, %q) = %q, want %q", tc.promptText, tc.path, got, tc.want)
 			}
 		})
 	}

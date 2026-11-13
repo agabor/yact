@@ -41,8 +41,8 @@ func TestCombinePromptText(t *testing.T) {
 		{name: "file text only", promptFile: "  file text \n", cliPrompt: "", want: "file text"},
 		{name: "CLI text only", promptFile: " \n", cliPrompt: "cli text", want: "cli text"},
 		{name: "both joined with a blank line after trimming", promptFile: " file \n", cliPrompt: "  cli  ", want: "file\n\ncli"},
-		{name: "CLI text goes before the footer separator", promptFile: "plan body\n-----\n[a](a.go) ((kw))\n", cliPrompt: "cli text", want: "plan body\n\ncli text\n\n-----\n\n[a](a.go) ((kw))\n"},
-		{name: "footer kept when there is no CLI text", promptFile: "plan body\n-----\nfooter\n", cliPrompt: "", want: "plan body\n\n-----\n\nfooter\n"},
+		{name: "CLI text goes below the separator, read links stay above it", promptFile: "[a](a.go) kw\n-----\nplan body\n", cliPrompt: "cli text", want: "[a](a.go) kw\n\n-----\n\nplan body\n\ncli text"},
+		{name: "read links kept above the separator when there is no CLI text", promptFile: "[a](a.go)\n-----\nplan body\n", cliPrompt: "", want: "[a](a.go)\n\n-----\n\nplan body"},
 	}
 
 	for _, tc := range tests {
@@ -61,8 +61,8 @@ func TestSentPromptText(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "footer is absent and keyword markers are removed from the body",
-			promptText: "do ((x))\n-----\nsecret [a](a.go) ((kw))\n",
+			name:       "read links above the separator are absent and keyword markers are removed from the body",
+			promptText: "[a](a.go) kw\n-----\ndo ((x))\n",
 			want:       "do x\n",
 		},
 		{

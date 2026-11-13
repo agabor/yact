@@ -122,7 +122,7 @@ func (g GlobPattern) Matches(path string) bool {
 // The body is dropped because the compacted prompt keeps only the links, which are the only part that selects files.
 func CompactPromptLinks(prompt string) string {
 	sections := SplitPromptFooter(prompt)
-	found := append(findPromptLinks(sections.Body), findPromptLinks(sections.Footer)...)
+	found := append(findPromptLinks(sections.ReadLinks), findPromptLinks(sections.Body)...)
 	for position := range found {
 		found[position] = unixStyleLink(found[position])
 	}
@@ -130,7 +130,7 @@ func CompactPromptLinks(prompt string) string {
 	if len(links) == 0 {
 		return ""
 	}
-	return JoinPromptSections(PromptSections{Separator: "-----", Footer: linkLines(links)})
+	return JoinPromptSections(PromptSections{ReadLinks: linkLines(links)})
 }
 
 // Backslashes are rewritten so that a link written on Windows keeps the same target form as the slash-form project paths.

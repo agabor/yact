@@ -2,12 +2,14 @@ package logic
 
 import "strings"
 
-// Separator is empty exactly when the text has no footer section. Footer may be empty while a separator is present.
+// ReadLinks is the read link block above the separator and Body the text below it. The separator
+// is not stored: JoinPromptSections writes it whenever ReadLinks is set.
 type PromptSections struct {
+	ReadLinks string
 	Body      string
-	Separator string
-	Footer    string
 }
+
+const promptSeparator = "-----"
 
 func SplitPromptFooter(promptText string) PromptSections {
 	lines := strings.SplitAfter(promptText, "\n")
@@ -16,9 +18,8 @@ func SplitPromptFooter(promptText string) PromptSections {
 		if isPromptSeparatorLine(line) {
 			// Blank lines around the separator are layout, not content, so they are dropped here and restored by JoinPromptSections.
 			return PromptSections{
-				Body:      trimBlankLinesAtEnd(promptText[:offset]),
-				Separator: strings.TrimRight(line, "\r\n"),
-				Footer:    trimBlankLinesAtStart(promptText[offset+len(line):]),
+				ReadLinks: trimBlankLinesAtEnd(promptText[:offset]),
+				Body:      trimBlankLinesAtStart(promptText[offset+len(line):]),
 			}
 		}
 		offset += len(line)
@@ -28,18 +29,10 @@ func SplitPromptFooter(promptText string) PromptSections {
 
 // Blank lines are written around the separator for readability; SplitPromptFooter accepts text with or without them.
 func JoinPromptSections(sections PromptSections) string {
-	if sections.Separator == "" {
-		return sections.Body + sections.Footer
+	if sections.ReadLinks == "" {
+		return sections.Body
 	}
-	text := ""
-	if body := ensureTrailingNewline(sections.Body); body != "" {
-		text = body + "\n"
-	}
-	text += sections.Separator + "\n"
-	if sections.Footer != "" {
-		text += "\n" + sections.Footer
-	}
-	return text
+	return ensureTrailingNewline(sections.ReadLinks) + "\n" + promptSeparator + "\n\n" + sections.Body
 }
 
 func isPromptSeparatorLine(line string) bool {

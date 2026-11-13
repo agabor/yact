@@ -16,27 +16,27 @@ func TestSplitPromptFooter(t *testing.T) {
 		{
 			name:       "five dashes form the separator",
 			promptText: "body\n-----\nfooter\n",
-			want:       PromptSections{Body: "body\n", Separator: "-----", Footer: "footer\n"},
+			want:       PromptSections{ReadLinks: "body\n", Body: "footer\n"},
 		},
 		{
-			name:       "blank lines around the separator are not part of body or footer",
+			name:       "blank lines around the separator are not part of read links or body",
 			promptText: "body\n\n-----\n\nfooter\n",
-			want:       PromptSections{Body: "body\n", Separator: "-----", Footer: "footer\n"},
+			want:       PromptSections{ReadLinks: "body\n", Body: "footer\n"},
 		},
 		{
-			name:       "separator with surrounding spaces is kept verbatim",
+			name:       "separator with surrounding spaces is not stored",
 			promptText: "body\n   ---  \nfoot",
-			want:       PromptSections{Body: "body\n", Separator: "   ---  ", Footer: "foot"},
+			want:       PromptSections{ReadLinks: "body\n", Body: "foot"},
 		},
 		{
-			name:       "footer with links and keywords is kept",
-			promptText: "body\n-----\n[a](a.go) ((kw))\n",
-			want:       PromptSections{Body: "body\n", Separator: "-----", Footer: "[a](a.go) ((kw))\n"},
+			name:       "read links and keywords above the separator are kept",
+			promptText: "[a](a.go) ((kw))\n-----\nbody\n",
+			want:       PromptSections{ReadLinks: "[a](a.go) ((kw))\n", Body: "body\n"},
 		},
 		{
 			name:       "first separator line is used",
 			promptText: "a\n---\nb\n---\nc\n",
-			want:       PromptSections{Body: "a\n", Separator: "---", Footer: "b\n---\nc\n"},
+			want:       PromptSections{ReadLinks: "a\n", Body: "b\n---\nc\n"},
 		},
 	}
 
@@ -56,34 +56,29 @@ func TestJoinPromptSections(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "sections without separator are concatenated",
-			sections: PromptSections{Body: "a\n", Footer: "b"},
+			name:     "sections without read links return the body unchanged",
+			sections: PromptSections{Body: "a\nb"},
 			want:     "a\nb",
 		},
 		{
-			name:     "sections with separator and footer have blank lines around the separator",
-			sections: PromptSections{Body: "a\n", Separator: "---", Footer: "f\n"},
-			want:     "a\n\n---\n\nf\n",
+			name:     "read links and body have blank lines around the separator",
+			sections: PromptSections{ReadLinks: "a\n", Body: "f\n"},
+			want:     "a\n\n-----\n\nf\n",
 		},
 		{
-			name:     "body without line break gets one before the blank line",
-			sections: PromptSections{Body: "a", Separator: "---", Footer: "f"},
-			want:     "a\n\n---\n\nf",
+			name:     "read links without line break get one before the blank line",
+			sections: PromptSections{ReadLinks: "a", Body: "f"},
+			want:     "a\n\n-----\n\nf",
 		},
 		{
-			name:     "empty footer ends after the separator line",
-			sections: PromptSections{Body: "a\n", Separator: "---", Footer: ""},
-			want:     "a\n\n---\n",
-		},
-		{
-			name:     "empty body starts with the separator line",
-			sections: PromptSections{Body: "", Separator: "---", Footer: "f\n"},
-			want:     "---\n\nf\n",
+			name:     "empty body ends after the blank line below the separator",
+			sections: PromptSections{ReadLinks: "a\n", Body: ""},
+			want:     "a\n\n-----\n\n",
 		},
 		{
 			name:     "round trip of canonical text returns the original text",
-			sections: SplitPromptFooter("a\n\n---\n\nf\n"),
-			want:     "a\n\n---\n\nf\n",
+			sections: SplitPromptFooter("a\n\n-----\n\nf\n"),
+			want:     "a\n\n-----\n\nf\n",
 		},
 	}
 
