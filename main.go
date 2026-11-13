@@ -17,21 +17,29 @@ import (
 // Set at build time with -ldflags "-X main.version=<tag>"; local builds keep "dev".
 var version = "dev"
 
+// Failing to write an error message leaves no other channel to report the failure,
+// so the process exits with the same status as the error it was trying to report.
+func printError(format string, args ...any) {
+	if _, err := fmt.Fprintf(os.Stderr, format, args...); err != nil {
+		os.Exit(1)
+	}
+}
+
 func requireArgCount(command string, args []string, validCounts ...int) {
 	if slices.Contains(validCounts, len(args)) {
 		return
 	}
 	if len(validCounts) == 1 {
-		fmt.Fprintf(os.Stderr, "Error: %s command requires %d argument(s)\n", command, validCounts[0])
+		printError("Error: %s command requires %d argument(s)\n", command, validCounts[0])
 	} else {
-		fmt.Fprintf(os.Stderr, "Error: %s command received %d argument(s), expected one of: %v\n", command, len(args), validCounts)
+		printError("Error: %s command received %d argument(s), expected one of: %v\n", command, len(args), validCounts)
 	}
 	os.Exit(1)
 }
 
 func requireNoArgs(command string, args []string) {
 	if len(args) != 0 {
-		fmt.Fprintf(os.Stderr, "Error: %s command takes no arguments\n", command)
+		printError("Error: %s command takes no arguments\n", command)
 		os.Exit(1)
 	}
 }
@@ -44,8 +52,8 @@ func getOptionalPrompt(args []string) string {
 }
 
 func promptNotFoundMessage(command config.PromptName, err error) {
-	fmt.Fprintf(os.Stderr, "Error: no system prompt found for command '%s'\n", command)
-	fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
+	printError("Error: no system prompt found for command '%s'\n", command)
+	printError("Download failed: %v\n", err)
 	fmt.Fprintln(os.Stderr, "Run 'y --help' for usage information.")
 }
 
@@ -70,7 +78,7 @@ func main() {
 
 	flags, err := cli.ToFlaglist(flag.CommandLine)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		printError("Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -87,14 +95,14 @@ func main() {
 	args := flag.Args()
 
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "Error: no command provided\n")
+		printError("Error: no command provided\n")
 		fmt.Println("Run 'y --help' for usage information.")
 		os.Exit(1)
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		printError("Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -153,7 +161,7 @@ func main() {
 
 		promptName, err := config.ParsePromptName(command)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			printError("Error: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -184,7 +192,7 @@ func main() {
 	}
 
 	if commandErr != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", commandErr)
+		printError("Error: %v\n", commandErr)
 		os.Exit(1)
 	}
 }
