@@ -275,7 +275,7 @@
             <div class="cost"><b>−</b><span><strong>You resolve the plan.</strong> You have to supply the missing context and accept or answer every assumption, and <code>act</code> does not run until you have. That is work. Without it, the same work comes back in review.</span></div>
             <div class="cost"><b>−</b><span><strong>Files must be small.</strong> <code>act</code> writes every file it changes back in full. A long file makes the call slow and expensive, and gives the model more room for edits you did not ask for. Keep files under about 200 lines. YACT warns above 300.</span></div>
             <div class="cost"><b>−</b><span><strong>Legacy code is hard.</strong> YACT is easy to introduce on a new project or a clean codebase. On a legacy codebase with very large files it is hard: every step rewrites a long file and needs a lot of context, and YACT does not refactor code that the prompt did not mention.</span></div>
-            <div class="cost"><b>−</b><span><strong>You run the tests.</strong> YACT never runs anything and never retries. If a test fails, pipe the output to <code>y output</code> and write the next prompt.</span></div>
+            <div class="cost"><b>−</b><span><strong>You run the tests.</strong> YACT never runs anything and never retries. If a test fails, save the output to a file, link it with <code>y read</code>, and write the next prompt.</span></div>
             <div class="cost"><b>−</b><span><strong>No automation.</strong> YACT does not run unattended. A plan needs a person to accept or answer its assumptions, so there are no CI workflows that plan and implement by themselves.</span></div>
             <div class="cost"><b>−</b><span><strong>Anthropic models only, for now.</strong></span></div>
           </div>
@@ -328,7 +328,7 @@
           <div><h3>Can the model tick an assumption itself?</h3><p>No. YACT decides every box after a plan call. A box stays ticked only if you ticked that entry before and its wording has not changed. If the model rewords an entry, you accept it again.</p></div>
           <div><h3>Can I run it in CI, without a person?</h3><p>No, and this is deliberate. A plan needs a person to accept or answer its assumptions. YACT has no workflows that plan and implement by themselves.</p></div>
           <div><h3>Does the lint prove the code is right?</h3><p>No. The model does the lint during the plan call, and the two sections show only what the model noticed. It can overlook something, so you still read the plan, check the change and run your tests. What the lint gives you is the open decisions before any code is written, when changing one costs a sentence.</p></div>
-          <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and two optional inputs if you use them: <code>.yact/domain.txt</code> and output captured with <code>y output</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run --verbose</code> shows what would be sent.</p></div>
+          <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and one optional input if you use it: <code>.yact/domain.txt</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run --verbose</code> shows what would be sent.</p></div>
           <div><h3>Do I always need a plan?</h3><p>No. For a trivial change, such as a rename, give the prompt directly to <code>act</code>. For any change that a reviewer will need to understand, plan first.</p></div>
           <div><h3>Can I use it on an existing codebase?</h3><p>Yes, if its files are small and its structure is clear. On a legacy codebase with very large files it is hard, because <code>act</code> rewrites every changed file in full. It is easiest on a new project.</p></div>
           <div><h3>Does it change my coding style?</h3><p><code>plan</code> and <code>act</code> follow sixteen <a href="code-principles.html">code principles</a>, but only in code that a step writes or changes, and they are told to match the conventions already in the file. The principles are one text file that you can edit.</p></div>
@@ -357,6 +357,7 @@
             <a href="getting-started.html">Getting started</a>
             <a href="the-yact-way.html">The YACT way</a>
             <a href="code-principles.html">Code principles</a>
+            <a href="known-issues.html">Known issues</a>
             <a href="https://github.com/agabor/yact#readme">README</a>
           </div>
           <div class="foot-col">

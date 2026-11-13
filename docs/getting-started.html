@@ -215,8 +215,9 @@ y read commands/call.go
 y ask "why does this function return early?"</code></pre>
         <p>To ask about more than the linked files, add an index with <code>-i</code>. It lists the files, classes and functions in your project by name, without the code inside them, so the model can find its way around code you did not link. <code>-i public</code> lists public declarations and <code>-i all</code> lists all of them; <code>-i none</code> turns it off. It works for Go, PHP, JavaScript, C#, Swift and Kotlin. <code>act</code> and <code>plan</code> include an index by default.</p>
         <pre data-copy><code>y -i public ask "where is the config loaded?"</code></pre>
-        <p>To have the model review a change before you open the pull request, send it the diff:</p>
-        <pre data-copy><code>git diff main | y output
+        <p>To have the model review a change before you open the pull request, link the diff and review it:</p>
+        <pre data-copy><code>git diff main > yact-diff.patch
+y read yact-diff.patch
 y review "add a --version flag"</code></pre>
       </div>
     </section>
@@ -235,8 +236,8 @@ y review "add a --version flag"</code></pre>
           <dt><code>((plan step))</code></dt>
           <dd>Double parentheses send every file that contains those words, in any casing: <code>PlanStep</code>, <code>plan_step</code> or <code>plan step</code>. This is what <code>y keyword</code> does, at the time of the call.</dd>
         </dl>
-        <p><code>y read</code> puts its links below a line of dashes. The links below that line still send their files, but the text below the line is not sent, so your prompt stays readable.</p>
-        <p>Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. Output you capture with <code>y output</code> is sent with every call until you run <code>y new</code>.</p>
+        <p><code>y read</code> puts its links above a line of dashes. Links above that line still send their files, but the block above the line is not sent itself; only the text below the line is, so your prompt stays readable.</p>
+        <p>Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. A file linked with <code>y read</code> stays linked, and so is sent with every call, until you remove the link or run <code>y new</code>.</p>
         <p><code>plan</code> and <code>act</code> also send the index by default: names of files, classes and functions, with no code. Turn it off with <code>-i none</code>.</p>
         <p>To see exactly what goes out, add <code>--verbose</code>. Add <code>--dry-run</code> as well to stop before the call:</p>
         <pre data-copy><code>y --dry-run --verbose ask "how does the parser work?"</code></pre>
@@ -285,7 +286,7 @@ y review "add a --version flag"</code></pre>
           <dt>A file was not sent</dt>
           <dd>Only links send files. Run with <code>--dry-run --verbose</code>, and check that the path is relative to the project root and not in a hidden or skipped folder.</dd>
         </dl>
-        <p>The <a href="https://github.com/agabor/yact#troubleshooting">README</a> lists more, and you can ask for help by opening an <a href="https://github.com/agabor/yact/issues">issue</a>.</p>
+        <p>The <a href="https://github.com/agabor/yact#troubleshooting">README</a> lists more, <a href="known-issues.html">known issues</a> covers limitations rather than errors, and you can ask for help by opening an <a href="https://github.com/agabor/yact/issues">issue</a>.</p>
       </div>
     </section>
   </main>
@@ -303,6 +304,7 @@ y review "add a --version flag"</code></pre>
             <a href="getting-started.html">Getting started</a>
             <a href="the-yact-way.html">The YACT way</a>
             <a href="code-principles.html">Code principles</a>
+            <a href="known-issues.html">Known issues</a>
             <a href="https://github.com/agabor/yact#readme">README</a>
           </div>
           <div class="foot-col">
