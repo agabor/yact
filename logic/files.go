@@ -10,13 +10,13 @@ import (
 	"yact/config"
 )
 
-func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, error) {
+func EnumerateFiles(root string, includeFile func(name string) bool) ([]projectpath.Path, error) {
 	ignoredFolders, err := config.LoadIgnoredFolders()
 	if err != nil {
 		return nil, err
 	}
 
-	var files []string
+	var files []projectpath.Path
 	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -56,7 +56,7 @@ func EnumerateFiles(root string, includeFile func(name string) bool) ([]string, 
 		}
 
 		// Paths are slash-separated on every OS so that links and lookups compare equal on Windows.
-		files = append(files, filepath.ToSlash(path))
+		files = append(files, projectpath.Path(filepath.ToSlash(path)))
 		return nil
 	})
 	return files, err

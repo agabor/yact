@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+	"yact/projectpath"
 )
 
 // Phrases are wrapped in double parentheses so that ordinary parentheses in prose do not trigger a file search.
@@ -86,9 +87,9 @@ func ContainsKeyword(content string, keyword string) bool {
 	return containsWordSequence(splitWords(content), splitWords(keyword))
 }
 
-func UniquePaths(paths []string) []string {
-	seen := map[string]bool{}
-	var unique []string
+func UniquePaths(paths []projectpath.Path) []projectpath.Path {
+	seen := map[projectpath.Path]bool{}
+	var unique []projectpath.Path
 	for _, path := range paths {
 		if seen[path] {
 			continue

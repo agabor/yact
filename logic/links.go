@@ -15,7 +15,7 @@ var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)\s]
 var promptDoubleBracketPattern = regexp.MustCompile(`\[\[([^\[\]\n]+)\]\]`)
 
 type PromptLinks struct {
-	Paths []string
+	Paths []projectpath.Path
 }
 
 type promptLink struct {
@@ -100,18 +100,6 @@ func ParseGlobPattern(raw string) (GlobPattern, error) {
 	return GlobPattern(raw), nil
 }
 
-func parseGlobPatterns(raws []string) ([]GlobPattern, error) {
-	var patterns []GlobPattern
-	for _, raw := range raws {
-		pattern, err := ParseGlobPattern(raw)
-		if err != nil {
-			return nil, err
-		}
-		patterns = append(patterns, pattern)
-	}
-	return patterns, nil
-}
-
 // The pattern was validated by ParseGlobPattern, so filepath.Match cannot return an error here.
 func (g GlobPattern) Matches(path string) bool {
 	matched, _ := filepath.Match(string(g), path)
@@ -142,14 +130,14 @@ func unixStyleLink(link promptLink) promptLink {
 }
 
 // Targets that are not valid project paths cannot match a project file, so they are dropped.
-func normalizeLinkTargets(targets []string) []string {
-	var normalized []string
+func normalizeLinkTargets(targets []string) []projectpath.Path {
+	var normalized []projectpath.Path
 	for _, target := range targets {
 		projectPath, err := projectpath.Parse(target)
 		if err != nil {
 			continue
 		}
-		normalized = append(normalized, string(projectPath))
+		normalized = append(normalized, projectPath)
 	}
 	return normalized
 }
@@ -178,12 +166,10 @@ func linkLines(links []promptLink) string {
 	return lines.String()
 }
 
-func selectLinkedFiles(files []string, exactPaths []string, patterns []GlobPattern) []string {
-	var selected []string
+func selectLinkedFiles(files []projectpath.Path, exactPaths []projectpath.Path) []projectpath.Path {
+	var selected []projectpath.Path
 	for _, path := range files {
-		if slices.Contains(exactPaths, path) || slices.ContainsFunc(patterns, func(pattern GlobPattern) bool {
-			return pattern.Matches(path)
-		}) {
+		if slices.Contains(exactPaths, path) {
 			selected = append(selected, path)
 		}
 	}
@@ -192,15 +178,9 @@ func selectLinkedFiles(files []string, exactPaths []string, patterns []GlobPatte
 
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 	// Only link targets count, because a plain mention of a path must not send that file to the LLM.
-	exactPaths := normalizeLinkTargets(ParseMarkdownLinkTargets(prompt))
-	patternRaws := normalizeLinkTargets(doubleBracketTargets(prompt))
-	if len(exactPaths) == 0 && len(patternRaws) == 0 {
+	exactPaths := append(normalizeLinkTargets(ParseMarkdownLinkTargets(prompt)), normalizeLinkTargets(doubleBracketTargets(prompt))...)
+	if len(exactPaths) == 0 {
 		return PromptLinks{}, nil
-	}
-
-	patterns, err := parseGlobPatterns(patternRaws)
-	if err != nil {
-		return PromptLinks{}, err
 	}
 
 	files, err := EnumerateFiles(".", func(name string) bool {
@@ -210,5 +190,5 @@ func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 		return PromptLinks{}, err
 	}
 
-	return PromptLinks{Paths: selectLinkedFiles(files, exactPaths, patterns)}, nil
+	return PromptLinks{Paths: selectLinkedFiles(files, exactPaths)}, nil
 }

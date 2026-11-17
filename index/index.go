@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"yact/projectpath"
 
 	"yact/logic"
 )
@@ -108,13 +109,13 @@ func WriteIndex(visibility string) error {
 	return os.WriteFile(indexPath, []byte(data), 0644)
 }
 
-func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, error) {
+func buildIndexTree(paths []projectpath.Path, languages []indexLanguage) (*IndexNode, error) {
 	root := &IndexNode{
 		Name: ".",
 		Type: "dir",
 	}
 	for _, filePath := range paths {
-		name := path.Base(filePath)
+		name := path.Base(string(filePath))
 		language, found := findLanguageForFile(name, languages)
 		if !found {
 			continue
@@ -126,7 +127,7 @@ func buildIndexTree(paths []string, languages []indexLanguage) (*IndexNode, erro
 		if len(fileNode.Functions) == 0 {
 			continue
 		}
-		directory := ensureDirectoryNode(root, path.Dir(filePath))
+		directory := ensureDirectoryNode(root, path.Dir(string(filePath)))
 		directory.Children = append(directory.Children, fileNode)
 	}
 	return root, nil
@@ -137,7 +138,7 @@ func ensureDirectoryNode(root *IndexNode, dirPath string) *IndexNode {
 		return root
 	}
 	current := root
-	for _, name := range strings.Split(dirPath, "/") {
+	for name := range strings.SplitSeq(dirPath, "/") {
 		current = findOrAddChildDirectory(current, name)
 	}
 	return current
@@ -198,7 +199,7 @@ func renderFileSection(path string, signatures []IndexSignature) string {
 	return builder.String()
 }
 
-func buildSourceFileNode(path string, name string, language indexLanguage) (*IndexNode, error) {
+func buildSourceFileNode(path projectpath.Path, name string, language indexLanguage) (*IndexNode, error) {
 	functions, err := extractFunctions(path, language)
 	if err != nil {
 		return nil, err
@@ -210,8 +211,8 @@ func buildSourceFileNode(path string, name string, language indexLanguage) (*Ind
 	}, nil
 }
 
-func extractFunctions(path string, language indexLanguage) ([]IndexSignature, error) {
-	content, err := os.ReadFile(path)
+func extractFunctions(path projectpath.Path, language indexLanguage) ([]IndexSignature, error) {
+	content, err := os.ReadFile(string(path))
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}

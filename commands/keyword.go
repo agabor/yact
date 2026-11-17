@@ -13,11 +13,7 @@ func HandleKeywordCommand(args []string) error {
 		return err
 	}
 
-	for _, path := range files {
-		filePath, err := projectpath.Parse(path)
-		if err != nil {
-			return err
-		}
+	for _, filePath := range files {
 		if err := readFile(filePath); err != nil {
 			return err
 		}
@@ -26,7 +22,7 @@ func HandleKeywordCommand(args []string) error {
 	return nil
 }
 
-func findKeywordFiles(keyword string) ([]string, error) {
+func findKeywordFiles(keyword string) ([]projectpath.Path, error) {
 	extensions, err := config.LoadExtensions()
 	if err != nil {
 		return nil, err
@@ -39,9 +35,9 @@ func findKeywordFiles(keyword string) ([]string, error) {
 		return nil, err
 	}
 
-	var matches []string
+	var matches []projectpath.Path
 	for _, path := range files {
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(string(path))
 		if err != nil {
 			continue
 		}
@@ -54,8 +50,8 @@ func findKeywordFiles(keyword string) ([]string, error) {
 	return matches, nil
 }
 
-func resolvePromptKeywordFiles(prompt string) ([]string, error) {
-	var paths []string
+func resolvePromptKeywordFiles(prompt string) ([]projectpath.Path, error) {
+	var paths []projectpath.Path
 	for _, keyword := range logic.ParsePromptKeywords(prompt) {
 		found, err := findKeywordFiles(keyword)
 		if err != nil {
