@@ -148,7 +148,7 @@ func TestCompactPromptLinks(t *testing.T) {
 		{
 			name:   "body is dropped and the links of both parts are listed",
 			prompt: "body [a](a.go)\n-----\n[[logic/links.go]]\n",
-			want:   "[a](a.go)\n[[logic/links.go]]\n\n-----\n\n",
+			want:   "[a](a.go)\n\n[[logic/links.go]]\n\n-----\n\n",
 		},
 		{
 			name:   "same target in read links and body is listed once",
@@ -168,7 +168,7 @@ func TestCompactPromptLinks(t *testing.T) {
 		{
 			name:   "links keep the order of first appearance",
 			prompt: "intro\n-----\nSome note\n[[c.go]] text\n[b](b.go)\n[[c.go]]\n",
-			want:   "[[c.go]]\n[b](b.go)\n\n-----\n\n",
+			want:   "[[c.go]]\n\n[b](b.go)\n\n-----\n\n",
 		},
 	}
 
@@ -189,7 +189,7 @@ func TestCompactPromptLinksLeavesOnlyFooter(t *testing.T) {
 	if sections.Body != "" {
 		t.Errorf("SplitPromptFooter(%q).Body = %q, want empty", compacted, sections.Body)
 	}
-	wantReadLinks := "[a](a.go)\n[[logic/links.go]]\n"
+	wantReadLinks := "[a](a.go)\n\n[[logic/links.go]]\n"
 	if sections.ReadLinks != wantReadLinks {
 		t.Errorf("SplitPromptFooter(%q).ReadLinks = %q, want %q", compacted, sections.ReadLinks, wantReadLinks)
 	}

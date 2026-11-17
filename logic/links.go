@@ -169,7 +169,10 @@ func uniqueLinks(links []promptLink) []promptLink {
 
 func linkLines(links []promptLink) string {
 	var lines strings.Builder
-	for _, link := range links {
+	for position, link := range links {
+		if position > 0 {
+			lines.WriteString("\n")
+		}
 		lines.WriteString(link.Text + "\n")
 	}
 	return lines.String()
