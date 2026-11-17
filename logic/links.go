@@ -9,13 +9,14 @@ import (
 	"yact/projectpath"
 )
 
-var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)\s]+))\)`)
+var promptLinkPattern = regexp.MustCompile(`\[[^\]\n]*\]\((?:<([^>\n]+)>|([^)]+))\)`)
 
 // A double-bracket link is a shorthand for a Markdown link with the same target, so [[main.go]] sends the same file as [main.go](main.go).
 var promptDoubleBracketPattern = regexp.MustCompile(`\[\[([^\[\]\n]+)\]\]`)
 
 type PromptLinks struct {
-	Paths []projectpath.Path
+	Paths           []projectpath.Path
+	UnresolvedPaths []projectpath.Path
 }
 
 type promptLink struct {
@@ -77,11 +78,7 @@ func findPromptLinks(prompt string) []promptLink {
 }
 
 func ParsePromptLinkTargets(prompt string) []string {
-	var targets []string
-	for _, match := range promptLinkPattern.FindAllStringSubmatch(prompt, -1) {
-		targets = append(targets, linkTarget(match))
-	}
-	return append(targets, doubleBracketTargets(prompt)...)
+	return append(ParseMarkdownLinkTargets(prompt), doubleBracketTargets(prompt)...)
 }
 
 // Markdown link targets are exact paths, so a glob in them is never expanded.
@@ -166,19 +163,9 @@ func linkLines(links []promptLink) string {
 	return lines.String()
 }
 
-func selectLinkedFiles(files []projectpath.Path, exactPaths []projectpath.Path) []projectpath.Path {
-	var selected []projectpath.Path
-	for _, path := range files {
-		if slices.Contains(exactPaths, path) {
-			selected = append(selected, path)
-		}
-	}
-	return selected
-}
-
 func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 	// Only link targets count, because a plain mention of a path must not send that file to the LLM.
-	exactPaths := append(normalizeLinkTargets(ParseMarkdownLinkTargets(prompt)), normalizeLinkTargets(doubleBracketTargets(prompt))...)
+	exactPaths := normalizeLinkTargets(ParsePromptLinkTargets(prompt))
 	if len(exactPaths) == 0 {
 		return PromptLinks{}, nil
 	}
@@ -190,5 +177,15 @@ func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 		return PromptLinks{}, err
 	}
 
-	return PromptLinks{Paths: selectLinkedFiles(files, exactPaths)}, nil
+	var selected []projectpath.Path
+	var unresolved []projectpath.Path
+	for _, path := range exactPaths {
+		if slices.Contains(files, path) {
+			selected = append(selected, path)
+		} else {
+			unresolved = append(unresolved, path)
+		}
+	}
+
+	return PromptLinks{Paths: selected, UnresolvedPaths: unresolved}, nil
 }

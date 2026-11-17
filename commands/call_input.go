@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"yact/projectpath"
 
 	"yact/config"
 	"yact/logic"
@@ -58,6 +59,14 @@ func longFileWarnings(counts []fileLineCount) []string {
 		if count.Lines > longFileLineThreshold {
 			warnings = append(warnings, fmt.Sprintf("%s has %d lines, more than %d", count.Path, count.Lines, longFileLineThreshold))
 		}
+	}
+	return warnings
+}
+
+func unresolvedFileWarnings(unresolvedPaths []projectpath.Path) []string {
+	var warnings []string
+	for _, path := range unresolvedPaths {
+		warnings = append(warnings, fmt.Sprintf("'%s' is not found", path))
 	}
 	return warnings
 }

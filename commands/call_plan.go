@@ -102,6 +102,10 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 		return requestContent, err
 	}
 
+	if len(links.UnresolvedPaths) > 0 {
+		printWarnings(unresolvedFileWarnings(links.UnresolvedPaths))
+	}
+
 	keywordPaths, err := resolvePromptKeywordFiles(requestContent.Prompt)
 	if err != nil {
 		return requestContent, err
