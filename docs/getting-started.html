@@ -151,7 +151,7 @@ y act "add a --version flag"</code></pre>
         <p><code>act</code> writes files only when the response contains nothing but code. If the model added even one sentence of explanation, YACT writes no files and keeps the response in <code>.yact/temp/buffer.txt</code>. Read it there, and apply it with <code>y commit</code> if it is what you want.</p>
 
         <h3>Choose a model</h3>
-        <p><code>plan</code> and <code>act</code> use Haiku by default. Add <code>-m sonnet</code>, <code>-m opus</code> or <code>-m fable</code> to use another model for one call. Which models you can use depends on your Anthropic account. The lint depends on the model, so a stronger model for <code>y plan</code> is worth trying on a difficult change.</p>
+        <p><code>plan</code> and <code>act</code> use Haiku by default. Add <code>-m sonnet</code>, <code>-m opus</code> or <code>-m fable</code> to use another model for one call. Which models you can use depends on your Anthropic account. The lint depends on the model: it only flags the gaps it notices, not the ones it misses. A stronger model for <code>y plan</code> notices more, which is worth it on a difficult or unfamiliar change — an empty Assumptions section is not proof the prompt had none.</p>
         <p>Each command sets its default model in the first line of its prompt file. <code>y config claude_model &lt;name&gt;</code> sets the model for commands whose prompt file names none.</p>
       </div>
     </section>
