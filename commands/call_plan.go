@@ -1,29 +1,9 @@
 package commands
 
 import (
-	"strings"
-
 	"yact/logic"
 	"yact/projectpath"
 )
-
-func combinePromptText(promptFileText string, cliPrompt string) string {
-	sections := logic.SplitPromptFooter(promptFileText)
-	sections.Body = joinPromptBody(sections.Body, cliPrompt)
-	return logic.JoinPromptSections(sections)
-}
-
-func joinPromptBody(fileBody string, cliPrompt string) string {
-	fileText := strings.TrimSpace(fileBody)
-	cliText := strings.TrimSpace(cliPrompt)
-	if fileText == "" {
-		return cliText
-	}
-	if cliText == "" {
-		return fileText
-	}
-	return fileText + "\n\n" + cliText
-}
 
 // The read link block above the separator is never sent as text, so only the body is sent, with keyword markers removed.
 func sentPromptText(promptText string) string {

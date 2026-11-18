@@ -18,17 +18,16 @@ Commands:
   keyword <keyword>                    Recursively add files containing the keyword to the task context
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
-  query [prompt]                       Call the LLM without a system prompt
+  query                                Call the LLM without a system prompt
   commit                               Write code blocks from the buffer to disk (with --strict, fail on free text or incomplete code blocks)
   batch                                Fetch the pending batch result and write it using the output flags it was submitted with (--output, --strict). Without them, the result goes to the buffer. Apply the buffer with commit
   download prompt <command>            Download a system prompt from the project repository, replacing the local copy
   index <none|public|all>              Write the index to .yact/temp/index.txt without calling the LLM, where none removes it, public is public and all is private
   compact                              Compact the links in the prompt file
-  <command> [prompt]                   Call the LLM with the system prompt that belongs to the given command.
+  <command>                            Call the LLM with the system prompt that belongs to the given command.
 
 Prompt rules for query and <command>:
-  A prompt argument is always used, together with the files linked in yact-prompt.md.
-  Without a prompt argument, yact-prompt.md is used as the prompt and only the files
+  The prompt is always the content of yact-prompt.md, and only the files
   linked in it are sent as context. A missing plan is an error.`)
 }
 

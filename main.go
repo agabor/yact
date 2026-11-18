@@ -44,13 +44,6 @@ func requireNoArgs(command string, args []string) {
 	}
 }
 
-func getOptionalPrompt(args []string) string {
-	if len(args) > 0 {
-		return args[0]
-	}
-	return ""
-}
-
 func promptNotFoundMessage(command config.PromptName, err error) {
 	printError("Error: no system prompt found for command '%s'\n", command)
 	printError("Download failed: %v\n", err)
@@ -132,7 +125,7 @@ func main() {
 		requireNoArgs("commit", commandArgs)
 		commandErr = commands.HandleCommitCommand(cli.Strict)
 	case "query":
-		requireArgCount("query", commandArgs, 0, 1)
+		requireNoArgs("query", commandArgs)
 		resolved, err := config.ResolveFlags(flags, config.QueryDefaults())
 		if err != nil {
 			commandErr = err
@@ -141,7 +134,7 @@ func main() {
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
-		commandErr = commands.HandleCommand(resolved, cfg, "", getOptionalPrompt(commandArgs))
+		commandErr = commands.HandleCommand(resolved, cfg, "")
 	case "batch":
 		requireNoArgs("batch", commandArgs)
 		commandErr = commands.HandleBatchCommand(cfg)
@@ -154,7 +147,7 @@ func main() {
 		requireNoArgs("compact", commandArgs)
 		commandErr = commands.HandleCompactCommand()
 	default:
-		requireArgCount(command, commandArgs, 0, 1)
+		requireNoArgs(command, commandArgs)
 
 		promptName, err := config.ParsePromptName(command)
 		if err != nil {
@@ -185,7 +178,7 @@ func main() {
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s %s\n", flagString, command)
 		}
-		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt, getOptionalPrompt(commandArgs))
+		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt)
 	}
 
 	if commandErr != nil {

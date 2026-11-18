@@ -2,13 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"yact/config"
 	"yact/logic"
 )
 
-func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, prompt string) error {
+func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string) error {
 	mode := config.ParseOutputMode(flags)
 
 	if flags.Batch {
@@ -23,30 +22,17 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	applyModelOverride(cfg, flags.ModelOverride())
 
-	var err error
-	planPrompt := ""
-	combinedPrompt := ""
-	planUsed := false
-
-	if prompt == "" {
-		var planFound bool
-		planPrompt, planFound, err = logic.ReadPlan()
-		if err != nil {
-			return err
-		}
-		if !planFound {
-			return fmt.Errorf("no plan found in %s, provide a prompt or create a plan with --plan", config.GetProjectPromptPath())
-		}
-		planUsed = true
+	planPrompt, planFound, err := logic.ReadPlan()
+	if err != nil {
+		return err
+	}
+	if !planFound {
+		return fmt.Errorf("no plan found in %s, create a plan with --plan", config.GetProjectPromptPath())
 	}
 
 	// Writing the plan is how a blocked prompt gets unblocked, so it is never gated.
 	if mode != config.OutputWritePlan {
-		gateText := prompt
-		if planUsed {
-			gateText = planPrompt
-		}
-		if err := logic.PromptGateError(logic.DecidePromptGate(gateText)); err != nil {
+		if err := logic.PromptGateError(logic.DecidePromptGate(planPrompt)); err != nil {
 			return err
 		}
 	}
@@ -56,17 +42,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	if planUsed {
-		requestContentForLLM.Prompt = planPrompt
-	} else {
-		promptFileText, _, err := logic.ReadPlan()
-		if err != nil {
-			return err
-		}
-
-		combinedPrompt = combinePromptText(promptFileText, prompt)
-		requestContentForLLM.Prompt = combinedPrompt
-	}
+	requestContentForLLM.Prompt = planPrompt
 	requestContentForLLM, err = applyPromptLinks(requestContentForLLM)
 	if err != nil {
 		return err
@@ -87,13 +63,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	if flags.DryRun {
 		fmt.Println("Dry run: LLM call skipped.")
 		return nil
-	}
-
-	// Later calls with a prompt read this file back, so it must hold the prompt that was sent.
-	if !planUsed {
-		if err := os.WriteFile(string(config.GetProjectPromptPath()), []byte(combinedPrompt), 0644); err != nil {
-			return err
-		}
 	}
 
 	if flags.Batch {

@@ -1,6 +1,0 @@
-globpattern matching has been removed from double bracket links.
-a link to a file that cannot be sent (missing, or in a hidden or ignored folder) prints a warning: '<path>' is not found.
-the --steps (-s) flag has been removed. y act sends the whole plan; plan steps have no checkboxes and are not ticked off.
-new split command: y split divides a plan that is too large for one call into smaller plans in .yact/plans/, each of which leaves the code working.
-plan defaults to --index public instead of --index all.
-y compact separates the links it writes with blank lines.
