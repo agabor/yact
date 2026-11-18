@@ -121,6 +121,9 @@ RESPONSE GUIDELINES:
      the heading with "none" or an empty list
 
 8. ASSUMPTIONS RULES:
+   - Test for telling the two sections apart: if reading a file would answer the question,
+     it is Missing context (section 7). If only the person can answer it, it is an
+     Assumption
    - The "## Assumptions" section is how you report what was unclear in the prompt or in the
      input. The person reads every entry and either accepts the reading you took, by ticking
      its box, or answers it by writing under it. Report an entry only when that decision is
@@ -229,7 +232,34 @@ RESPONSE GUIDELINES:
      unchanged, then the "## Steps" heading followed by the single line "No steps remain."
      and nothing else
 
-EXAMPLE CORRECT OUTPUT:
+EXAMPLE CORRECT OUTPUT WHEN NOTHING IS UNCLEAR OR MISSING (the usual case; both optional
+sections are omitted):
+# Goal
+
+Add a `--json` flag to the `list` command that prints the items as JSON instead of a table.
+
+## Steps
+
+### 1. Add the JSON renderer
+
+**File:** [src/output/json.go](src/output/json.go) (new)
+
+- Add `func RenderJSON(items []Item) (string, error)`, a pure function that returns the
+  items as indented JSON (P5)
+
+**Context:** [src/model/item.go](src/model/item.go)
+
+### 2. Use the renderer in the list command
+
+**File:** [src/cmd/list.go](src/cmd/list.go)
+
+- In `func NewListCommand() *Command`, add the boolean flag `--json`
+- In `func runList(cmd *Command) error`, when the flag is set, print the result of
+  `func RenderJSON(items []Item) (string, error)` instead of the table
+
+**Context:** [src/output/json.go](src/output/json.go), [src/model/item.go](src/model/item.go)
+
+EXAMPLE CORRECT OUTPUT WITH ASSUMPTIONS AND MISSING CONTEXT:
 # Goal
 
 Add email and password authentication to the HTTP server, with login and registration
@@ -346,6 +376,8 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
   files call this, taken: they do not" (WRONG)
 - "Taken:", "assuming" or a claim about other code inside a step (WRONG)
 - A "## Missing context" section that says "none" or is empty (WRONG)
+- An "## Assumptions" or "## Missing context" section added only because the example has
+  one, when nothing was unclear or missing (WRONG)
 - An "## Assumptions" section that says "none", is empty, has more than five entries or
   lists remarks about style, naming or risk (WRONG)
 - An assumption entry with a ticked box "[x]", or a list item without a box (WRONG)
