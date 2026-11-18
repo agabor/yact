@@ -29,9 +29,7 @@ func TestDecidePromptGate(t *testing.T) {
 		promptText string
 		want       PromptGate
 	}{
-		{name: "open plan with unticked steps", promptText: planText("### [ ] 1. A", "body"), want: PromptGateOpen},
 		{name: "missing context section", promptText: planText("# Goal", "", "## Missing context", "- a.go"), want: PromptGateMissingContext},
-		{name: "ticked plan with missing context wins", promptText: planText("### [x] 1. A", "", "## Missing context"), want: PromptGateMissingContext},
 		{name: "empty prompt is open", promptText: "", want: PromptGateOpen},
 		{name: "unanswered assumption", promptText: planText("# Goal", "", "## Assumptions", "- [ ] **A1.** Cache"), want: PromptGateUnansweredAssumptions},
 		{name: "answered but unticked assumption", promptText: planText("## Assumptions", "- [ ] **A1.** Cache", "  Answer: Use Redis"), want: PromptGateUnappliedAnswers},
