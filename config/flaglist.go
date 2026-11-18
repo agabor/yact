@@ -14,7 +14,6 @@ type Flaglist struct {
 	NoProgress bool
 	Verbose    bool
 	DryRun     bool
-	Steps      string
 }
 
 // OutputApply is the zero value, so a batch job stored without a mode is applied.
@@ -84,14 +83,6 @@ func (f Flaglist) ModelOverride() string {
 	return string(*f.Model)
 }
 
-// --output plan sends the plan whole, so it implies selector 0 unless --steps is given explicitly.
-func (f Flaglist) StepsSelector() string {
-	if f.EffectiveOutput() == OutputNamePlan && f.Steps == "" {
-		return "0"
-	}
-	return f.Steps
-}
-
 func (f Flaglist) FlagString() string {
 	var parts []string
 
@@ -118,9 +109,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.DryRun {
 		parts = append(parts, "--dry-run")
-	}
-	if f.Steps != "" {
-		parts = append(parts, fmt.Sprintf("--steps %s", f.Steps))
 	}
 
 	return strings.Join(parts, " ")

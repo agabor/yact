@@ -17,10 +17,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		}
 	}
 
-	if err := validateStepsOptions(flags.Steps, mode, prompt); err != nil {
-		return err
-	}
-
 	if err := applyIndexOverride(flags.Index); err != nil {
 		return err
 	}
@@ -59,24 +55,9 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	if err != nil {
 		return err
 	}
-	var sentSteps []logic.PlanStep
 
 	if planUsed {
-		selection, err := selectPlanSteps(planPrompt, flags.StepsSelector())
-
-		if err != nil {
-			return err
-		}
-		printWarnings(selection.Warnings)
-		if selection.AllDone {
-			fmt.Println("All plan steps are done.")
-			return nil
-		}
-		if len(selection.Steps) > 0 {
-			fmt.Printf("Plan steps: %s\n", logic.FormatNumbers(logic.StepNumbers(selection.Steps)))
-		}
-		sentSteps = selection.Steps
-		requestContentForLLM.Prompt = selection.Prompt
+		requestContentForLLM.Prompt = planPrompt
 	} else {
 		promptFileText, _, err := logic.ReadPlan()
 		if err != nil {
@@ -130,14 +111,5 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	if err := deliverResponse(mode, result.Text); err != nil {
-		return err
-	}
-
-	// A step whose output was only printed or written as a plan stays unchecked.
-	if planUsed && (mode == config.OutputApply || mode == config.OutputValidateAndApply) {
-		return tickPlanSteps(planPrompt, sentSteps)
-	}
-
-	return nil
+	return deliverResponse(mode, result.Text)
 }

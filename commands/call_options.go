@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"yact/config"
 	"yact/index"
 	"yact/logic"
@@ -19,18 +17,4 @@ func applyIndexOverride(setting *config.IndexSetting) error {
 		return logic.RemoveIndexFile()
 	}
 	return index.WriteIndex(setting.Visibility())
-}
-
-func validateStepsOptions(stepsSelector string, mode config.OutputMode, prompt string) error {
-	if stepsSelector == "" {
-		return nil
-	}
-	if mode == config.OutputWritePlan {
-		return fmt.Errorf("--steps cannot be combined with --output plan")
-	}
-	if prompt != "" {
-		return fmt.Errorf("--steps cannot be combined with a prompt argument")
-	}
-	_, err := logic.ParseStepSelector(stepsSelector)
-	return err
 }

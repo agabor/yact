@@ -12,7 +12,6 @@ type CLIFlags struct {
 	Output     string
 	Strict     bool
 	Index      string
-	Steps      string
 	NoProgress bool
 	Verbose    bool
 	DryRun     bool
@@ -27,7 +26,6 @@ func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
 	set.StringVarP(&cli.Output, "output", "o", "", "Output mode: apply, print or plan")
 	set.BoolVar(&cli.Strict, "strict", false, "Fail if the response contains free text or incomplete code blocks")
 	set.StringVarP(&cli.Index, "index", "i", "", "Index: none, public or all, or 0 to 2")
-	set.StringVarP(&cli.Steps, "steps", "s", "", "Select plan steps to implement: N, N-M, a comma separated list, next, all, or 0 for the whole plan")
 	set.BoolVar(&cli.NoProgress, "no-progress", false, "Hide progress indicator")
 	set.BoolVar(&cli.Verbose, "verbose", false, "Print all file paths and the prompt sent to the LLM")
 	set.BoolVar(&cli.DryRun, "dry-run", false, "Skip the LLM call, only build and check the request")
@@ -43,7 +41,6 @@ func (c *CLIFlags) ToFlaglist(set *pflag.FlagSet) (Flaglist, error) {
 		Verbose:    c.Verbose,
 		DryRun:     c.DryRun,
 		Batch:      c.Batch,
-		Steps:      normalizeStepsSelector(c.Steps),
 	}
 
 	if set.Changed("model") {
@@ -68,13 +65,4 @@ func (c *CLIFlags) ToFlaglist(set *pflag.FlagSet) (Flaglist, error) {
 		flags.Index = &index
 	}
 	return flags, nil
-}
-
-// "all" is a user-facing alias for the selector 0, which sends the whole plan. The translation
-// happens here so that logic/steps.go does not need to know about the alias.
-func normalizeStepsSelector(raw string) string {
-	if raw == "all" {
-		return "0"
-	}
-	return raw
 }

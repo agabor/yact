@@ -164,9 +164,8 @@ func TestFlagStringUsesNewNames(t *testing.T) {
 				Model:  pointerTo(ModelHaiku),
 				Index:  pointerTo(IndexPrivate),
 				Output: pointerTo(OutputNamePlan),
-				Steps:  "1-3",
 			},
-			want: "--model haiku --index all --output plan --steps 1-3",
+			want: "--model haiku --index all --output plan",
 		},
 		{
 			name:  "apply output is not printed",

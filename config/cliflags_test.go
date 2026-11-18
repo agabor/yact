@@ -53,25 +53,6 @@ func TestRemovedFlagsAreUnknown(t *testing.T) {
 	}
 }
 
-func TestStepsSelectorAll(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-		want string
-	}{
-		{name: "all becomes selector 0", args: []string{"--steps", "all"}, want: "0"},
-		{name: "range is unchanged", args: []string{"--steps", "1-3"}, want: "1-3"},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := parseTestArgs(t, tc.args).Steps; got != tc.want {
-				t.Errorf("Steps = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestModelFlagConversion(t *testing.T) {
 	tests := []struct {
 		name    string
