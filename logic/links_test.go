@@ -3,6 +3,7 @@ package logic
 import (
 	"slices"
 	"testing"
+	"yact/projectpath"
 )
 
 func TestParsePromptLinkTargetsDoubleBrackets(t *testing.T) {
@@ -103,42 +104,6 @@ func TestGlobPatternMatches(t *testing.T) {
 	}
 }
 
-func TestSelectLinkedFiles(t *testing.T) {
-	files := []string{"logic/links.go", "logic/links_test.go", "main.go"}
-
-	tests := []struct {
-		name       string
-		exactPaths []string
-		patterns   []GlobPattern
-		want       []string
-	}{
-		{
-			name:       "exact path selects file",
-			exactPaths: []string{"main.go"},
-			want:       []string{"main.go"},
-		},
-		{
-			name:     "glob pattern selects matching files",
-			patterns: []GlobPattern{"logic/*.go"},
-			want:     []string{"logic/links.go", "logic/links_test.go"},
-		},
-		{
-			name:       "markdown target with star is compared exactly",
-			exactPaths: []string{"logic/*.go"},
-			want:       nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := selectLinkedFiles(files, tt.exactPaths, tt.patterns)
-			if !slices.Equal(got, tt.want) {
-				t.Errorf("selectLinkedFiles() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestCompactPromptLinks(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -197,7 +162,7 @@ func TestCompactPromptLinksLeavesOnlyFooter(t *testing.T) {
 
 func TestNormalizeLinkTargets(t *testing.T) {
 	got := normalizeLinkTargets([]string{`logic\links.go`, "./main.go", "/abs/x.go", "../up.go", "a/../b.go"})
-	want := []string{"logic/links.go", "main.go", "b.go"}
+	want := []projectpath.Path{"logic/links.go", "main.go", "b.go"}
 	if !slices.Equal(got, want) {
 		t.Errorf("normalizeLinkTargets() = %v, want %v", got, want)
 	}

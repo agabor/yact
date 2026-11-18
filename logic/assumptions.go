@@ -87,6 +87,9 @@ func scanAssumptions(promptText string) []assumptionEntry {
 	return entries
 }
 
+func trimLineEnding(line string) string {
+	return strings.TrimRight(line, "\r\n")
+}
 func assumptionSectionBounds(lines []string) (start int, end int, found bool) {
 	for index, line := range lines {
 		if !found {

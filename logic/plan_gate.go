@@ -10,7 +10,6 @@ type PromptGate int
 const (
 	PromptGateOpen PromptGate = iota
 	PromptGateMissingContext
-	PromptGateNoStepsRemain
 	PromptGateUnansweredAssumptions
 	PromptGateUnappliedAnswers
 )
@@ -50,10 +49,6 @@ func DecidePromptGate(promptText string) PromptGate {
 	if HasMissingContextSection(promptText) {
 		return PromptGateMissingContext
 	}
-	plan := ParsePlan(promptText)
-	if len(plan.Steps) > 0 && plan.AllChecked() {
-		return PromptGateNoStepsRemain
-	}
 	assumptions := ParseAssumptions(promptText)
 	if hasUnansweredAssumption(assumptions) {
 		return PromptGateUnansweredAssumptions
@@ -68,8 +63,6 @@ func PromptGateError(gate PromptGate) error {
 	switch gate {
 	case PromptGateMissingContext:
 		return errors.New("Files needed as context are missing; run with --plan to update the plan")
-	case PromptGateNoStepsRemain:
-		return errors.New("no steps remain; run with --plan to update the plan")
 	case PromptGateUnansweredAssumptions:
 		return errors.New("Assumptions are still open; tick the box of each one you accept, or write \"Answer: ...\" under it and run with --plan to update the plan")
 	case PromptGateUnappliedAnswers:

@@ -3,6 +3,7 @@ package logic
 import (
 	"slices"
 	"testing"
+	"yact/projectpath"
 )
 
 func TestParsePromptKeywords(t *testing.T) {
@@ -86,14 +87,14 @@ func TestSplitWords(t *testing.T) {
 }
 
 func TestUniquePaths(t *testing.T) {
-	input := []string{"b.go", "a.go", "b.go", "c.go", "a.go"}
-	want := []string{"b.go", "a.go", "c.go"}
+	input := []projectpath.Path{"b.go", "a.go", "b.go", "c.go", "a.go"}
+	want := []projectpath.Path{"b.go", "a.go", "c.go"}
 
 	got := UniquePaths(input)
 	if !slices.Equal(got, want) {
 		t.Errorf("UniquePaths(%v) = %v, want %v", input, got, want)
 	}
-	if !slices.Equal(input, []string{"b.go", "a.go", "b.go", "c.go", "a.go"}) {
+	if !slices.Equal(input, []projectpath.Path{"b.go", "a.go", "b.go", "c.go", "a.go"}) {
 		t.Errorf("UniquePaths mutated its argument: %v", input)
 	}
 }

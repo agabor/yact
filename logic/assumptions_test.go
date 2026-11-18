@@ -2,8 +2,13 @@ package logic
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func planText(lines ...string) string {
+	return strings.Join(lines, "\n") + "\n"
+}
 
 func TestParseAssumptions(t *testing.T) {
 	tests := []struct {
