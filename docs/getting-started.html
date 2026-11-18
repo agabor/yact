@@ -108,8 +108,9 @@ y config</code></pre>
 y read "commands/*.go"</code></pre>
           </li>
           <li>
-            <p><strong>Ask for a plan.</strong> YACT writes the plan to <code>yact-prompt.md</code> and does not touch your source files. Open the plan, read it and edit anything you disagree with. Each step names the file it changes and ends with a <code>Context</code> line, which links the files the model receives for that step.</p>
-            <pre data-copy><code>y plan "add a --version flag"</code></pre>
+            <p><strong>Ask for a plan.</strong> <code>y prompt</code> writes your request into <code>yact-prompt.md</code>, and <code>y plan</code> turns it into a plan in the same file. Commands take no prompt text of their own: they always send <code>yact-prompt.md</code>. YACT does not touch your source files. Open the plan, read it and edit anything you disagree with. Each step names the file it changes and ends with a <code>Context</code> line, which links the files the model receives for that step.</p>
+            <pre data-copy><code>y prompt "add a --version flag"
+y plan</code></pre>
             <p>A plan can end with two sections. Together they are the lint of your prompt.</p>
             <p><code>## Missing context</code> lists code that the model needed and was not given. The model does not guess; it asks. This is an error: <code>act</code> refuses to run while the plan has this section. Run <code>y plan</code> once more, and the listed files are sent this time.</p>
             <p><code>## Assumptions</code> lists the decisions the model made where the prompt left them open. This is an error too: every entry has a checkbox, and <code>act</code> refuses to run while one is open.</p>
@@ -147,14 +148,16 @@ git diff</code></pre>
         <p>Copying a part replaces the full plan, so keep the full plan first if your reviewer should see it. Old parts stay until you delete them: remove <code>.yact/plans/</code> before you split the next plan.</p>
 
         <h3>Without a plan, for trivial changes</h3>
-        <p>A trivial change, such as a rename or a one-line fix, does not need a plan. Give the prompt directly to <code>act</code>. The files you linked with <code>y read</code> are the context.</p>
-        <pre data-copy><code>y read main.go
-y act "add a --version flag"</code></pre>
-        <p>YACT also adds the prompt you type to <code>yact-prompt.md</code>, so the next call receives it too. Run <code>y new</code> before you start an unrelated change.</p>
+        <p>A trivial change, such as a rename or a one-line fix, does not need a plan. Write the prompt and run <code>act</code> on it directly. The files you linked with <code>y read</code> are the context.</p>
+        <pre data-copy><code>y new
+y read main.go
+y prompt "add a --version flag"
+y act</code></pre>
+        <p><code>y prompt</code> appends to <code>yact-prompt.md</code>, so text from earlier calls stays there and is sent again. Run <code>y new</code> before you start an unrelated change.</p>
 
         <h3>Check a request before you send it</h3>
         <p>With <code>--dry-run --verbose</code>, YACT prints every file and the full prompt it would send, and stops before the API call. It costs nothing.</p>
-        <pre data-copy><code>y --dry-run --verbose act "add a --version flag"</code></pre>
+        <pre data-copy><code>y --dry-run --verbose act</code></pre>
         <p><code>act</code> writes files only when the response contains nothing but code. If the model added even one sentence of explanation, YACT writes no files and keeps the response in <code>.yact/temp/buffer.txt</code>. Read it there, and apply it with <code>y commit</code> if it is what you want.</p>
 
         <h3>Choose a model</h3>
@@ -173,9 +176,10 @@ y act "add a --version flag"</code></pre>
           <dt><code>y keyword PlanStep</code></dt>
           <dd>Searches the project once and adds a link to every file that contains the word. The links are a snapshot: files created later are not included until you run it again.</dd>
           <dt><code>((PlanStep))</code> in your prompt</dt>
-          <dd>Searches each time you run a command. YACT removes the marker before it sends your text, so the model reads a normal sentence.</dd>
+          <dd>Typed into <code>yact-prompt.md</code>, it searches each time you run a command, and YACT removes the marker before it sends your text, so the model reads a normal sentence. Passed to <code>y prompt</code>, it searches once: the matching files are linked and the text is stored without the marker.</dd>
         </dl>
-        <pre data-copy><code>y act "Rename PlanStep to Step and update every use. ((PlanStep))"</code></pre>
+        <pre data-copy><code>y prompt "Rename PlanStep to Step and update every use. ((PlanStep))"
+y act</code></pre>
         <p>A keyword matches whole words, in any casing or separator style, so <code>plan step</code> finds <code>PlanStep</code> and <code>plan_step</code>. Only files with the extensions in your settings are searched; add one with <code>y config ext vue</code>. YACT reads markers only in your own prompt, not in system prompts. To see which files a keyword linked, add <code>--dry-run --verbose</code>.</p>
         <p>A keyword links files by their content. It helps most with the changes whose files are hardest to list by hand: renames, and changes to something that is used in many places.</p>
       </div>
@@ -189,13 +193,16 @@ y act "add a --version flag"</code></pre>
         <p>The <code>ask</code> command answers questions about the files you link and never writes to your source files. Use it to learn how unfamiliar code works before you change it.</p>
         <pre data-copy><code>y new
 y read commands/call.go
-y ask "why does this function return early?"</code></pre>
+y prompt "why does this function return early?"
+y ask</code></pre>
         <p>To ask about more than the linked files, add an index with <code>-i</code>. It lists the files, classes and functions in your project by name, without the code inside them, so the model can find its way around code you did not link. <code>-i public</code> lists public declarations and <code>-i all</code> lists all of them; <code>-i none</code> turns it off. It works for Go, PHP, JavaScript, C#, Swift and Kotlin. <code>act</code> and <code>plan</code> include an index by default.</p>
-        <pre data-copy><code>y -i public ask "where is the config loaded?"</code></pre>
+        <pre data-copy><code>y prompt "where is the config loaded?"
+y -i public ask</code></pre>
         <p>To have the model review a change before you open the pull request, link the diff and review it:</p>
         <pre data-copy><code>git diff main > yact-diff.patch
 y read yact-diff.patch
-y review "add a --version flag"</code></pre>
+y prompt "add a --version flag"
+y review</code></pre>
       </div>
     </section>
 
@@ -217,7 +224,7 @@ y review "add a --version flag"</code></pre>
         <p>If a link points to a file that does not exist, or to one YACT never sends, YACT prints a warning such as <code>'commands/call.go' is not found</code> before the call. Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. A file linked with <code>y read</code> stays linked, and so is sent with every call, until you remove the link or run <code>y new</code>.</p>
         <p><code>plan</code> and <code>act</code> also send the index by default: names of files, classes and functions, with no code. Turn it off with <code>-i none</code>.</p>
         <p>To see exactly what goes out, add <code>--verbose</code>. Add <code>--dry-run</code> as well to stop before the call:</p>
-        <pre data-copy><code>y --dry-run --verbose ask "how does the parser work?"</code></pre>
+        <pre data-copy><code>y --dry-run --verbose ask</code></pre>
         <p>YACT warns before the call about any linked file over 300 lines, because the model has to write such a file back in full. After the call it prints the model, the duration, the token counts and an estimated cost.</p>
       </div>
     </section>
@@ -248,6 +255,10 @@ y review "add a --version flag"</code></pre>
           <dd>This comes from <code>--strict</code>, which <code>act</code> turns on by default. Nothing was written to disk. Run the command again, or read the response in <code>.yact/temp/buffer.txt</code> and apply it with <code>y commit</code>.</dd>
           <dt>--strict cannot be combined with --output print</dt>
           <dd>The output mode is <code>apply</code> (write files), <code>print</code> (show the response) or <code>plan</code> (write the plan), and <code>--strict</code> only makes sense with <code>apply</code>. A command's prompt file sets its own defaults: <code>act</code> writes files, <code>plan</code> writes the plan and <code>ask</code> prints. To read what <code>act</code> would produce without writing it, use <code>-o print</code>; to see what it would send, use <code>--dry-run --verbose</code>.</dd>
+          <dt>act command takes no arguments</dt>
+          <dd>Prompt commands no longer take the prompt as an argument. Write it with <code>y prompt "…"</code> first, then run the command without one.</dd>
+          <dt>no plan found in yact-prompt.md</dt>
+          <dd><code>yact-prompt.md</code> is missing or empty. Write a prompt with <code>y prompt "…"</code> or in an editor.</dd>
           <dt>Files needed as context are missing</dt>
           <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more, or add the files yourself with <code>y read</code> or <code>y keyword</code>.</dd>
           <dt>Assumptions are still open</dt>

@@ -184,7 +184,8 @@ Then, inside a git working tree, plan first:
 ```
 y new                                   # start an empty prompt
 y read main.go                          # link a file into yact-prompt.md
-y plan "add a --version flag"           # one call, writes a plan to yact-prompt.md
+y prompt "add a --version flag"         # write the request into yact-prompt.md
+y plan                                  # one call, writes a plan to yact-prompt.md
 $EDITOR yact-prompt.md                  # read the plan, resolve its two sections
 y act                                   # one call, implements the plan
 git diff                                # check the change against the plan
@@ -194,8 +195,15 @@ If the plan is too large for one call, [split it](#splitting-a-large-plan) first
 trivial change you can skip the plan, and to understand code before you change it, ask:
 
 ```
-y act "rename Foo to Bar"               # one call, files written to disk
-y ask "how are flags parsed?"           # one call, answer printed
+y new
+y prompt "rename Foo to Bar"
+y act                                   # one call, files written to disk
+```
+
+```
+y new
+y prompt "how are flags parsed?"
+y ask                                   # one call, answer printed
 ```
 
 System prompts are downloaded automatically from this repository the first time you use a
@@ -229,7 +237,9 @@ Only explicit links select files. Plain mentions of a path in prose are not sent
   words, ignoring case and separators: `((plan step))` matches `PlanStep`, `plan_step` and
   `plan step`, but not `explanation`. Only files with a configured
   [extension](#file-extensions) are searched. The parentheses are removed before the
-  prompt is sent; the phrase itself stays.
+  prompt is sent; the phrase itself stays. A keyword you type into `yact-prompt.md` is
+  searched on every call; one you pass to `y prompt` is searched once, and the files it
+  finds are linked.
 
 Each file is sent once. Hidden files and folders are never sent, except the `.github`
 folder. Folders listed in `.yact/ignore.txt` (by default
@@ -252,11 +262,13 @@ Note that any dash-only line counts, including a Markdown horizontal rule (`---`
 
 ### How the prompt is built
 
-- **With a prompt argument** (`y act "..."`), the argument is appended to the body of
-  `yact-prompt.md` and the combined text is sent. The combined text is also **written back
-  to `yact-prompt.md`**, so instructions accumulate across calls until you run `y new` or
-  `y compact`.
-- **Without a prompt argument** (`y act`), `yact-prompt.md` is the prompt. If it holds a
+- **Commands take no prompt argument.** Every prompt command, and `query`, sends
+  `yact-prompt.md`.
+- **`y prompt "<text>"` writes to it.** The text is appended to the body. Files it links,
+  and files that match a `((keyword))` in it, are also added as read links, and the
+  keyword markers are removed from the stored text. Text accumulates across calls until
+  you edit the file or run `y new` or `y compact`. You can also edit the file directly.
+- **`yact-prompt.md` is the prompt.** If it holds a
   plan, the whole plan is sent (see [Plan, then act](#plan-then-act)). A missing or empty
   file is an error.
 
@@ -332,7 +344,8 @@ and `y download skill <name>` downloads it again.
 ### Writing a plan
 
 ```
-y plan "add authentication"
+y prompt "add authentication"
+y plan
 ```
 
 `plan` defaults to `--output plan`, so the response is saved to `yact-prompt.md`, replacing
@@ -454,9 +467,9 @@ between parts, `split` writes no parts and explains why in the same file.
 
 Resolve the plan before you split it. Each assumption is copied, word for word and
 **unticked**, into every part whose steps it affects, so you accept it again in that part.
-To steer the split, add instructions as an argument, such as
-`y split "at most two steps per part"`; like any prompt argument, it is appended to
-`yact-prompt.md`.
+To steer the split, append instructions to the plan first, such as
+`y prompt "at most two steps per part"`. They stay in `yact-prompt.md`, so remove them if
+you later implement the plan without splitting it.
 
 Implement the parts one at a time: copy a part into `yact-prompt.md`, tick its
 assumptions, run `y act` and check the change before you move to the next part.
@@ -473,12 +486,13 @@ remove `.yact/plans/` before you split another plan.
 
 ### Updating a plan
 
-Run `y plan` without an argument to update an existing plan: the model checks which steps
-are already implemented in the linked files, drops them and renumbers the rest. It also
-applies your answers to assumptions. Add an argument to change the plan:
+Run `y plan` on an existing plan to update it: the model checks which steps are already
+implemented in the linked files, drops them and renumbers the rest. It also applies your
+answers to assumptions. To change the plan, append an instruction first:
 
 ```
-y plan "also add a logout endpoint"
+y prompt "also add a logout endpoint"
+y plan
 ```
 
 ### Keeping the plan
@@ -495,9 +509,10 @@ y [flags] <command> [arguments]
 
 | Command | Description |
 | --- | --- |
-| `<prompt command> [prompt]` | Call the LLM with the command's system prompt |
-| `query [prompt]` | Call the LLM without a system prompt; the response is printed |
+| `<prompt command>` | Call the LLM with the command's system prompt |
+| `query` | Call the LLM without a system prompt; the response is printed |
 | `new` | Start a new, empty prompt |
+| `prompt <text>` | Append text to `yact-prompt.md`, linking the files it links or names by keyword |
 | `read <file>...` | Link files above the separator in `yact-prompt.md` (glob patterns supported) |
 | `keyword <keyword>` | Link every file containing the keyword |
 | `index <none\|public\|all>` | Write or remove the code index without calling the LLM |
@@ -518,6 +533,18 @@ y new
 Deletes `yact-prompt.md` (including any plan in it) and `.yact/temp/index.txt`.
 `.yact/domain.txt` is kept.
 
+### Write the prompt
+
+```
+y prompt "add a --version flag"
+```
+
+Appends the text to the body of `yact-prompt.md`, creating the file if needed. Quote the
+text so the shell passes it as one argument. Files the text links, and files that match a
+`((keyword))` in it, are added above the separator, and the markers are removed from the
+stored text. A link that does not resolve prints `'<path>' is not found`. You can also
+write the prompt in an editor.
+
 ### Link files
 
 ```
@@ -531,8 +558,8 @@ separator if needed. Quote glob patterns so the shell does not expand them. Dire
 skipped and files already linked are not added twice.
 
 `y keyword` links every project file whose content contains the keyword as whole
-words (see [Selecting context files](#selecting-context-files)). Use `((keyword))` in the
-prompt instead to search at call time without adding links.
+words (see [Selecting context files](#selecting-context-files)). Type `((keyword))` into
+`yact-prompt.md` instead to search on every call without adding links.
 
 ### Sending command output
 
@@ -561,7 +588,8 @@ Go, PHP, JavaScript (`.js`, `.mjs`, `.cjs`), C#, Swift and Kotlin. Hidden and ig
 folders are skipped.
 
 ```
-y -i public ask "where is the config loaded?"
+y prompt "where is the config loaded?"
+y -i public ask
 ```
 
 - `none` — no index
@@ -582,13 +610,13 @@ y index none
 ### Run a prompt command
 
 ```
-y act "implement Foo"
-y ask "is Foo buggy?"
-y bash "find all TODO comments in Go files"
+y prompt "is Foo buggy?"
+y ask
 ```
 
-The response is always saved to `.yact/temp/buffer.txt`. What happens next depends on the
-output mode, set with `-o` / `--output` or by the command's prompt file:
+A prompt command takes no argument: it sends `yact-prompt.md`. The response is always
+saved to `.yact/temp/buffer.txt`. What happens next depends on the output mode, set with
+`-o` / `--output` or by the command's prompt file:
 
 - `apply` (the default) — code blocks are written to disk, and any text outside them is
   printed
@@ -603,11 +631,12 @@ writes.
 ### Query without a system prompt
 
 ```
-y query "explain what the keyword command does"
+y prompt "explain what the keyword command does"
+y query
 ```
 
-The prompt and context are built the same way as for prompt commands. The response is
-printed by default. With no argument, the plan in `yact-prompt.md` is the prompt.
+The prompt and context are built the same way as for prompt commands: `yact-prompt.md` is
+the prompt. The response is printed by default.
 
 ### Compact the prompt file
 
@@ -634,7 +663,7 @@ buffer contains free text or an incomplete code block.
 ### Batch requests
 
 ```
-y -b act "implement Foo"
+y -b act
 y batch
 ```
 
@@ -668,12 +697,12 @@ Flags come before the command.
 ```
 
 ```
-y -m opus plan "add authentication"
-y -i all ask "where is the config loaded?"
-y -i none act "rename Foo to Bar"
+y -m opus plan
+y -i all ask
+y -i none act
 y -o print act
 y --dry-run --verbose act
-y -b plan "add authentication"
+y -b plan
 ```
 
 ## Configuration
@@ -783,10 +812,15 @@ standard error with exit code 1.
   the command, or apply the response anyway with `y commit` after checking
   `.yact/temp/buffer.txt`.
 
-**"no plan found in yact-prompt.md, provide a prompt or create a plan with --plan"**
+**"no plan found in yact-prompt.md, create a plan with --plan"**
 
-- You ran a call without a prompt argument and `yact-prompt.md` is missing or empty. Pass a
-  prompt, or create a plan with `y plan "<prompt>"`.
+- `yact-prompt.md` is missing or empty. Write a prompt with `y prompt "<text>"` or in an
+  editor, then run the command again.
+
+**"act command takes no arguments"** (or any other prompt command)
+
+- Prompt commands no longer take the prompt as an argument. Run `y prompt "<text>"` first,
+  then the command without an argument.
 
 **"Files needed as context are missing; run with --plan to update the plan"**
 
@@ -832,8 +866,8 @@ standard error with exit code 1.
 
 **The model keeps seeing old instructions**
 
-- Prompt arguments are appended to `yact-prompt.md`. Edit the file, or run `y compact` or
-  `y new`.
+- Text added with `y prompt` accumulates in `yact-prompt.md`. Edit the file, or run
+  `y compact` or `y new`.
 
 **"no system prompt found for command"**
 
