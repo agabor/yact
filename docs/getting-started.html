@@ -81,7 +81,7 @@ mv yact-linux-amd64 ~/.local/bin/y</code></pre>
         <pre data-copy><code>y config anthropic_api_key &lt;your-own-anthropic-key&gt;
 y config</code></pre>
         <p>The second command shows your current settings, so you can check that it worked. YACT reads the key only from this file, not from the <code>ANTHROPIC_API_KEY</code> environment variable.</p>
-        <p>YACT downloads the system prompt of a command from the YACT repository the first time you use that command. Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there is a command: <code>plan</code> writes a plan, <code>act</code> writes code, <code>ask</code> answers questions, <code>review</code> reviews a diff, <code>analyze</code> checks code against the <a href="code-principles.html">code principles</a> and <code>bash</code> writes shell commands. You can read these files at any time. To replace your copy of one with the latest version, download it again. This overwrites any edits you made to that file.</p>
+        <p>YACT downloads the system prompt of a command from the YACT repository the first time you use that command. Every system prompt is a plain text file in <code>~/.yact/systemprompts/</code>, and every file there is a command: <code>plan</code> writes a plan, <code>split</code> splits a large plan into smaller ones, <code>act</code> writes code, <code>ask</code> answers questions, <code>review</code> reviews a diff, <code>analyze</code> checks code against the <a href="code-principles.html">code principles</a> and <code>bash</code> writes shell commands. You can read these files at any time. To replace your copy of one with the latest version, download it again. This overwrites any edits you made to that file.</p>
         <pre data-copy><code>y download prompt act</code></pre>
         <p>Finally, keep YACT's working files out of your commits. In the repository you work on, add this to <code>.gitignore</code>:</p>
         <pre data-copy><code>.yact/temp
@@ -99,7 +99,7 @@ y config</code></pre>
         <p>This walk-through makes a change from a plan, so you read what will change before any code is written. Run it inside a Git repository.</p>
         <ol class="steps">
           <li>
-            <p><strong>Start clean.</strong> This deletes the earlier prompt file, captured output and index, if there are any.</p>
+            <p><strong>Start clean.</strong> This deletes the earlier prompt file and index, if there are any.</p>
             <pre data-copy><code>y new</code></pre>
           </li>
           <li>
@@ -122,15 +122,12 @@ y read "commands/*.go"</code></pre>
             <p>The plan is ready when it has no Missing context section and every assumption is ticked. <a href="the-yact-way.html">Why this matters</a>.</p>
           </li>
           <li>
-            <p><strong>Implement the first step.</strong> YACT sends the goal and that one step, makes one API call, writes the files and ticks the step off in the plan.</p>
-            <pre data-copy><code>y -s next act</code></pre>
+            <p><strong>Implement the plan.</strong> YACT sends the whole plan and the files its steps link, makes one API call and writes the files.</p>
+            <pre data-copy><code>y act</code></pre>
           </li>
           <li>
-            <p><strong>Check the change.</strong> Compare the diff with the step it implements, and run your tests. If the change is wrong, correct the plan or the code and try again.</p>
+            <p><strong>Check the change.</strong> Compare the diff with the plan, and run your tests. If the change is wrong, correct the plan or the code and try again. If only part of the plan was implemented, run <code>y plan</code>: it drops the finished steps, and <code>y act</code> implements the rest.</p>
             <pre data-copy><code>git diff</code></pre>
-          </li>
-          <li>
-            <p><strong>Repeat.</strong> Repeat steps 4 and 5 until every step heading reads <code>[x]</code>. To implement all remaining steps in one call instead, use <code>y act</code> without <code>-s</code>. When every step is ticked, <code>act</code> stops with <code>no steps remain</code>. Untick a step to implement it again, or start the next change with <code>y new</code>.</p>
           </li>
           <li>
             <p><strong>Open the pull or merge request.</strong> The plan shows the reviewer what was asked, which file each step changed, which files the model received and what it assumed. Commit the plan or copy it into the request, as your team prefers, before you run <code>y new</code>.</p>
@@ -138,6 +135,16 @@ y read "commands/*.go"</code></pre>
         </ol>
 
         <p>If <code>act</code> finds a problem in the plan or the context, it writes a note to <code>.yact/temp/feedback.md</code>. YACT prints the note after the call. Read it before you check the change.</p>
+
+        <h3>Split a large plan</h3>
+        <p>A plan whose changes are too large for one call, or for one review, can be split into parts. Resolve the plan first, then run:</p>
+        <pre data-copy><code>y split</code></pre>
+        <p><code>split</code> writes each part to its own file in <code>.yact/plans/</code>, numbered in the order to implement them, such as <code>.yact/plans/1-add-version-variable.md</code>. Each part is a complete plan with its own goal, at most four steps and the links they need, and the code builds and its tests pass after every part. <code>split</code> only regroups and orders the steps; it does not change their design. If the plan already fits in one call, it writes no parts and explains why in <code>.yact/temp/feedback.md</code>.</p>
+        <p>Implement one part at a time. Copy it into <code>yact-prompt.md</code>, tick its assumptions (they are copied into each part unticked, so you accept them again), run <code>y act</code> and check the change before you go on.</p>
+        <pre data-copy><code>cp .yact/plans/1-add-version-variable.md yact-prompt.md
+y act
+git diff</code></pre>
+        <p>Copying a part replaces the full plan, so keep the full plan first if your reviewer should see it. Old parts stay until you delete them: remove <code>.yact/plans/</code> before you split the next plan.</p>
 
         <h3>Without a plan, for trivial changes</h3>
         <p>A trivial change, such as a rename or a one-line fix, does not need a plan. Give the prompt directly to <code>act</code>. The files you linked with <code>y read</code> are the context.</p>
@@ -201,13 +208,13 @@ y review "add a --version flag"</code></pre>
         <dl class="defs">
           <dt><code>[main.go](main.go)</code></dt>
           <dd>A Markdown link sends that one file. This is what <code>y read</code> writes.</dd>
-          <dt><code>[[commands/*.go]]</code></dt>
-          <dd>Double brackets send every file that matches the pattern.</dd>
+          <dt><code>[[commands/call.go]]</code></dt>
+          <dd>Double brackets are a shorter way to write the same link and send that one file. They do not expand patterns: to link every file that matches one, run <code>y read "commands/*.go"</code>.</dd>
           <dt><code>((plan step))</code></dt>
           <dd>Double parentheses send every file that contains those words, in any casing: <code>PlanStep</code>, <code>plan_step</code> or <code>plan step</code>. This is what <code>y keyword</code> does, at the time of the call.</dd>
         </dl>
         <p><code>y read</code> puts its links above a line of dashes. Links above that line still send their files, but the block above the line is not sent itself; only the text below the line is, so your prompt stays readable.</p>
-        <p>Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. A file linked with <code>y read</code> stays linked, and so is sent with every call, until you remove the link or run <code>y new</code>.</p>
+        <p>If a link points to a file that does not exist, or to one YACT never sends, YACT prints a warning such as <code>'commands/call.go' is not found</code> before the call. Hidden folders (except <code>.github</code>), <code>vendor</code> and <code>node_modules</code> are never sent. Add more folders to skip with <code>y config ignore &lt;folder&gt;</code>. A file linked with <code>y read</code> stays linked, and so is sent with every call, until you remove the link or run <code>y new</code>.</p>
         <p><code>plan</code> and <code>act</code> also send the index by default: names of files, classes and functions, with no code. Turn it off with <code>-i none</code>.</p>
         <p>To see exactly what goes out, add <code>--verbose</code>. Add <code>--dry-run</code> as well to stop before the call:</p>
         <pre data-copy><code>y --dry-run --verbose ask "how does the parser work?"</code></pre>
@@ -241,8 +248,6 @@ y review "add a --version flag"</code></pre>
           <dd>This comes from <code>--strict</code>, which <code>act</code> turns on by default. Nothing was written to disk. Run the command again, or read the response in <code>.yact/temp/buffer.txt</code> and apply it with <code>y commit</code>.</dd>
           <dt>--strict cannot be combined with --output print</dt>
           <dd>The output mode is <code>apply</code> (write files), <code>print</code> (show the response) or <code>plan</code> (write the plan), and <code>--strict</code> only makes sense with <code>apply</code>. A command's prompt file sets its own defaults: <code>act</code> writes files, <code>plan</code> writes the plan and <code>ask</code> prints. To read what <code>act</code> would produce without writing it, use <code>-o print</code>; to see what it would send, use <code>--dry-run --verbose</code>.</dd>
-          <dt>--steps cannot be combined with a prompt argument</dt>
-          <dd><code>-s</code> implements steps that are already in the plan, so it takes no prompt text. Put the instruction in the plan, or leave out <code>-s</code>.</dd>
           <dt>Files needed as context are missing</dt>
           <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more, or add the files yourself with <code>y read</code> or <code>y keyword</code>.</dd>
           <dt>Assumptions are still open</dt>
@@ -251,8 +256,10 @@ y review "add a --version flag"</code></pre>
           <dd>You answered an assumption but have not planned again. Run <code>y plan</code>, read the rewritten entry and tick it.</dd>
           <dt>An assumption I ticked is open again</dt>
           <dd>The model reworded the entry, so YACT did not keep your tick. Read the new wording and tick it again.</dd>
-          <dt>no steps remain</dt>
-          <dd>Every step of the plan is ticked. Untick a step to run it again, extend the plan with <code>y plan "…"</code>, or start over with <code>y new</code>.</dd>
+          <dt>'…' is not found</dt>
+          <dd>A link points to a missing file, to a file in a hidden or skipped folder, or is a <code>[[pattern]]</code>, which no longer expands. Fix the path, or link the matching files with <code>y read "&lt;pattern&gt;"</code>.</dd>
+          <dt>The plan is only partly implemented, or the response is cut off</dt>
+          <dd>The plan is too large for one call. Run <code>y plan</code> to drop the finished steps, or split it with <code>y split</code> and implement the parts one at a time.</dd>
           <dt>A file was not sent</dt>
           <dd>Only links send files. Run with <code>--dry-run --verbose</code>, and check that the path is relative to the project root and not in a hidden or skipped folder.</dd>
         </dl>

@@ -11,7 +11,7 @@ canonical: index.html
           <div class="hero-text">
             <div class="eyebrow">Open source · Go · GPL v3</div>
             <h1>Lint the prompt.<br>Review the change <mark>against its plan.</mark></h1>
-            <p class="lede">YACT is a command-line tool for AI-assisted coding that works one way: plan first. You write a prompt. The model turns it into a plan and lists what your prompt left unclear. One model call then implements each step. You put the plan in the pull request, so the reviewer can see what was asked.</p>
+            <p class="lede">YACT is a command-line tool for AI-assisted coding that works one way: plan first. You write a prompt. The model turns it into a plan and lists what your prompt left unclear. One model call then implements the plan. You put the plan in the pull request, so the reviewer can see what was asked.</p>
             <div class="actions">
               <a class="btn btn-primary" href="getting-started.html">Get started</a>
               <a class="btn" href="https://github.com/agabor/yact">View on GitHub</a>
@@ -22,7 +22,7 @@ canonical: index.html
             <div class="lint">
               <div class="lint-head">yact-prompt.md · y plan "validate email addresses on signup"</div>
               <div class="lint-block">
-                <div class="lint-title">### [ ] 1. Add email validation</div>
+                <div class="lint-title">### 1. Add email validation</div>
                 <p class="lint-item">**File:** internal/signup/validate.go</p>
                 <p class="lint-item">**Context:** internal/signup/signup.go</p>
               </div>
@@ -94,11 +94,11 @@ canonical: index.html
             <span class="cap">the plan, after linking the missing file and ticking A1</span>
             <span class="row"># Goal</span>
             <span class="row">## Steps</span>
-            <span class="row">### [ ] 1. Add email validation</span>
+            <span class="row">### 1. Add email validation</span>
             <span class="row">## Assumptions</span>
             <span class="row">- [x] **A1. Unclear:** ... Taken: signup returns an error.</span>
             <span class="row dim">(no ## Missing context)</span>
-            <span class="ok">Ready: y -s next act</span>
+            <span class="ok">Ready: y act</span>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ canonical: index.html
           <ol class="steps">
             <li><h3>Write the prompt and link the files</h3><p><code>y new</code> starts an empty prompt. <code>y read</code> links files by path or glob. <code>y keyword Signup</code> links every file that contains the word, and <code>((Signup))</code> in the prompt runs the same search each time you run a command. The linked files are the context: they are the only code the model sees.</p></li>
             <li><h3>Plan, then resolve the two sections</h3><p><code>y plan</code> turns the prompt into a plan with one file per step. Link the files that <code>## Missing context</code> lists. Under <code>## Assumptions</code>, tick each entry you accept and write an answer under each one you do not. If you linked a file or wrote an answer, run <code>y plan</code> again.</p></li>
-            <li><h3>Implement one step</h3><p><code>y -s next act</code> implements the next unticked step: it writes the complete file and ticks the step. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
-            <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the step and run your tests. Then implement the next step.</p></li>
+            <li><h3>Implement the plan</h3><p><code>y act</code> implements the plan in one call and writes the complete files. A plan too large for one call is split first: <code>y split</code> writes it as smaller plans, each of which leaves the code working, and you implement them one at a time. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
+            <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the plan and run your tests. If you split the plan, go on with the next part.</p></li>
             <li><h3>Open the pull request</h3><p>Include the plan, so the reviewer has the intent, the files and the assumptions you accepted.</p></li>
           </ol>
           <div class="stack">
@@ -138,19 +138,19 @@ canonical: index.html
               <span class="row"><span class="dim">$</span> y new</span>
               <span class="row"><span class="dim">$</span> y read "internal/signup/*.go"</span>
               <span class="row"><span class="dim">$</span> y plan "validate email addresses on signup"</span>
-              <span class="row"><span class="dim">$</span> y -s next act</span>
+              <span class="row"><span class="dim">$</span> y act</span>
               <span class="row"><span class="dim">$</span> git diff</span>
             </div>
             <div class="term">
-              <span class="cap">yact-prompt.md, after step 1</span>
+              <span class="cap">yact-prompt.md, the plan</span>
               <span class="row"># Goal</span>
               <span class="row soft">Validate email addresses on signup.</span>
               <span class="row"> </span>
               <span class="row">## Steps</span>
-              <span class="row">### [x] 1. Add email validation</span>
+              <span class="row">### 1. Add email validation</span>
               <span class="row soft">**File:** internal/signup/validate.go</span>
               <span class="row soft">**Context:** internal/signup/signup.go</span>
-              <span class="row">### [ ] 2. Cover it with tests</span>
+              <span class="row">### 2. Cover it with tests</span>
               <span class="row soft">**File:** internal/signup/validate_test.go</span>
               <span class="row soft">**Context:** internal/signup/validate.go</span>
             </div>
@@ -183,7 +183,7 @@ canonical: index.html
       <div class="wrap">
         <div class="hunk">@@ <b>06 · Code principles</b> @@</div>
         <h2 class="big" id="code-h">YACT also has rules for the code it writes.</h2>
-        <p class="lead">The lint checks your prompt. Sixteen code principles guide the code. <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> all include the same list, and the list has one goal: every piece of code can be understood from what is visible in one place.</p>
+        <p class="lead">The lint checks your prompt. Sixteen code principles guide the code. <code>plan</code>, <code>split</code>, <code>act</code>, <code>review</code> and <code>analyze</code> all include the same list, and the list has one goal: every piece of code can be understood from what is visible in one place.</p>
         <div class="grid c3">
           <div class="topline"><h3>Why YACT needs them</h3><p>Each call sees only the files you linked, and <code>act</code> writes every changed file back in full. Code that can be understood from one place needs few linked files, and a small file is quick to rewrite.</p></div>
           <div class="topline"><h3>What they ask for</h3><p>Searchable names, one job per function, no hidden side effects, logic kept apart from I/O, precise types, tests, and source files under about 200 lines.</p></div>
@@ -260,10 +260,11 @@ canonical: index.html
         <h2 class="big" id="own-h">Every command is a text file.</h2>
         <div class="split">
           <div>
-            <p>Six commands come with YACT. Each one is a plain-text system prompt in <code>~/.yact/systemprompts/</code>. Add a file there and you have a new command, with nothing to rebuild. The lint rules and the code principles are in these files too, so you can read them and change them.</p>
+            <p>Seven commands come with YACT. Each one is a plain-text system prompt in <code>~/.yact/systemprompts/</code>. Add a file there and you have a new command, with nothing to rebuild. The lint rules and the code principles are in these files too, so you can read them and change them.</p>
             <dl class="cmds">
               <dt>plan</dt><dd>Turns a prompt into a plan with one file per step, and lists the missing context and the assumptions</dd>
-              <dt>act</dt><dd>Implements steps by writing complete files, following the plan and the code principles</dd>
+              <dt>split</dt><dd>Splits a plan too large for one call into smaller plans, each of which leaves the code working</dd>
+              <dt>act</dt><dd>Implements the plan by writing complete files, following the plan and the code principles</dd>
               <dt>ask</dt><dd>Answers questions about the linked code and changes nothing</dd>
               <dt>review</dt><dd>Asks the model to review a diff against its prompt</dd>
               <dt>analyze</dt><dd>Checks code against the <a href="code-principles.html">code principles</a></dd>
@@ -296,6 +297,7 @@ canonical: index.html
           <div><h3>Can I run it in CI, without a person?</h3><p>No, and this is deliberate. A plan needs a person to accept or answer its assumptions. YACT has no workflows that plan and implement by themselves.</p></div>
           <div><h3>Does the lint prove the code is right?</h3><p>No. The model does the lint during the plan call, and the two sections show only what the model noticed. It can overlook something, so you still read the plan, check the change and run your tests. What the lint gives you is the open decisions before any code is written, when changing one costs a sentence.</p></div>
           <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and one optional input if you use it: <code>.yact/domain.txt</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run --verbose</code> shows what would be sent.</p></div>
+          <div><h3>What if a plan is too large for one call?</h3><p>Split it. <code>y split</code> regroups its steps into smaller plans of at most four steps each, ordered so that the code builds and the tests pass after every part. It does not change the design of the steps. You implement and check the parts one at a time.</p></div>
           <div><h3>Do I always need a plan?</h3><p>No. For a trivial change, such as a rename, give the prompt directly to <code>act</code>. For any change that a reviewer will need to understand, plan first.</p></div>
           <div><h3>Can I use it on an existing codebase?</h3><p>Yes, if its files are small and its structure is clear. On a legacy codebase with very large files it is hard, because <code>act</code> rewrites every changed file in full. It is easiest on a new project.</p></div>
           <div><h3>Does it change my coding style?</h3><p><code>plan</code> and <code>act</code> follow sixteen <a href="code-principles.html">code principles</a>, but only in code that a step writes or changes, and they are told to match the conventions already in the file. The principles are one text file that you can edit.</p></div>

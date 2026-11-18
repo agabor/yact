@@ -4,8 +4,9 @@
 
 YACT is a command-line tool for AI-assisted coding that works one way: plan first. You write
 a prompt. The model turns it into a plan and lists what your prompt left unclear. You
-resolve every entry, and one model call then implements each step. The plan goes to the
-reviewer together with the change. Not for vibe coding.
+resolve every entry, and one model call then implements the plan. A plan too large for
+one call is split first into smaller plans that each leave the code working. The plan goes
+to the reviewer together with the change. Not for vibe coding.
 
 Website and getting-started guide: [yact.dev](https://yact.dev)
 
@@ -185,12 +186,12 @@ y new                                   # start an empty prompt
 y read main.go                          # link a file into yact-prompt.md
 y plan "add a --version flag"           # one call, writes a plan to yact-prompt.md
 $EDITOR yact-prompt.md                  # read the plan, resolve its two sections
-y -s next act                           # one call, implements the next step
-git diff                                # check the change against the step
+y act                                   # one call, implements the plan
+git diff                                # check the change against the plan
 ```
 
-Repeat the last two commands until every step is ticked. For a trivial change you can skip
-the plan, and to understand code before you change it, ask:
+If the plan is too large for one call, [split it](#splitting-a-large-plan) first. For a
+trivial change you can skip the plan, and to understand code before you change it, ask:
 
 ```
 y act "rename Foo to Bar"               # one call, files written to disk
@@ -206,7 +207,7 @@ command.
 
 ```
 [main.go](main.go)
-[[commands/*.go]]
+[[commands/call.go]]
 
 -----
 
@@ -220,9 +221,10 @@ Only explicit links select files. Plain mentions of a path in prose are not sent
 
 - **Markdown links** `[text](path)` send exactly that file. Wrap paths with spaces in angle
   brackets: `[my file.go](<my file.go>)`.
-- **Double-bracket links** `[[pattern]]` send every project file matching a glob pattern,
-  for example `[[commands/*.go]]`. Patterns follow Go's `filepath.Match`, so `*` does not
-  cross `/`.
+- **Double-bracket links** `[[path]]` are a shorter way to write a Markdown link:
+  `[[commands/call.go]]` sends the same file as `[commands/call.go](commands/call.go)`.
+  They do not expand glob patterns. To link every file that matches a pattern, use
+  `y read "commands/*.go"`, which expands the pattern when it writes the links.
 - **Keywords** `((phrase))` send every file whose content contains the phrase as whole
   words, ignoring case and separators: `((plan step))` matches `PlanStep`, `plan_step` and
   `plan step`, but not `explanation`. Only files with a configured
@@ -233,6 +235,10 @@ Each file is sent once. Hidden files and folders are never sent, except the `.gi
 folder. Folders listed in `.yact/ignore.txt` (by default
 `vendor` and `node_modules`) are skipped, and so is `yact-prompt.md` itself. URLs are never
 fetched.
+
+A link whose target is not a project file that can be sent (a typo, a deleted file, a
+hidden or ignored folder, or a `[[pattern]]` written for an older version) sends nothing,
+and YACT prints a warning before the call: `'commands/*.go' is not found`.
 
 ### Read links
 
@@ -251,8 +257,8 @@ Note that any dash-only line counts, including a Markdown horizontal rule (`---`
   to `yact-prompt.md`**, so instructions accumulate across calls until you run `y new` or
   `y compact`.
 - **Without a prompt argument** (`y act`), `yact-prompt.md` is the prompt. If it holds a
-  plan, only some of its steps may be sent (see [Plan, then act](#plan-then-act)). A
-  missing or empty file is an error.
+  plan, the whole plan is sent (see [Plan, then act](#plan-then-act)). A missing or empty
+  file is an error.
 
 ## Prompt commands
 
@@ -271,14 +277,15 @@ The official prompts:
 
 | Command | Defaults | What it does |
 | --- | --- | --- |
-| `plan` | `--model haiku --output plan --index all` | Writes or updates a step-by-step plan in `yact-prompt.md`, with the lint of the prompt |
+| `plan` | `--model haiku --output plan --index public` | Writes or updates a step-by-step plan in `yact-prompt.md`, with the lint of the prompt |
+| `split` | `--model haiku --strict --index none` | Splits a plan too large for one call into smaller plans in `.yact/plans/` |
 | `act` | `--model haiku --strict --index public` | Writes code. Responds with complete files only; fails on any free text |
 | `ask` | `--model sonnet --output print` | Answers questions about the code in plain text |
 | `analyze` | `--model sonnet --output print` | Reports where the code breaks the code principles, with fixes |
 | `review` | `--model sonnet --output print` | Reviews a diff, linked with `y read`, against the prompt |
 | `bash` | `--model haiku --output print` | Prints a plain list of shell commands |
 
-`act`, `plan`, `analyze` and `review` share one set of code principles
+`act`, `plan`, `split`, `analyze` and `review` share one set of code principles
 ([`systemprompts/include/principles.txt`](systemprompts/include/principles.txt)), so code is
 planned, written and reviewed against the same rules. They are described on
 [yact.dev](https://yact.dev/code-principles.html).
@@ -339,7 +346,7 @@ One or two sentences.
 
 ## Steps
 
-### [ ] 1. Create the User model
+### 1. Create the User model
 
 **File:** [src/models/user.go](src/models/user.go) (new)
 
@@ -347,7 +354,7 @@ One or two sentences.
 
 **Context:** [src/db/connection.go](src/db/connection.go)
 
-### [ ] 2. ...
+### 2. ...
 
 ## Assumptions
 
@@ -407,48 +414,62 @@ you want, and you resolve it by deciding.
 ### Implementing the plan
 
 ```
-y -s next act
+y act
+git diff
 ```
 
-This sends the goal and the first step that is not ticked off yet. After the files are
-written, the step is ticked off in `yact-prompt.md`: `### [ ] 1. Title` becomes
-`### [x] 1. Title`. Check the change with `git diff`, then run the command again for the
-next step. Untick a step by hand to run it again.
-
-Without `--steps`, `y act` sends the goal and **every step that is not ticked off yet** in
-one call; ticked steps, and files linked only in them, are left out.
-
-Steps are ticked only when the response was written to disk: not with `--output print`,
-not when the call fails, and not for batch jobs. When every step is ticked, further calls
-fail with `no steps remain; run with --plan to update the plan`.
+`y act` sends the whole plan, with the files its steps link, in one call, and writes the
+files it gets back. Check the change with `git diff` and run your tests. YACT does not
+select or tick off steps: if only part of the plan was implemented, run `y plan` to drop
+the finished steps (see [Updating a plan](#updating-a-plan)) and then `y act` again.
 
 If `act` finds a problem in the plan while it writes the code, such as a contradiction or a
 choice the plan left open, it writes a note to `.yact/temp/feedback.md`, and YACT prints it
 after the call. Treat the note as a bug report on the prompt. The file is not cleared
 between calls.
 
-### Implementing selected steps
+### Splitting a large plan
 
-With `-s` / `--steps <selector>`, only the selected steps are sent, together with the goal:
-
-- `N` — a single step, for example `2`
-- `N-M` — a range, for example `2-4`
-- a comma separated list, for example `1,3,5-6`
-- `next` — the first step that is not ticked off yet
-- `all` (or `0`) — the whole plan as it is, without step selection; no step is ticked off
+A plan whose changes are too large for one call, or for one review, is split into parts:
 
 ```
-y -s next act
-y -s 1,3 act
+y split
 ```
 
-`--steps` cannot be combined with a prompt argument or with `--output plan`. Selectors
-naming steps the plan does not contain, and plans with duplicate step numbers, are
-rejected. Selecting a step that is already done prints a warning and sends it again. The
-two sections block `act` whichever steps you select.
+`split` sends the plan and writes each part to its own file in `.yact/plans/`, numbered in
+the order to implement them, for example `.yact/plans/1-add-user-model.md` and
+`.yact/plans/2-add-auth-endpoints.md`. Each part is a complete plan of its own:
 
-Read links placed above a plan's separator are part of the preamble, so they are sent with
-every step selection, not only the last one.
+- its own `# Goal`, followed by a line such as `Part 1 of 2 of: <the original goal>`
+- at most four steps, numbered from 1, changing roughly 600 lines in total
+- every link its steps need, so it can be implemented without the other parts
+- the code builds and the tests pass after each part, and no part depends on a file that
+  only a later part creates
+
+`split` regroups and orders the steps; it does not redesign them. The only exception is a
+rename or signature change whose callers do not fit in one part: it is split into an add,
+a move and a remove phase across parts, and `split` says so in `.yact/temp/feedback.md`.
+If the plan already fits one part, or cannot be split without leaving the code broken
+between parts, `split` writes no parts and explains why in the same file.
+
+Resolve the plan before you split it. Each assumption is copied, word for word and
+**unticked**, into every part whose steps it affects, so you accept it again in that part.
+To steer the split, add instructions as an argument, such as
+`y split "at most two steps per part"`; like any prompt argument, it is appended to
+`yact-prompt.md`.
+
+Implement the parts one at a time: copy a part into `yact-prompt.md`, tick its
+assumptions, run `y act` and check the change before you move to the next part.
+
+```
+cp .yact/plans/1-add-user-model.md yact-prompt.md
+y act
+git diff
+```
+
+Copying a part replaces the full plan in `yact-prompt.md`, so keep the full plan first if
+the reviewer should see it. Old parts are not deleted by a later `split` or by `y new`:
+remove `.yact/plans/` before you split another plan.
 
 ### Updating a plan
 
@@ -549,7 +570,7 @@ y -i public ask "where is the config loaded?"
 
 The numbers `0`, `1` and `2` are accepted too. The index is written to
 `.yact/temp/index.txt` and sent only in the call that asks for it; every other call deletes
-it. `act` defaults to `public` and `plan` to `all`. With the index, the model can name code
+it. `act` and `plan` default to `public`, and `split` to `none`. With the index, the model can name code
 it was not given and ask for it under `## Missing context`. To write or remove the index
 without calling the LLM:
 
@@ -586,8 +607,7 @@ y query "explain what the keyword command does"
 ```
 
 The prompt and context are built the same way as for prompt commands. The response is
-printed by default. With no argument, the plan in `yact-prompt.md` is the prompt and `-s`
-selects steps, but no step is ticked off when the response is only printed.
+printed by default. With no argument, the plan in `yact-prompt.md` is the prompt.
 
 ### Compact the prompt file
 
@@ -625,7 +645,7 @@ pending; it is stored in `.yact/batch_job_id.txt` together with the output mode.
 `y batch` prints the status while the batch is processing. Once it has ended, it prints
 token usage and the discounted cost, saves the response to the buffer, delivers it with the
 output mode the batch was submitted with (writing files, strict or not, printing, or saving
-the plan), and clears the pending job. Plan steps are not ticked off for batch jobs.
+the plan), and clears the pending job.
 
 ## Global flags
 
@@ -637,7 +657,6 @@ Flags come before the command.
                             to yact-prompt.md
     --strict                Fail if the response (or, for commit, the buffer) contains
                             free text or incomplete code blocks. Only with apply output
--s, --steps <selector>      Send only the selected plan steps: N, N-M, 1,3,5-6, next or all
 -i, --index <name>          Code index for this call: none, public or all
 -b, --batch                 Submit the request as a batch job
     --skill <name>          Attach ~/.yact/skills/<name>.md; repeatable or comma separated
@@ -713,13 +732,15 @@ Global, in `~/.yact/`:
 Per project:
 
 - `yact-prompt.md` — the prompt: your text and links, or the plan made from them
+- `.yact/plans/` — the parts written by `y split`
 - `.yact/domain.txt` — optional project description, sent with every call
 - `.yact/extensions.txt` — extensions searched by keyword
 - `.yact/ignore.txt` — folders to skip
 - `.yact/batch_job_id.txt` — the pending batch job and its output mode
 - `.yact/temp/buffer.txt` — the last LLM response
 - `.yact/temp/index.txt` — the code index, when a call asks for one
-- `.yact/temp/feedback.md` — the note `act` writes when it finds a problem in the plan
+- `.yact/temp/feedback.md` — the note `act` or `split` writes when it finds a problem in
+  the plan
 
 A good `.gitignore` setup commits the `.yact/*.txt` settings so the whole team shares them,
 and ignores the rest:
@@ -787,14 +808,16 @@ standard error with exit code 1.
 - The model reworded the entry, so the tick was not kept. Read the new wording and tick it
   again.
 
-**"no steps remain; run with --plan to update the plan"**
+**"'...' is not found"**
 
-- Every step is ticked. Untick a step to rerun it, or update the plan with `y plan "..."`.
+- A link points to something YACT cannot send: a missing file, a path in a hidden or
+  ignored folder, or a `[[pattern]]`, which no longer expands globs. Fix the path, or link
+  the matching files with `y read "<pattern>"`.
 
-**"step range ... does not match the plan" / "invalid step selector item"**
+**`act` implements only part of the plan, or the response is cut off**
 
-- Use `N`, `N-M`, a comma separated list, `next` or `all`, and check the numbers in
-  `yact-prompt.md`.
+- The plan is too large for one call. Run `y plan` to drop the finished steps, or split the
+  plan with `y split` and implement the parts one at a time.
 
 **"a batch is already pending"**
 
@@ -841,7 +864,7 @@ forward.
 files, sometimes reworded), while nothing else about the plan progresses.
 
 **Fix:** remove the `## Missing context` section from `yact-prompt.md` by hand, then run
-`y act` (or `y -s next act`) directly, skipping `y plan`. With the section gone, that gate
+`y act` directly, skipping `y plan`. With the section gone, that gate
 no longer blocks `act`, and the steps proceed with whatever context is already linked. If a
 step then genuinely fails for lack of context, link the file yourself with `y read` or
 `y keyword` rather than asking `y plan` to find it again.

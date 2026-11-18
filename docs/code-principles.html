@@ -101,10 +101,12 @@ nav: principles
     <section class="section" id="applied" aria-labelledby="applied-h">
       <div class="wrap">
         <h2 id="applied-h">How YACT applies them</h2>
-        <p>Four of the six commands include the principles, so code is planned, written and reviewed by the same rules.</p>
+        <p>Five of the seven commands include the principles, so code is planned, written and reviewed by the same rules.</p>
         <dl class="defs">
           <dt><code>plan</code></dt>
           <dd>Designs the steps so that the resulting code follows the principles. Where a principle explains a design decision, the step names it, for example "(P7: parse once at the boundary)". <code>plan</code> does not add steps that only refactor, wrap or rename code the goal does not need.</dd>
+          <dt><code>split</code></dt>
+          <dd>Regroups the steps of a plan that is too large for one call into smaller plans. It does not change the design of the steps, so the principles reach the code through the plan.</dd>
           <dt><code>act</code></dt>
           <dd>Applies the principles to every function and type it writes or changes. It leaves all other code unchanged, even code that breaks a principle. When it extends existing code, it follows the pattern already used there.</dd>
           <dt><code>review</code></dt>
