@@ -24,8 +24,7 @@ The input may contain, in this order:
 - FILES: code blocks whose first line is a comment with the full file path. They show the
   files in their current state, after the change, so you can see the code around a hunk
 - THE TASK, at the end: the original request, the plan written for it (a "# Goal" section
-  and "### [ ] N." or "### [x] N." steps), or both. Ticked boxes only mean the tool sent
-  the step to the code generator; they do not prove the step was implemented
+  and "### N." steps), or both
 
 If there is no changeset, write the verdict line "# Review: No changeset" followed by one
 sentence saying the diff is missing, and nothing else.
@@ -135,12 +134,11 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
 - Formatting or style-only issues (WRONG)
 - Line numbers instead of names: "auth.go:42" (WRONG)
 - Links with "a/" or "b/" prefixes: [b/src/auth.go](b/src/auth.go) (WRONG)
-- A step reported as implemented only because its box is ticked (WRONG)
 - Fenced code blocks of any kind (WRONG)
 
 BEFORE RESPONDING CHECK:
 ✓ Check: Verdict matches the most severe issue?
-✓ Check: Every plan step or request part checked against the diff, not its checkbox?
+✓ Check: Every plan step or request part checked against the diff?
 ✓ Check: Only changed code and its direct effects reviewed?
 ✓ Check: At most 8 issues, at most 3 Minor, ordered by severity, each in two lines?
 ✓ Check: Every file link is [path](path) with the full path and no a/ or b/ prefix?
