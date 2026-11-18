@@ -812,7 +812,7 @@ standard error with exit code 1.
   the command, or apply the response anyway with `y commit` after checking
   `.yact/temp/buffer.txt`.
 
-**"no plan found in yact-prompt.md, create a plan with --plan"**
+**"no plan found in yact-prompt.md"**
 
 - `yact-prompt.md` is missing or empty. Write a prompt with `y prompt "<text>"` or in an
   editor, then run the command again.

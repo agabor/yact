@@ -27,7 +27,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 	if !planFound {
-		return fmt.Errorf("no plan found in %s, create a plan with --plan", config.GetProjectPromptPath())
+		return fmt.Errorf("no plan found in %s", config.GetProjectPromptPath())
 	}
 
 	// Writing the plan is how a blocked prompt gets unblocked, so it is never gated.
