@@ -146,6 +146,9 @@ func main() {
 	case "compact":
 		requireNoArgs("compact", commandArgs)
 		commandErr = commands.HandleCompactCommand()
+	case "prompt":
+		requireArgCount("prompt", commandArgs, 1)
+		commandErr = commands.HandlePromptCommand(commandArgs[0])
 	default:
 		requireNoArgs(command, commandArgs)
 

@@ -24,6 +24,7 @@ Commands:
   download prompt <command>            Download a system prompt from the project repository, replacing the local copy
   index <none|public|all>              Write the index to .yact/temp/index.txt without calling the LLM, where none removes it, public is public and all is private
   compact                              Compact the links in the prompt file
+  prompt <text>                        Append text to yact-prompt.md, adding the files it links or names with keyword as read links
   <command>                            Call the LLM with the system prompt that belongs to the given command.
 
 Prompt rules for query and <command>:

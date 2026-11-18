@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"yact/config"
+	"yact/projectpath"
 )
 
 func ReadPlan() (string, bool, error) {
@@ -69,6 +70,28 @@ func appendReadLinkToPrompt(promptText string, path string) string {
 		sections.ReadLinks = link
 	} else {
 		sections.ReadLinks = withTrailingNewline(sections.ReadLinks) + "\n" + link
+	}
+	return JoinPromptSections(sections)
+}
+
+// Paths that are already linked are skipped, so calling this again with the same paths does not duplicate links.
+func AddReadLinksToPrompt(promptText string, paths []projectpath.Path) string {
+	for _, path := range paths {
+		if HasPromptLink(promptText, string(path)) {
+			continue
+		}
+		promptText = appendReadLinkToPrompt(promptText, string(path))
+	}
+	return promptText
+}
+
+// A blank body is replaced rather than appended to, so the first text does not start after an empty line.
+func AppendPromptBody(promptText string, text string) string {
+	sections := SplitPromptFooter(promptText)
+	if strings.TrimSpace(sections.Body) == "" {
+		sections.Body = withTrailingNewline(text)
+	} else {
+		sections.Body = withTrailingNewline(sections.Body) + "\n" + withTrailingNewline(text)
 	}
 	return JoinPromptSections(sections)
 }
