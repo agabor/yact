@@ -36,6 +36,12 @@ func storeBuffer(response string) error {
 	return nil
 }
 
+func formatPlanSummary(plan string) string {
+	assumptions := len(logic.ParseAssumptions(plan))
+	missingContext := logic.CountMissingContextEntries(plan)
+	return fmt.Sprintf("Assumptions: %d\nMissing context: %d", assumptions, missingContext)
+}
+
 func deliverResponse(mode config.OutputMode, response string) error {
 	switch mode {
 	case config.OutputWritePlan:
@@ -43,10 +49,12 @@ func deliverResponse(mode config.OutputMode, response string) error {
 		if err != nil {
 			return err
 		}
-		if err := logic.WritePlan(logic.CarryAssumptionTicks(previousPlan, response)); err != nil {
+		carriedPlan := logic.CarryAssumptionTicks(previousPlan, response)
+		if err := logic.WritePlan(carriedPlan); err != nil {
 			return err
 		}
 		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
+		fmt.Println(formatPlanSummary(carriedPlan))
 		return nil
 	case config.OutputPrintOnly:
 		fmt.Println("\n" + response)

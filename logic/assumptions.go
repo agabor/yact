@@ -69,7 +69,7 @@ func (a Assumption) HasUnappliedAnswer() bool {
 
 func scanAssumptions(promptText string) []assumptionEntry {
 	lines := strings.SplitAfter(promptText, "\n")
-	start, end, found := assumptionSectionBounds(lines)
+	start, end, found := promptSectionBounds(lines, assumptionsHeading)
 	if !found {
 		return nil
 	}
@@ -90,10 +90,10 @@ func scanAssumptions(promptText string) []assumptionEntry {
 func trimLineEnding(line string) string {
 	return strings.TrimRight(line, "\r\n")
 }
-func assumptionSectionBounds(lines []string) (start int, end int, found bool) {
+func promptSectionBounds(lines []string, heading string) (start int, end int, found bool) {
 	for index, line := range lines {
 		if !found {
-			if trimLineEnding(line) == assumptionsHeading {
+			if trimLineEnding(line) == heading {
 				start = index + 1
 				found = true
 			}

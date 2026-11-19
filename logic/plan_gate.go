@@ -25,6 +25,23 @@ func HasMissingContextSection(promptText string) bool {
 	return false
 }
 
+// Only top-level items count: each one names a missing file, while indented lines
+// are the continuation text of that item.
+func CountMissingContextEntries(promptText string) int {
+	lines := strings.SplitAfter(promptText, "\n")
+	start, end, found := promptSectionBounds(lines, missingContextHeading)
+	if !found {
+		return 0
+	}
+	count := 0
+	for _, line := range lines[start:end] {
+		if strings.HasPrefix(line, "- ") {
+			count++
+		}
+	}
+	return count
+}
+
 func hasUnansweredAssumption(assumptions []Assumption) bool {
 	for _, assumption := range assumptions {
 		if assumption.IsUnanswered() {

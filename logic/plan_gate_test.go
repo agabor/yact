@@ -23,6 +23,26 @@ func TestHasMissingContextSection(t *testing.T) {
 	}
 }
 
+func TestCountMissingContextEntries(t *testing.T) {
+	tests := []struct {
+		name       string
+		promptText string
+		want       int
+	}{
+		{name: "no section gives zero", promptText: planText("# Goal", "- a.go"), want: 0},
+		{name: "two top-level items", promptText: planText("## Missing context", "- a.go", "- b.go"), want: 2},
+		{name: "indented continuation is not counted", promptText: planText("## Missing context", "- a.go", "  needed for the cache", "  - nested"), want: 1},
+		{name: "items below the next heading are not counted", promptText: planText("## Missing context", "- a.go", "", "## Steps", "- [ ] 1. Do"), want: 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := CountMissingContextEntries(tc.promptText); got != tc.want {
+				t.Errorf("CountMissingContextEntries() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestDecidePromptGate(t *testing.T) {
 	tests := []struct {
 		name       string
