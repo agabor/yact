@@ -106,8 +106,8 @@ func detectFilePath(lines []string) (string, int) {
 }
 
 func isValidCodeFile(lines []string) bool {
-	path, _ := detectFilePath(lines)
-	return path != ""
+	p, _ := detectFilePath(lines)
+	return p != ""
 }
 
 func linesToCodeFile(lines []string) (CodeFile, error) {
