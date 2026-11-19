@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 	"yact/logic"
 	"yact/projectpath"
 )
@@ -23,10 +24,6 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 		return requestContent, err
 	}
 
-	for _, path := range links.Paths {
-		fmt.Printf("Reading: %s\n", path)
-	}
-
 	for _, path := range links.UnresolvedPaths {
 		fmt.Printf("Unresolved: %s\n", path)
 	}
@@ -38,7 +35,14 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 
 	paths := append([]projectpath.Path{}, links.Paths...)
 	paths = append(paths, keywordPaths...)
-	requestContent.Files = logic.UniquePaths(paths)
+	for _, path := range logic.UniquePaths(paths) {
+		file, err := logic.ReadAsFile(path)
+		if err != nil {
+			return requestContent, err
+		}
+		fmt.Printf("Reading: %s (%d lines)\n", path, strings.Count(file.Content, "\n")+1)
+		requestContent.Files = append(requestContent.Files, file)
+	}
 	requestContent.Prompt = sentPromptText(requestContent.Prompt)
 	return requestContent, nil
 }

@@ -8,9 +8,9 @@ import (
 
 type RequestContent struct {
 	Prompt string
-	Files  []projectpath.Path
-	Domain projectpath.Path
-	Index  projectpath.Path
+	Files  []CodeFile
+	Domain CodeFile
+	Index  CodeFile
 }
 
 const (
@@ -56,11 +56,20 @@ func LoadRequestContent() (RequestContent, error) {
 		return RequestContent{}, err
 	}
 
+	domainFile, err := ReadAsFile(domain)
+	if err != nil {
+		return RequestContent{}, err
+	}
+	indexFile, err := ReadAsFile(index)
+	if err != nil {
+		return RequestContent{}, err
+	}
+
 	return RequestContent{
 		Prompt: "",
-		Files:  []projectpath.Path{},
-		Domain: domain,
-		Index:  index,
+		Files:  []CodeFile{},
+		Domain: domainFile,
+		Index:  indexFile,
 	}, nil
 }
 

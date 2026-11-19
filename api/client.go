@@ -1,11 +1,9 @@
 package api
 
 import (
-	"os"
 	"strings"
 	"yact/config"
 	"yact/logic"
-	"yact/projectpath"
 )
 
 type Client interface {
@@ -17,27 +15,22 @@ type Client interface {
 	GetBatchResult(batchID string) (BatchResult, error)
 }
 
-func Serialize(path string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-
+func Serialize(file logic.CodeFile) (string, error) {
 	delimiter := "//"
-	if strings.HasSuffix(path, ".sh") {
+	if strings.HasSuffix(string(file.Path), ".sh") {
 		delimiter = "#"
 	}
 
-	headerLine := delimiter + path
+	headerLine := delimiter + string(file.Path)
 
-	return strings.Join([]string{logic.BlockDelimiter, headerLine, string(content), logic.BlockDelimiter}, "\n"), nil
+	return strings.Join([]string{logic.BlockDelimiter, headerLine, file.Content, logic.BlockDelimiter}, "\n"), nil
 }
 
 func BuildUserBlocks(requestContent logic.RequestContent) ([]string, error) {
 	blocks := make([]string, 0, len(requestContent.Files)+2)
 
-	for _, filePath := range append([]projectpath.Path{requestContent.Domain, requestContent.Index}, requestContent.Files...) {
-		fileContent, err := Serialize(string(filePath))
+	for _, file := range append([]logic.CodeFile{requestContent.Domain, requestContent.Index}, requestContent.Files...) {
+		fileContent, err := Serialize(file)
 		if err != nil {
 			return nil, err
 		}

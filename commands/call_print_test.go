@@ -53,7 +53,6 @@ func TestPrintCallResult(t *testing.T) {
 		Cost:         0.001234,
 	}
 	summary := "Claude API call took 1.50 seconds\n" +
-		"Files sent: 2\n" +
 		"Token usage - Input: 100, Output: 50\n" +
 		"Cost: $0.001234\n"
 	truncationWarning := fmt.Sprintf("WARNING: Maximum output tokens (%d) reached", config.MaxTokens)
