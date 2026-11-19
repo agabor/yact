@@ -38,7 +38,6 @@ func (c *CLIFlags) ToFlaglist(set *pflag.FlagSet) (Flaglist, error) {
 	flags := Flaglist{
 		Strict:     c.Strict,
 		NoProgress: c.NoProgress,
-		Verbose:    c.Verbose,
 		DryRun:     c.DryRun,
 		Batch:      c.Batch,
 	}

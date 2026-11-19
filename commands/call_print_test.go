@@ -23,22 +23,6 @@ func TestPrintWarnings(t *testing.T) {
 	}
 }
 
-func TestPrintSentFiles(t *testing.T) {
-	requestContent := logic.RequestContent{
-		Domain: "domain.txt",
-		Files:  []projectpath.Path{"a.go", "b.go"},
-	}
-
-	got := captureStdout(t, func() {
-		printSentFiles(requestContent)
-	})
-
-	want := "Sending: domain.txt\nSending: a.go\nSending: b.go\n"
-	if got != want {
-		t.Errorf("printSentFiles() output = %q, want %q", got, want)
-	}
-}
-
 func TestPrintSentPrompt(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -64,7 +48,6 @@ func TestPrintSentPrompt(t *testing.T) {
 func TestPrintCallResult(t *testing.T) {
 	result := api.CallResult{
 		Duration:     1500 * time.Millisecond,
-		FileCount:    2,
 		InputTokens:  100,
 		OutputTokens: 50,
 		Cost:         0.001234,

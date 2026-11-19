@@ -45,7 +45,6 @@ type CallResult struct {
 	Cost         float64
 	Truncated    bool
 	Duration     time.Duration
-	FileCount    int
 }
 
 type claudeTier struct {
@@ -118,10 +117,10 @@ func (c *ClaudeClient) newClient() anthropic.Client {
 	return anthropic.NewClient(option.WithAPIKey(c.apiKey))
 }
 
-func (c *ClaudeClient) buildParams(requestContent logic.RequestContent, systemPrompt string) (anthropic.MessageNewParams, int, error) {
-	textBlocks, fileCount, err := BuildUserBlocks(requestContent)
+func (c *ClaudeClient) buildParams(requestContent logic.RequestContent, systemPrompt string) (anthropic.MessageNewParams, error) {
+	textBlocks, err := BuildUserBlocks(requestContent)
 	if err != nil {
-		return anthropic.MessageNewParams{}, 0, err
+		return anthropic.MessageNewParams{}, err
 	}
 
 	blocks := make([]anthropic.ContentBlockParamUnion, 0, len(textBlocks))
@@ -147,7 +146,7 @@ func (c *ClaudeClient) buildParams(requestContent logic.RequestContent, systemPr
 		}
 	}
 
-	return params, fileCount, nil
+	return params, nil
 }
 
 func joinTextBlocks(message anthropic.Message) string {
@@ -169,7 +168,7 @@ func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt st
 
 	client := c.newClient()
 
-	params, fileCount, err := c.buildParams(requestContent, systemPrompt)
+	params, err := c.buildParams(requestContent, systemPrompt)
 	if err != nil {
 		return CallResult{}, err
 	}
@@ -191,7 +190,6 @@ func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt st
 		Cost:         c.calculateCost(message.Usage.InputTokens, message.Usage.OutputTokens),
 		Truncated:    message.Usage.OutputTokens >= int64(config.MaxTokens),
 		Duration:     duration,
-		FileCount:    fileCount,
 	}, nil
 }
 
@@ -211,7 +209,7 @@ func (c *ClaudeClient) SubmitBatch(requestContent logic.RequestContent, systemPr
 
 	client := c.newClient()
 
-	params, _, err := c.buildParams(requestContent, systemPrompt)
+	params, err := c.buildParams(requestContent, systemPrompt)
 	if err != nil {
 		return "", err
 	}

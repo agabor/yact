@@ -45,17 +45,6 @@ func existingFilePath(path projectpath.Path) (projectpath.Path, error) {
 	return path, nil
 }
 
-func (r RequestContent) MessagePaths() []projectpath.Path {
-	paths := []projectpath.Path{}
-	for _, path := range []projectpath.Path{r.Domain, r.Index} {
-		if path != "" {
-			paths = append(paths, path)
-		}
-	}
-
-	return paths
-}
-
 func LoadRequestContent() (RequestContent, error) {
 	domain, err := existingFilePath(projectpath.Join(config.GetProjectYactDir(), domainFileName))
 	if err != nil {

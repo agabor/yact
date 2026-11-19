@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"fmt"
 	"yact/logic"
 	"yact/projectpath"
 )
+
+const longFileLineThreshold = 300
 
 // The read link block above the separator is never sent as text, so only the body is sent, with keyword markers removed.
 func sentPromptText(promptText string) string {
@@ -20,8 +23,12 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 		return requestContent, err
 	}
 
-	if len(links.UnresolvedPaths) > 0 {
-		printWarnings(unresolvedFileWarnings(links.UnresolvedPaths))
+	for _, path := range links.Paths {
+		fmt.Printf("Reading: %s\n", path)
+	}
+
+	for _, path := range links.UnresolvedPaths {
+		fmt.Printf("Unresolved: %s\n", path)
 	}
 
 	keywordPaths, err := resolvePromptKeywordFiles(requestContent.Prompt)

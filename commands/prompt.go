@@ -19,7 +19,6 @@ func HandlePromptCommand(text string) error {
 	if err != nil {
 		return err
 	}
-	printWarnings(unresolvedFileWarnings(links.UnresolvedPaths))
 
 	keywordPaths, err := resolvePromptKeywordFiles(text)
 	if err != nil {

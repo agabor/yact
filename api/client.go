@@ -5,6 +5,7 @@ import (
 	"strings"
 	"yact/config"
 	"yact/logic"
+	"yact/projectpath"
 )
 
 type Client interface {
@@ -32,31 +33,20 @@ func Serialize(path string) (string, error) {
 	return strings.Join([]string{logic.BlockDelimiter, headerLine, string(content), logic.BlockDelimiter}, "\n"), nil
 }
 
-func BuildUserBlocks(requestContent logic.RequestContent) ([]string, int, error) {
-	messagePaths := requestContent.MessagePaths()
-	blocks := make([]string, 0, len(messagePaths)+len(requestContent.Files)+1)
-	fileCount := 0
+func BuildUserBlocks(requestContent logic.RequestContent) ([]string, error) {
+	blocks := make([]string, 0, len(requestContent.Files)+2)
 
-	for _, messagePath := range messagePaths {
-		messageContent, err := os.ReadFile(string(messagePath))
-		if err != nil {
-			return nil, 0, err
-		}
-		blocks = append(blocks, string(messageContent))
-	}
-
-	for _, filePath := range requestContent.Files {
+	for _, filePath := range append([]projectpath.Path{requestContent.Domain, requestContent.Index}, requestContent.Files...) {
 		fileContent, err := Serialize(string(filePath))
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		blocks = append(blocks, fileContent)
-		fileCount++
 	}
 
 	blocks = append(blocks, requestContent.Prompt)
 
-	return blocks, fileCount, nil
+	return blocks, nil
 }
 
 func FormatCost(inputTokens int64, outputTokens int64, inputPrice float64, outputPrice float64) float64 {

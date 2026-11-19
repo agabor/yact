@@ -187,5 +187,5 @@ func ResolvePromptLinks(prompt string) (PromptLinks, error) {
 		}
 	}
 
-	return PromptLinks{Paths: selected, UnresolvedPaths: unresolved}, nil
+	return PromptLinks{Paths: UniquePaths(selected), UnresolvedPaths: UniquePaths(unresolved)}, nil
 }

@@ -32,15 +32,6 @@ func printWarnings(warnings []string) {
 	}
 }
 
-func printSentFiles(requestContent logic.RequestContent) {
-	for _, messagePath := range requestContent.MessagePaths() {
-		fmt.Printf("Sending: %s\n", messagePath)
-	}
-	for _, contextPath := range requestContent.Files {
-		fmt.Printf("Sending: %s\n", contextPath)
-	}
-}
-
 func printSentPrompt(prompt string) {
 	if prompt == "" {
 		return
@@ -51,7 +42,6 @@ func printSentPrompt(prompt string) {
 
 func printCallResult(result api.CallResult) {
 	fmt.Printf("Claude API call took %.2f seconds\n", result.Duration.Seconds())
-	fmt.Printf("Files sent: %d\n", result.FileCount)
 	fmt.Printf("Token usage - Input: %d, Output: %d\n", result.InputTokens, result.OutputTokens)
 	fmt.Printf("Cost: $%.6f\n", result.Cost)
 

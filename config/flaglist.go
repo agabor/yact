@@ -12,7 +12,6 @@ type Flaglist struct {
 	Strict     bool
 	Batch      bool
 	NoProgress bool
-	Verbose    bool
 	DryRun     bool
 }
 
@@ -104,9 +103,7 @@ func (f Flaglist) FlagString() string {
 	if f.Batch {
 		parts = append(parts, "--batch")
 	}
-	if f.Verbose {
-		parts = append(parts, "--verbose")
-	}
+
 	if f.DryRun {
 		parts = append(parts, "--dry-run")
 	}

@@ -48,18 +48,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	fileCounts, err := countFileLines(requestContentForLLM)
-	if err != nil {
-		return err
-	}
-
-	printWarnings(longFileWarnings(fileCounts))
-
-	if flags.Verbose {
-		printSentFiles(requestContentForLLM)
-		printSentPrompt(requestContentForLLM.Prompt)
-	}
-
 	if flags.DryRun {
 		fmt.Println("Dry run: LLM call skipped.")
 		return nil
