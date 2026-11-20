@@ -10,7 +10,6 @@ type CLIFlags struct {
 	Version    bool
 	Model      string
 	Output     string
-	Strict     bool
 	Index      string
 	NoProgress bool
 	Verbose    bool
@@ -24,7 +23,6 @@ func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
 	set.BoolVarP(&cli.Version, "version", "V", false, "Print the version and exit")
 	set.StringVarP(&cli.Model, "model", "m", "", "Model: haiku, sonnet, opus, fable, or 1 to 4")
 	set.StringVarP(&cli.Output, "output", "o", "", "Output mode: apply, print or plan")
-	set.BoolVar(&cli.Strict, "strict", false, "Fail if the response contains free text or incomplete code blocks")
 	set.StringVarP(&cli.Index, "index", "i", "", "Index: none, public or all, or 0 to 2")
 	set.BoolVar(&cli.NoProgress, "no-progress", false, "Hide progress indicator")
 	set.BoolVar(&cli.Verbose, "verbose", false, "Print all file paths and the prompt sent to the LLM")
@@ -36,7 +34,6 @@ func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
 // Only flags the user actually set become non-nil, so that prompt file defaults can fill the rest.
 func (c *CLIFlags) ToFlaglist(set *pflag.FlagSet) (Flaglist, error) {
 	flags := Flaglist{
-		Strict:     c.Strict,
 		NoProgress: c.NoProgress,
 		DryRun:     c.DryRun,
 		Batch:      c.Batch,

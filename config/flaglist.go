@@ -9,7 +9,6 @@ type Flaglist struct {
 	Model      *ModelName
 	Index      *IndexSetting
 	Output     *OutputName
-	Strict     bool
 	Batch      bool
 	NoProgress bool
 	DryRun     bool
@@ -23,7 +22,6 @@ const (
 	OutputApply OutputMode = iota
 	OutputWritePlan
 	OutputPrintOnly
-	OutputValidateAndApply
 )
 
 // User values win over the prompt file defaults. Strict is rejected unless the output is apply,
@@ -41,11 +39,7 @@ func ResolveFlags(user Flaglist, defaults PromptDefaults) (Flaglist, error) {
 	}
 
 	output := resolved.EffectiveOutput()
-	if user.Strict && output != OutputNameApply {
-		return Flaglist{}, fmt.Errorf("--strict cannot be combined with --output %s", output)
-	}
 	resolved.Output = &output
-	resolved.Strict = user.Strict || (defaults.Strict && output == OutputNameApply)
 	return resolved, nil
 }
 
@@ -61,9 +55,6 @@ func ParseOutputMode(flags Flaglist) OutputMode {
 		return OutputPrintOnly
 	case OutputNamePlan:
 		return OutputWritePlan
-	}
-	if flags.Strict {
-		return OutputValidateAndApply
 	}
 	return OutputApply
 }
@@ -93,9 +84,6 @@ func (f Flaglist) FlagString() string {
 	}
 	if f.Output != nil && *f.Output != OutputNameApply {
 		parts = append(parts, fmt.Sprintf("--output %s", *f.Output))
-	}
-	if f.Strict {
-		parts = append(parts, "--strict")
 	}
 	if f.NoProgress {
 		parts = append(parts, "--no-progress")

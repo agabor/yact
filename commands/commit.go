@@ -15,25 +15,19 @@ func printFreeText(elements []logic.ParsedElement) {
 	}
 }
 
-func parseBufferElements(content string, validateCode bool) ([]logic.ParsedElement, bool, error) {
-	if validateCode {
-		if err := validateCodeOnlyResponse(content); err != nil {
-			return nil, false, err
-		}
-	}
-
+func parseBufferElements(content string) ([]logic.ParsedElement, bool, error) {
 	elements, incomplete := logic.ParseCodeFilesDetailed(content)
 	printFreeText(elements)
 	return elements, incomplete, nil
 }
 
-func HandleCommitCommand(validateCode bool) error {
+func HandleCommitCommand() error {
 	content, err := logic.ReadBuffer()
 	if err != nil {
 		return err
 	}
 
-	elements, incomplete, err := parseBufferElements(content, validateCode)
+	elements, incomplete, err := parseBufferElements(content)
 	if err != nil {
 		return err
 	}

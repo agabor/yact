@@ -211,15 +211,6 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 	var result = make([]ParsedElement, 0)
 	var lineBuffer = make([]string, 0)
 
-	flushText := func() {
-		if len(lineBuffer) > 0 {
-			if block := processCodeBlock(lineBuffer); block != nil {
-				result = append(result, *block)
-			}
-			lineBuffer = make([]string, 0)
-		}
-	}
-
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
 			if block := processCodeBlock(lineBuffer); block != nil {
@@ -230,8 +221,6 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 			lineBuffer = append(lineBuffer, line)
 		}
 	}
-
-	flushText()
 
 	incomplete := false
 	if block := processCodeBlock(lineBuffer); block != nil {

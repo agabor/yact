@@ -7,6 +7,12 @@ import (
 	"yact/logic"
 )
 
+const fence = "```"
+
+func codeFileBlock(path string, body string) string {
+	return fence + "\n// " + path + "\n" + body + "\n" + fence + "\n"
+}
+
 func TestPrintFreeText(t *testing.T) {
 	elements := []logic.ParsedElement{
 		logic.NewTextElement("intro"),
@@ -36,26 +42,17 @@ func TestParseBufferElements(t *testing.T) {
 		wantOutput     string
 	}{
 		{
-			name:         "clean code-only buffer parses with validation",
-			content:      codeFileBlock("a.txt", "x"),
-			validateCode: true,
+			name:    "clean code-only buffer parses with validation",
+			content: codeFileBlock("a.txt", "x"),
 		},
 		{
-			name:         "free text without validation is printed",
-			content:      "intro\n" + codeFileBlock("a.txt", "x"),
-			validateCode: false,
-			wantOutput:   "intro\n",
-		},
-		{
-			name:         "free text with validation fails",
-			content:      "intro\n" + codeFileBlock("a.txt", "x"),
-			validateCode: true,
-			wantErr:      true,
+			name:       "free text without validation is printed",
+			content:    "intro\n" + codeFileBlock("a.txt", "x"),
+			wantOutput: "intro\n",
 		},
 		{
 			name:           "incomplete code block sets the incomplete flag",
 			content:        fence + "\n// a.txt\nx\n",
-			validateCode:   false,
 			wantIncomplete: true,
 		},
 	}
@@ -65,7 +62,7 @@ func TestParseBufferElements(t *testing.T) {
 			var incomplete bool
 			var err error
 			output := captureStdout(t, func() {
-				_, incomplete, err = parseBufferElements(tc.content, tc.validateCode)
+				_, incomplete, err = parseBufferElements(tc.content)
 			})
 
 			if tc.wantErr {

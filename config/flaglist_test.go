@@ -49,22 +49,6 @@ func TestResolveFlags(t *testing.T) {
 			wantOutput: OutputNamePrint,
 		},
 		{
-			name:    "strict with print output fails",
-			user:    Flaglist{Strict: true, Output: pointerTo(OutputNamePrint)},
-			wantErr: true,
-		},
-		{
-			name:    "strict with plan output fails",
-			user:    Flaglist{Strict: true, Output: pointerTo(OutputNamePlan)},
-			wantErr: true,
-		},
-		{
-			name:     "strict with a print default fails",
-			user:     Flaglist{Strict: true},
-			defaults: PromptDefaults{Output: pointerTo(OutputNamePrint)},
-			wantErr:  true,
-		},
-		{
 			name:       "strict default applies when output is apply",
 			defaults:   PromptDefaults{Strict: true},
 			wantOutput: OutputNameApply,
@@ -93,9 +77,6 @@ func TestResolveFlags(t *testing.T) {
 			if got.EffectiveOutput() != tc.wantOutput {
 				t.Errorf("EffectiveOutput() = %q, want %q", got.EffectiveOutput(), tc.wantOutput)
 			}
-			if got.Strict != tc.wantStrict {
-				t.Errorf("Strict = %v, want %v", got.Strict, tc.wantStrict)
-			}
 		})
 	}
 }
@@ -108,7 +89,6 @@ func TestParseOutputMode(t *testing.T) {
 	}{
 		{name: "no output set applies", flags: Flaglist{}, want: OutputApply},
 		{name: "apply output applies", flags: Flaglist{Output: pointerTo(OutputNameApply)}, want: OutputApply},
-		{name: "apply with strict validates and applies", flags: Flaglist{Output: pointerTo(OutputNameApply), Strict: true}, want: OutputValidateAndApply},
 		{name: "print output prints", flags: Flaglist{Output: pointerTo(OutputNamePrint)}, want: OutputPrintOnly},
 		{name: "plan output writes plan", flags: Flaglist{Output: pointerTo(OutputNamePlan)}, want: OutputWritePlan},
 	}
@@ -123,9 +103,9 @@ func TestParseOutputMode(t *testing.T) {
 }
 
 func TestOutputModeNumericValues(t *testing.T) {
-	if int(OutputApply) != 0 || int(OutputWritePlan) != 1 || int(OutputPrintOnly) != 2 || int(OutputValidateAndApply) != 3 {
-		t.Fatalf("OutputMode values = %d %d %d %d, want 0 1 2 3",
-			OutputApply, OutputWritePlan, OutputPrintOnly, OutputValidateAndApply)
+	if int(OutputApply) != 0 || int(OutputWritePlan) != 1 || int(OutputPrintOnly) != 2 {
+		t.Fatalf("OutputMode values = %d %d %d, want 0 1 2",
+			OutputApply, OutputWritePlan, OutputPrintOnly)
 	}
 }
 

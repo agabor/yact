@@ -123,7 +123,7 @@ func main() {
 		commandErr = commands.HandleNewCommand()
 	case "commit":
 		requireNoArgs("commit", commandArgs)
-		commandErr = commands.HandleCommitCommand(cli.Strict)
+		commandErr = commands.HandleCommitCommand()
 	case "query":
 		requireNoArgs("query", commandArgs)
 		resolved, err := config.ResolveFlags(flags, config.QueryDefaults())
