@@ -15,7 +15,7 @@ type Client interface {
 	GetBatchResult(batchID string) (BatchResult, error)
 }
 
-func Serialize(file logic.CodeFile) (string, error) {
+func Serialize(file logic.CodeFile) string {
 	delimiter := "//"
 	if strings.HasSuffix(string(file.Path), ".sh") {
 		delimiter = "#"
@@ -23,21 +23,21 @@ func Serialize(file logic.CodeFile) (string, error) {
 
 	headerLine := delimiter + string(file.Path)
 
-	return strings.Join([]string{logic.BlockDelimiter, headerLine, file.Content, logic.BlockDelimiter}, "\n"), nil
+	return strings.Join([]string{logic.BlockDelimiter, headerLine, file.Content, logic.BlockDelimiter}, "\n")
 }
 
 func BuildUserBlocks(requestContent *logic.RequestContent) ([]string, error) {
 	blocks := make([]string, 0, len(requestContent.Files)+2)
 
 	for _, file := range append([]logic.CodeFile{requestContent.Domain, requestContent.Index}, requestContent.Files...) {
-		fileContent, err := Serialize(file)
-		if err != nil {
-			return nil, err
+		if strings.TrimSpace(file.Content) != "" {
+			blocks = append(blocks, Serialize(file))
 		}
-		blocks = append(blocks, fileContent)
 	}
 
-	blocks = append(blocks, requestContent.Prompt)
+	if strings.TrimSpace(requestContent.Prompt) != "" {
+		blocks = append(blocks, requestContent.Prompt)
+	}
 
 	return blocks, nil
 }

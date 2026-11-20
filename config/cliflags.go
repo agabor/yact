@@ -12,7 +12,6 @@ type CLIFlags struct {
 	Output     string
 	Index      string
 	NoProgress bool
-	Verbose    bool
 	DryRun     bool
 	Batch      bool
 }
@@ -25,7 +24,6 @@ func RegisterFlags(set *pflag.FlagSet) *CLIFlags {
 	set.StringVarP(&cli.Output, "output", "o", "", "Output mode: apply, print or plan")
 	set.StringVarP(&cli.Index, "index", "i", "", "Index: none, public or all, or 0 to 2")
 	set.BoolVar(&cli.NoProgress, "no-progress", false, "Hide progress indicator")
-	set.BoolVar(&cli.Verbose, "verbose", false, "Print all file paths and the prompt sent to the LLM")
 	set.BoolVar(&cli.DryRun, "dry-run", false, "Skip the LLM call, only build and check the request")
 	set.BoolVarP(&cli.Batch, "batch", "b", false, "Submit the request as a batch job instead of streaming it")
 	return cli

@@ -24,9 +24,8 @@ const (
 	OutputPrintOnly
 )
 
-// User values win over the prompt file defaults. Strict is rejected unless the output is apply,
-// so that a conflict is reported instead of silently ignored.
-func ResolveFlags(user Flaglist, defaults PromptDefaults) (Flaglist, error) {
+// User values win over the prompt file defaults.
+func ResolveFlags(user Flaglist, defaults PromptDefaults) Flaglist {
 	resolved := user
 	if resolved.Model == nil {
 		resolved.Model = defaults.Model
@@ -40,7 +39,7 @@ func ResolveFlags(user Flaglist, defaults PromptDefaults) (Flaglist, error) {
 
 	output := resolved.EffectiveOutput()
 	resolved.Output = &output
-	return resolved, nil
+	return resolved
 }
 
 // Query prints by default, because its response is for reading rather than for applying to files.

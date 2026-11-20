@@ -19,8 +19,8 @@ Commands:
   config [key] [value]                 Manage configuration settings
   new                                  Create a new empty task context
   query                                Call the LLM without a system prompt
-  commit                               Write code blocks from the buffer to disk (with --strict, fail on free text or incomplete code blocks)
-  batch                                Fetch the pending batch result and write it using the output flags it was submitted with (--output, --strict). Without them, the result goes to the buffer. Apply the buffer with commit
+  commit                               Write code blocks from the buffer to disk
+  batch                                Fetch the pending batch result and write it using the output flag it was submitted with (--output). Without it, the result goes to the buffer. Apply the buffer with commit
   download prompt <command>            Download a system prompt from the project repository, replacing the local copy
   index <none|public|all>              Write the index to .yact/temp/index.txt without calling the LLM, where none removes it, public is public and all is private
   compact                              Compact the links in the prompt file
@@ -52,11 +52,9 @@ Global Flags:
   -V, --version                        Print the version and exit
   -m, --model <name>                   Model: haiku, sonnet, opus, fable, or 1 to 4
   -o, --output <mode>                  apply writes the result to files, print prints it, plan writes it to yact-prompt.md. A plan sent as the prompt is sent whole
-  --strict                             Fail if the response (or, for commit, the buffer) contains free text or incomplete code blocks. Only allowed with apply output
   -i, --index <name>                   Index for this call: none sends no index, public generates a public index, all generates a private index. The index is written to .yact/temp/index.txt and sent only in the call that sets the switch
-  -b, --batch                          Submit the request as a batch job, allows one pending job at a time, skips post-processing. The output flags (--output, --strict) are saved with the job and applied when the result is fetched with 'y batch'
+  -b, --batch                          Submit the request as a batch job, allows one pending job at a time, skips post-processing. The output flag (--output) is saved with the job and applied when the result is fetched with 'y batch'
   --no-progress                        Hide progress indicator
-  --verbose                            Print all file paths and the prompt sent to the LLM
   --dry-run                            Skip the LLM call, only build and check the request
 
 For more information, visit: https://github.com/agabor/yact`)

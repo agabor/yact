@@ -14,11 +14,9 @@ func TestResolveFlags(t *testing.T) {
 		name       string
 		user       Flaglist
 		defaults   PromptDefaults
-		wantErr    bool
 		wantModel  *ModelName
 		wantIndex  *IndexSetting
 		wantOutput OutputName
-		wantStrict bool
 	}{
 		{
 			name:       "defaults fill unset model index and output",
@@ -42,32 +40,11 @@ func TestResolveFlags(t *testing.T) {
 			wantIndex:  pointerTo(IndexNone),
 			wantOutput: OutputNameApply,
 		},
-		{
-			name:       "print output drops a strict default without error",
-			user:       Flaglist{Output: pointerTo(OutputNamePrint)},
-			defaults:   PromptDefaults{Strict: true},
-			wantOutput: OutputNamePrint,
-		},
-		{
-			name:       "strict default applies when output is apply",
-			defaults:   PromptDefaults{Strict: true},
-			wantOutput: OutputNameApply,
-			wantStrict: true,
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ResolveFlags(tc.user, tc.defaults)
-			if tc.wantErr {
-				if err == nil {
-					t.Fatal("ResolveFlags() error = nil, want error")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("ResolveFlags() unexpected error: %v", err)
-			}
+			got := ResolveFlags(tc.user, tc.defaults)
 			if !reflect.DeepEqual(got.Model, tc.wantModel) {
 				t.Errorf("Model = %v, want %v", got.Model, tc.wantModel)
 			}
@@ -121,10 +98,7 @@ func TestQueryDefaultsPrintUnlessOutputIsSet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resolved, err := ResolveFlags(tc.user, QueryDefaults())
-			if err != nil {
-				t.Fatalf("ResolveFlags() unexpected error: %v", err)
-			}
+			resolved := ResolveFlags(tc.user, QueryDefaults())
 			if resolved.EffectiveOutput() != tc.want {
 				t.Errorf("EffectiveOutput() = %q, want %q", resolved.EffectiveOutput(), tc.want)
 			}

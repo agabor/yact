@@ -126,11 +126,7 @@ func main() {
 		commandErr = commands.HandleCommitCommand()
 	case "query":
 		requireNoArgs("query", commandArgs)
-		resolved, err := config.ResolveFlags(flags, config.QueryDefaults())
-		if err != nil {
-			commandErr = err
-			break
-		}
+		resolved := config.ResolveFlags(flags, config.QueryDefaults())
 		if flagString := resolved.FlagString(); flagString != "" {
 			fmt.Printf("Executing: y %s query\n", flagString)
 		}
@@ -164,11 +160,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		resolved, err := config.ResolveFlags(flags, defaults)
-		if err != nil {
-			commandErr = err
-			break
-		}
+		resolved := config.ResolveFlags(flags, defaults)
 
 		cleanedPrompt := systemPrompt
 		if strings.HasPrefix(cleanedPrompt, "flags: ") {

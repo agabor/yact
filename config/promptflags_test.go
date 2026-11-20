@@ -13,9 +13,9 @@ func TestParsePromptFlags(t *testing.T) {
 		want    PromptDefaults
 	}{
 		{
-			name:    "letter syntax with model index strict",
-			content: "flags: c1vi1\nbody",
-			want:    PromptDefaults{Model: pointerTo(ModelHaiku), Index: pointerTo(IndexPublic), Strict: true},
+			name:    "letter syntax with model and index",
+			content: "flags: c1i1\nbody",
+			want:    PromptDefaults{Model: pointerTo(ModelHaiku), Index: pointerTo(IndexPublic)},
 		},
 		{
 			name:    "letter c without digit falls back to sonnet",
@@ -33,9 +33,9 @@ func TestParsePromptFlags(t *testing.T) {
 			want:    PromptDefaults{Output: pointerTo(OutputNamePlan)},
 		},
 		{
-			name:    "long syntax with model strict and index",
-			content: "flags: --model haiku --strict --index public",
-			want:    PromptDefaults{Model: pointerTo(ModelHaiku), Index: pointerTo(IndexPublic), Strict: true},
+			name:    "long syntax with model and index",
+			content: "flags: --model haiku --index public",
+			want:    PromptDefaults{Model: pointerTo(ModelHaiku), Index: pointerTo(IndexPublic)},
 		},
 		{
 			name:    "long syntax with output plan",
@@ -74,7 +74,7 @@ func TestParsePromptFlagsErrorsNameThePrompt(t *testing.T) {
 	}{
 		{name: "unknown flag", content: "flags: --claude 1"},
 		{name: "invalid output value", content: "flags: --output maybe"},
-		{name: "positional argument", content: "flags: --strict extra"},
+		{name: "positional argument", content: "flags: --output plan extra"},
 		{name: "download is no longer a flag", content: "flags: --download"},
 	}
 

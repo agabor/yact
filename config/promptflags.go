@@ -15,7 +15,6 @@ type PromptDefaults struct {
 	Model  *ModelName
 	Index  *IndexSetting
 	Output *OutputName
-	Strict bool
 }
 
 const promptFlagsPrefix = "flags: "
@@ -43,7 +42,6 @@ func parseLongFlags(name PromptName, text string) (PromptDefaults, error) {
 	set.StringVar(&modelRaw, "model", "", "")
 	set.StringVar(&indexRaw, "index", "", "")
 	set.StringVar(&outputRaw, "output", "", "")
-	set.BoolVar(&defaults.Strict, "strict", false, "")
 
 	if err := set.Parse(strings.Fields(text)); err != nil {
 		return PromptDefaults{}, promptFlagError(name, err)
@@ -109,8 +107,6 @@ func applyLetterFlag(defaults *PromptDefaults, token string) {
 	case "p":
 		output := OutputNamePlan
 		defaults.Output = &output
-	case "v":
-		defaults.Strict = true
 	}
 }
 
