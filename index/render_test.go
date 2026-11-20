@@ -27,52 +27,48 @@ func TestRenderFileSectionWithoutSignatures(t *testing.T) {
 func TestRenderIndexHeaderForVisibility(t *testing.T) {
 	tests := []struct {
 		name       string
-		visibility string
+		visibility Visibility
 		wantScope  string
 		absent     string
 	}{
-		{name: "public scope", visibility: "public", wantScope: publicIndexScope, absent: privateIndexScope},
-		{name: "private scope", visibility: "private", wantScope: privateIndexScope, absent: publicIndexScope},
+		{name: "public scope", visibility: VisibilityPublic, wantScope: publicIndexScope, absent: privateIndexScope},
+		{name: "private scope", visibility: VisibilityPrivate, wantScope: privateIndexScope, absent: publicIndexScope},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			root := &IndexNode{Name: ".", Type: "dir"}
+			root := &indexDir{Name: "."}
 			got := renderIndex(root, tc.visibility)
 			if !strings.Contains(got, tc.wantScope) {
-				t.Errorf("renderIndex(%q) does not contain %q", tc.visibility, tc.wantScope)
+				t.Errorf("renderIndex(%v) does not contain %q", tc.visibility, tc.wantScope)
 			}
 			if strings.Contains(got, tc.absent) {
-				t.Errorf("renderIndex(%q) contains %q", tc.visibility, tc.absent)
+				t.Errorf("renderIndex(%v) contains %q", tc.visibility, tc.absent)
 			}
 		})
 	}
 }
 
 func TestRenderIndexOrdersSectionsByPath(t *testing.T) {
-	root := &IndexNode{
+	root := &indexDir{
 		Name: ".",
-		Type: "dir",
-		Children: []*IndexNode{
-			{
+		Children: []indexEntry{
+			&indexDir{
 				Name: "pkg",
-				Type: "dir",
-				Children: []*IndexNode{
-					{
+				Children: []indexEntry{
+					&indexFile{
 						Name:      "a.go",
-						Type:      "file",
 						Functions: []IndexSignature{{Text: "func A()", Depth: 0}},
 					},
 				},
 			},
-			{
+			&indexFile{
 				Name:      "b.go",
-				Type:      "file",
 				Functions: []IndexSignature{{Text: "func B()", Depth: 0}},
 			},
 		},
 	}
-	got := renderIndex(root, "public")
-	if !strings.HasPrefix(got, renderIndexHeader("public")+"\n") {
+	got := renderIndex(root, VisibilityPublic)
+	if !strings.HasPrefix(got, renderIndexHeader(VisibilityPublic)+"\n") {
 		t.Errorf("renderIndex() does not start with the index header")
 	}
 	wantSections := "pkg/a.go\n  func A()\n\nb.go\n  func B()\n"

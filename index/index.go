@@ -11,12 +11,22 @@ import (
 	"yact/logic"
 )
 
-type IndexNode struct {
-	Name      string
-	Type      string
-	Functions []IndexSignature
-	Children  []*IndexNode
+type indexEntry interface {
+	isIndexEntry()
 }
+
+type indexDir struct {
+	Name     string
+	Children []indexEntry
+}
+
+type indexFile struct {
+	Name      string
+	Functions []IndexSignature
+}
+
+func (*indexDir) isIndexEntry()  {}
+func (*indexFile) isIndexEntry() {}
 
 type IndexSignature struct {
 	Text  string
@@ -55,18 +65,6 @@ const publicIndexScope = "Only the public interface is listed: private declarati
 
 const privateIndexScope = "All declarations are listed, including private ones."
 
-func languagesForVisibility(visibility string) ([]indexLanguage, error) {
-	if visibility != "public" && visibility != "private" {
-		return nil, fmt.Errorf("invalid visibility %q, expected private or public", visibility)
-	}
-	languages := make([]indexLanguage, len(indexLanguages))
-	copy(languages, indexLanguages)
-	for position := range languages {
-		languages[position].Rules.PublicOnly = visibility == "public"
-	}
-	return languages, nil
-}
-
 func findLanguageForFile(name string, languages []indexLanguage) (indexLanguage, bool) {
 	for _, language := range languages {
 		if hasLanguageExtension(name, language.Extensions) {
@@ -85,11 +83,8 @@ func hasLanguageExtension(name string, extensions []string) bool {
 	return false
 }
 
-func WriteIndex(visibility string) error {
-	languages, err := languagesForVisibility(visibility)
-	if err != nil {
-		return err
-	}
+func WriteIndex(visibility Visibility) error {
+	languages := languagesForVisibility(visibility)
 	files, err := logic.EnumerateFiles(".", func(name string) bool {
 		_, found := findLanguageForFile(name, languages)
 		return found
@@ -109,10 +104,9 @@ func WriteIndex(visibility string) error {
 	return os.WriteFile(indexPath, []byte(data), 0644)
 }
 
-func buildIndexTree(paths []projectpath.Path, languages []indexLanguage) (*IndexNode, error) {
-	root := &IndexNode{
+func buildIndexTree(paths []projectpath.Path, languages []indexLanguage) (*indexDir, error) {
+	root := &indexDir{
 		Name: ".",
-		Type: "dir",
 	}
 	for _, filePath := range paths {
 		name := path.Base(string(filePath))
@@ -133,7 +127,7 @@ func buildIndexTree(paths []projectpath.Path, languages []indexLanguage) (*Index
 	return root, nil
 }
 
-func ensureDirectoryNode(root *IndexNode, dirPath string) *IndexNode {
+func ensureDirectoryNode(root *indexDir, dirPath string) *indexDir {
 	if dirPath == "." {
 		return root
 	}
@@ -144,44 +138,36 @@ func ensureDirectoryNode(root *IndexNode, dirPath string) *IndexNode {
 	return current
 }
 
-func findOrAddChildDirectory(parent *IndexNode, name string) *IndexNode {
+func findOrAddChildDirectory(parent *indexDir, name string) *indexDir {
 	for _, child := range parent.Children {
-		if child.Type == "dir" && child.Name == name {
-			return child
+		if directory, ok := child.(*indexDir); ok && directory.Name == name {
+			return directory
 		}
 	}
-	child := &IndexNode{
+	child := &indexDir{
 		Name: name,
-		Type: "dir",
 	}
 	parent.Children = append(parent.Children, child)
 	return child
 }
 
-func renderIndex(root *IndexNode, visibility string) string {
+func renderIndex(root *indexDir, visibility Visibility) string {
 	sections := collectFileSections(root, "", nil)
 	return renderIndexHeader(visibility) + "\n" + strings.Join(sections, "\n")
 }
 
-func renderIndexHeader(visibility string) string {
+func renderIndexHeader(visibility Visibility) string {
 	return indexHeaderIntroduction + "\n" + indexScopeDescription(visibility) + "\n"
 }
 
-func indexScopeDescription(visibility string) string {
-	if visibility == "public" {
-		return publicIndexScope
-	}
-	return privateIndexScope
-}
-
-func collectFileSections(node *IndexNode, prefix string, sections []string) []string {
-	for _, child := range node.Children {
-		childPath := prefix + child.Name
-		if child.Type == "dir" {
-			sections = collectFileSections(child, childPath+"/", sections)
-			continue
+func collectFileSections(dir *indexDir, prefix string, sections []string) []string {
+	for _, entry := range dir.Children {
+		switch node := entry.(type) {
+		case *indexDir:
+			sections = collectFileSections(node, prefix+node.Name+"/", sections)
+		case *indexFile:
+			sections = append(sections, renderFileSection(prefix+node.Name, node.Functions))
 		}
-		sections = append(sections, renderFileSection(childPath, child.Functions))
 	}
 	return sections
 }
@@ -199,14 +185,13 @@ func renderFileSection(path string, signatures []IndexSignature) string {
 	return builder.String()
 }
 
-func buildSourceFileNode(path projectpath.Path, name string, language indexLanguage) (*IndexNode, error) {
+func buildSourceFileNode(path projectpath.Path, name string, language indexLanguage) (*indexFile, error) {
 	functions, err := extractFunctions(path, language)
 	if err != nil {
 		return nil, err
 	}
-	return &IndexNode{
+	return &indexFile{
 		Name:      name,
-		Type:      "file",
 		Functions: functions,
 	}, nil
 }

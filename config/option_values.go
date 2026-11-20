@@ -58,16 +58,6 @@ func (s IndexSetting) Name() string {
 	return "none"
 }
 
-func (s IndexSetting) Visibility() string {
-	switch s {
-	case IndexPublic:
-		return "public"
-	case IndexPrivate:
-		return "private"
-	}
-	return ""
-}
-
 type OutputName string
 
 const (

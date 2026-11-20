@@ -12,9 +12,21 @@ func applyModelOverride(cfg *config.Config, modelOverride *config.ModelName) {
 	}
 }
 
-func applyIndexOverride(setting *config.IndexSetting) error {
-	if setting == nil || *setting == config.IndexNone {
-		return logic.RemoveIndexFile()
+func indexVisibility(setting config.IndexSetting) (index.Visibility, bool) {
+	switch setting {
+	case config.IndexPublic:
+		return index.VisibilityPublic, true
+	case config.IndexPrivate:
+		return index.VisibilityPrivate, true
 	}
-	return index.WriteIndex(setting.Visibility())
+	return 0, false
+}
+
+func applyIndexOverride(setting *config.IndexSetting) error {
+	if setting != nil {
+		if visibility, ok := indexVisibility(*setting); ok {
+			return index.WriteIndex(visibility)
+		}
+	}
+	return logic.RemoveIndexFile()
 }

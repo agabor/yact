@@ -114,26 +114,6 @@ func TestParseOutputName(t *testing.T) {
 	}
 }
 
-func TestIndexSettingVisibility(t *testing.T) {
-	tests := []struct {
-		name    string
-		setting IndexSetting
-		want    string
-	}{
-		{name: "none has no visibility", setting: IndexNone, want: ""},
-		{name: "public", setting: IndexPublic, want: "public"},
-		{name: "all is private", setting: IndexPrivate, want: "private"},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.setting.Visibility(); got != tc.want {
-				t.Errorf("Visibility() = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestIndexSettingName(t *testing.T) {
 	tests := []struct {
 		name    string

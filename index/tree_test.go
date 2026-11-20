@@ -3,7 +3,7 @@ package index
 import "testing"
 
 func TestEnsureDirectoryNodeReusesSlashSegments(t *testing.T) {
-	root := &IndexNode{Name: ".", Type: "dir"}
+	root := &indexDir{Name: "."}
 
 	if got := ensureDirectoryNode(root, "."); got != root {
 		t.Fatalf("ensureDirectoryNode(root, \".\") did not return the root")
@@ -13,10 +13,13 @@ func TestEnsureDirectoryNodeReusesSlashSegments(t *testing.T) {
 	if first.Name != "sub" {
 		t.Fatalf("ensureDirectoryNode(root, \"pkg/sub\").Name = %q, want %q", first.Name, "sub")
 	}
-	if len(root.Children) != 1 || root.Children[0].Name != "pkg" {
-		t.Fatalf("root has %d children, want one directory named pkg", len(root.Children))
+	if len(root.Children) != 1 {
+		t.Fatalf("root has %d children, want one directory", len(root.Children))
 	}
-	pkg := root.Children[0]
+	pkg, ok := root.Children[0].(*indexDir)
+	if !ok || pkg.Name != "pkg" {
+		t.Fatalf("root does not contain a directory named pkg")
+	}
 	if len(pkg.Children) != 1 || pkg.Children[0] != first {
 		t.Fatalf("pkg does not contain the sub directory node")
 	}
