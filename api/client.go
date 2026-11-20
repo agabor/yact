@@ -9,8 +9,8 @@ import (
 type Client interface {
 	Init(cfg *config.Config)
 	GetModelName() string
-	Call(requestContent logic.RequestContent, systemPrompt string) (CallResult, error)
-	SubmitBatch(requestContent logic.RequestContent, systemPrompt string) (string, error)
+	Call(requestContent *logic.RequestContent, systemPrompt string) (CallResult, error)
+	SubmitBatch(requestContent *logic.RequestContent, systemPrompt string) (string, error)
 	GetBatchStatus(batchID string) (BatchStatus, error)
 	GetBatchResult(batchID string) (BatchResult, error)
 }
@@ -26,7 +26,7 @@ func Serialize(file logic.CodeFile) (string, error) {
 	return strings.Join([]string{logic.BlockDelimiter, headerLine, file.Content, logic.BlockDelimiter}, "\n"), nil
 }
 
-func BuildUserBlocks(requestContent logic.RequestContent) ([]string, error) {
+func BuildUserBlocks(requestContent *logic.RequestContent) ([]string, error) {
 	blocks := make([]string, 0, len(requestContent.Files)+2)
 
 	for _, file := range append([]logic.CodeFile{requestContent.Domain, requestContent.Index}, requestContent.Files...) {

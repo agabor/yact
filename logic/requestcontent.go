@@ -45,27 +45,27 @@ func existingFilePath(path projectpath.Path) (projectpath.Path, error) {
 	return path, nil
 }
 
-func LoadRequestContent() (RequestContent, error) {
+func LoadRequestContent() (*RequestContent, error) {
 	domain, err := existingFilePath(projectpath.Join(config.GetProjectYactDir(), domainFileName))
 	if err != nil {
-		return RequestContent{}, err
+		return &RequestContent{}, err
 	}
 
 	index, err := existingFilePath(IndexFilePath())
 	if err != nil {
-		return RequestContent{}, err
+		return &RequestContent{}, err
 	}
 
 	domainFile, err := ReadAsFile(domain)
 	if err != nil {
-		return RequestContent{}, err
+		return &RequestContent{}, err
 	}
 	indexFile, err := ReadAsFile(index)
 	if err != nil {
-		return RequestContent{}, err
+		return &RequestContent{}, err
 	}
 
-	return RequestContent{
+	return &RequestContent{
 		Prompt: "",
 		Files:  []CodeFile{},
 		Domain: domainFile,

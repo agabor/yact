@@ -79,7 +79,7 @@ func selectTier(modelName string) claudeTier {
 }
 
 func (c *ClaudeClient) GetModelName() string {
-	return string(c.tier.model)
+	return c.tier.model
 }
 
 func (c *ClaudeClient) calculateCost(inputTokens int64, outputTokens int64) float64 {
@@ -117,7 +117,7 @@ func (c *ClaudeClient) newClient() anthropic.Client {
 	return anthropic.NewClient(option.WithAPIKey(c.apiKey))
 }
 
-func (c *ClaudeClient) buildParams(requestContent logic.RequestContent, systemPrompt string) (anthropic.MessageNewParams, error) {
+func (c *ClaudeClient) buildParams(requestContent *logic.RequestContent, systemPrompt string) (anthropic.MessageNewParams, error) {
 	textBlocks, err := BuildUserBlocks(requestContent)
 	if err != nil {
 		return anthropic.MessageNewParams{}, err
@@ -159,7 +159,7 @@ func joinTextBlocks(message anthropic.Message) string {
 	return responseText.String()
 }
 
-func (c *ClaudeClient) Call(requestContent logic.RequestContent, systemPrompt string) (CallResult, error) {
+func (c *ClaudeClient) Call(requestContent *logic.RequestContent, systemPrompt string) (CallResult, error) {
 	if err := c.requireAPIKey(); err != nil {
 		return CallResult{}, err
 	}
@@ -202,7 +202,7 @@ func (c *ClaudeClient) toBatchRequestParams(params anthropic.MessageNewParams) a
 	}
 }
 
-func (c *ClaudeClient) SubmitBatch(requestContent logic.RequestContent, systemPrompt string) (string, error) {
+func (c *ClaudeClient) SubmitBatch(requestContent *logic.RequestContent, systemPrompt string) (string, error) {
 	if err := c.requireAPIKey(); err != nil {
 		return "", err
 	}

@@ -20,7 +20,7 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(requestContent logic.RequestContent, cfg *config.Config, systemPrompt string, mode config.OutputMode) error {
+func submitBatch(requestContent *logic.RequestContent, cfg *config.Config, systemPrompt string, mode config.OutputMode) error {
 	client := newClient(cfg)
 
 	batchID, err := client.SubmitBatch(requestContent, systemPrompt)
@@ -60,7 +60,7 @@ func stdoutIsTerminal() bool {
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
-func callLLM(requestContent logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (api.CallResult, error) {
+func callLLM(requestContent *logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (api.CallResult, error) {
 	client := newClient(cfg)
 
 	if !shouldShowProgress(noProgress, stdoutIsTerminal()) {

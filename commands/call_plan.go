@@ -14,14 +14,14 @@ func sentPromptText(promptText string) string {
 	return logic.StripKeywordMarkers(logic.SplitPromptFooter(promptText).Body)
 }
 
-func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent, error) {
+func applyPromptLinks(requestContent *logic.RequestContent) error {
 	if requestContent.Prompt == "" {
-		return requestContent, nil
+		return nil
 	}
 
 	links, err := logic.ResolvePromptLinks(requestContent.Prompt)
 	if err != nil {
-		return requestContent, err
+		return err
 	}
 
 	for _, path := range links.UnresolvedPaths {
@@ -30,7 +30,7 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 
 	keywordPaths, err := resolvePromptKeywordFiles(requestContent.Prompt)
 	if err != nil {
-		return requestContent, err
+		return err
 	}
 
 	paths := append([]projectpath.Path{}, links.Paths...)
@@ -38,11 +38,16 @@ func applyPromptLinks(requestContent logic.RequestContent) (logic.RequestContent
 	for _, path := range logic.UniquePaths(paths) {
 		file, err := logic.ReadAsFile(path)
 		if err != nil {
-			return requestContent, err
+			return err
 		}
-		fmt.Printf("Reading: %s (%d lines)\n", path, strings.Count(file.Content, "\n")+1)
+		lineCount := strings.Count(file.Content, "\n") + 1
+		if lineCount > longFileLineThreshold {
+			fmt.Printf("Reading: %s (%d lines) !!!\n", path, lineCount)
+		} else {
+			fmt.Printf("Reading: %s (%d lines)\n", path, lineCount)
+		}
 		requestContent.Files = append(requestContent.Files, file)
 	}
 	requestContent.Prompt = sentPromptText(requestContent.Prompt)
-	return requestContent, nil
+	return nil
 }

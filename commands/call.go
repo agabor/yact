@@ -43,7 +43,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	requestContentForLLM.Prompt = planPrompt
-	requestContentForLLM, err = applyPromptLinks(requestContentForLLM)
+	err = applyPromptLinks(requestContentForLLM)
 	if err != nil {
 		return err
 	}
