@@ -55,14 +55,20 @@ func LoadRequestContent() (*RequestContent, error) {
 	if err != nil {
 		return &RequestContent{}, err
 	}
-
-	domainFile, err := ReadAsFile(domain)
-	if err != nil {
-		return &RequestContent{}, err
+	domainFile := CodeFile{}
+	if domain != "" {
+		domainFile, err = ReadAsFile(domain)
+		if err != nil {
+			return &RequestContent{}, err
+		}
 	}
-	indexFile, err := ReadAsFile(index)
-	if err != nil {
-		return &RequestContent{}, err
+
+	indexFile := CodeFile{}
+	if index != "" {
+		indexFile, err = ReadAsFile(index)
+		if err != nil {
+			return &RequestContent{}, err
+		}
 	}
 
 	return &RequestContent{
