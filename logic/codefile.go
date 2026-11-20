@@ -210,43 +210,33 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 	lines := strings.Split(response, "\n")
 	var result = make([]ParsedElement, 0)
 	var lineBuffer = make([]string, 0)
-	var textBuffer = make([]string, 0)
-	inBlock := false
 
 	flushText := func() {
-		if len(textBuffer) > 0 {
-			result = append(result, NewTextElement(strings.Join(textBuffer, "\n")))
-			textBuffer = make([]string, 0)
+		if len(lineBuffer) > 0 {
+			if block := processCodeBlock(lineBuffer); block != nil {
+				result = append(result, *block)
+			}
+			lineBuffer = make([]string, 0)
 		}
 	}
 
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
-			if inBlock {
-				if block := processCodeBlock(lineBuffer); block != nil {
-					result = append(result, *block)
-				}
-				inBlock = false
-				lineBuffer = make([]string, 0)
-			} else {
-				flushText()
-				inBlock = true
+			if block := processCodeBlock(lineBuffer); block != nil {
+				result = append(result, *block)
 			}
-		} else if inBlock {
-			lineBuffer = append(lineBuffer, line)
+			lineBuffer = make([]string, 0)
 		} else {
-			textBuffer = append(textBuffer, line)
+			lineBuffer = append(lineBuffer, line)
 		}
 	}
 
 	flushText()
 
 	incomplete := false
-	if inBlock {
-		if block := processCodeBlock(lineBuffer); block != nil {
-			result = append(result, *block)
-			incomplete = true
-		}
+	if block := processCodeBlock(lineBuffer); block != nil {
+		result = append(result, *block)
+		incomplete = result[len(result)-1].Kind != ElementText
 	}
 
 	return result, incomplete
