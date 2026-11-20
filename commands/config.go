@@ -12,7 +12,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 	if len(args) == 0 {
 		fmt.Println("Current configuration:")
 		printConfigValue("anthropic_api_key", cfg.AnthropicAPIKey, true)
-		printConfigValue("claude_model", cfg.ClaudeModel, false)
 		return nil
 	}
 
@@ -35,8 +34,6 @@ func HandleConfigCommand(args []string, cfg *config.Config) error {
 		switch key {
 		case "anthropic_api_key":
 			cfg.AnthropicAPIKey = value
-		case "claude_model":
-			cfg.ClaudeModel = value
 		default:
 			return fmt.Errorf("unknown config key '%s'", key)
 		}

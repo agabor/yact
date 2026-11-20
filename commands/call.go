@@ -20,7 +20,7 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		return err
 	}
 
-	applyModelOverride(cfg, flags.ModelOverride())
+	applyModelOverride(cfg, flags.Model)
 
 	planPrompt, planFound, err := logic.ReadPlan()
 	if err != nil {

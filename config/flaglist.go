@@ -65,13 +65,6 @@ func (f Flaglist) EffectiveOutput() OutputName {
 	return *f.Output
 }
 
-func (f Flaglist) ModelOverride() string {
-	if f.Model == nil {
-		return ""
-	}
-	return string(*f.Model)
-}
-
 func (f Flaglist) FlagString() string {
 	var parts []string
 

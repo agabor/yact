@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	ClaudeModel = "haiku"
-	MaxTokens   = 128000
+	MaxTokens = 128000
 )
 
 const promptDownloadBaseURL = "https://raw.githubusercontent.com/agabor/yact/refs/heads/main/systemprompts/"
@@ -24,7 +23,9 @@ const includeDirName = "include"
 
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key"`
-	ClaudeModel     string `json:"claude_model"`
+	// The model is chosen per call through --model and is not stored, so it is
+	// kept out of the config file.
+	ClaudeModel ModelName `json:"-"`
 }
 
 func getConfigDir() (string, error) {
@@ -102,7 +103,7 @@ func GetProjectBatchJobPath() projectpath.Path {
 func DefaultConfig() *Config {
 	return &Config{
 		AnthropicAPIKey: "",
-		ClaudeModel:     ClaudeModel,
+		ClaudeModel:     ModelHaiku,
 	}
 }
 

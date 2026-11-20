@@ -6,9 +6,9 @@ import (
 	"yact/logic"
 )
 
-func applyModelOverride(cfg *config.Config, modelOverride string) {
-	if modelOverride != "" {
-		cfg.ClaudeModel = modelOverride
+func applyModelOverride(cfg *config.Config, modelOverride *config.ModelName) {
+	if modelOverride != nil {
+		cfg.ClaudeModel = *modelOverride
 	}
 }
 

@@ -65,13 +65,13 @@ func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.tier = selectTier(cfg.ClaudeModel)
 }
 
-func selectTier(modelName string) claudeTier {
-	switch strings.ToLower(modelName) {
-	case "fable":
+func selectTier(model config.ModelName) claudeTier {
+	switch model {
+	case config.ModelFable:
 		return claudeTier{model: anthropic.ModelClaudeFable5_1, inputPrice: 10, outputPrice: 50, longInputPrice: 0, longOutputPrice: 0}
-	case "opus":
+	case config.ModelOpus:
 		return claudeTier{model: anthropic.ModelClaudeOpus5_5, inputPrice: 4, outputPrice: 20, longInputPrice: 0, longOutputPrice: 0}
-	case "sonnet":
+	case config.ModelSonnet:
 		return claudeTier{model: anthropic.ModelClaudeSonnet5_5, inputPrice: 2, outputPrice: 10, longInputPrice: 0, longOutputPrice: 0}
 	default:
 		return claudeTier{model: anthropic.ModelClaudeHaiku5_5, inputPrice: 0.10, outputPrice: 0.50, longInputPrice: 0.50, longOutputPrice: 2.50}

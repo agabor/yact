@@ -7,13 +7,14 @@ import (
 )
 
 func TestApplyModelOverride(t *testing.T) {
+	opus := config.ModelOpus
 	tests := []struct {
 		name     string
-		override string
-		want     string
+		override *config.ModelName
+		want     config.ModelName
 	}{
-		{name: "empty override keeps the configured model", override: "", want: config.ClaudeModel},
-		{name: "non-empty override replaces the model", override: "opus", want: "opus"},
+		{name: "nil override keeps the configured model", override: nil, want: config.DefaultConfig().ClaudeModel},
+		{name: "non-nil override replaces the model", override: &opus, want: config.ModelOpus},
 	}
 
 	for _, tc := range tests {
@@ -21,7 +22,7 @@ func TestApplyModelOverride(t *testing.T) {
 			cfg := config.DefaultConfig()
 			applyModelOverride(cfg, tc.override)
 			if cfg.ClaudeModel != tc.want {
-				t.Errorf("applyModelOverride(%q) ClaudeModel = %q, want %q", tc.override, cfg.ClaudeModel, tc.want)
+				t.Errorf("applyModelOverride ClaudeModel = %q, want %q", cfg.ClaudeModel, tc.want)
 			}
 		})
 	}
