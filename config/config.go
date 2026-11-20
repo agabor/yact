@@ -155,7 +155,7 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	return os.WriteFile(configFile, data, 0644)
+	return os.WriteFile(configFile, data, 0600)
 }
 
 func readInclude(name string) (string, error) {
@@ -353,24 +353,12 @@ func ListPromptNames() ([]string, error) {
 	return names, nil
 }
 
-func LoadExtensions() ([]string, error) {
-	extensionsPath := GetProjectExtensionsPath()
-
-	data, err := os.ReadFile(string(extensionsPath))
-	if err != nil {
-		if os.IsNotExist(err) {
-			defaultExtensions := DefaultExtensions()
-			if saveErr := SaveExtensions(defaultExtensions); saveErr != nil {
-				return defaultExtensions, saveErr
-			}
-			return defaultExtensions, nil
-		}
-		return nil, err
-	}
-
-	lines := strings.Split(string(data), "\n")
+// ParseExtensions turns the extensions file content into the extension list.
+// An empty list falls back to the defaults, unlike ignored folders where an
+// empty file means no folder is ignored.
+func ParseExtensions(content string) []string {
 	var extensions []string
-	for _, line := range lines {
+	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed != "" {
 			extensions = append(extensions, trimmed)
@@ -378,10 +366,26 @@ func LoadExtensions() ([]string, error) {
 	}
 
 	if len(extensions) == 0 {
-		return DefaultExtensions(), nil
+		return DefaultExtensions()
 	}
 
-	return extensions, nil
+	return extensions
+}
+
+// A read must never modify the project: defaults are returned in memory and
+// written to disk only by SaveExtensions.
+func LoadExtensions() ([]string, error) {
+	extensionsPath := GetProjectExtensionsPath()
+
+	data, err := os.ReadFile(string(extensionsPath))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return DefaultExtensions(), nil
+		}
+		return nil, err
+	}
+
+	return ParseExtensions(string(data)), nil
 }
 
 func SaveExtensions(extensions []string) error {
@@ -412,18 +416,13 @@ func ParseIgnoredFolders(content string) ([]IgnorePattern, error) {
 
 // An empty ignore file means no folder is ignored, unlike extensions where
 // an empty file falls back to the defaults.
+// A read must never modify the project: defaults are returned in memory and
+// written to disk only by SaveIgnoredFolders.
 func LoadIgnoredFolders() ([]IgnorePattern, error) {
 	data, err := os.ReadFile(string(GetProjectIgnorePath()))
 	if err != nil {
 		if os.IsNotExist(err) {
-			defaultFolders, parseErr := ParseIgnoredFolders(strings.Join(DefaultIgnoredFolders(), "\n"))
-			if parseErr != nil {
-				return nil, parseErr
-			}
-			if saveErr := SaveIgnoredFolders(defaultFolders); saveErr != nil {
-				return defaultFolders, saveErr
-			}
-			return defaultFolders, nil
+			return ParseIgnoredFolders(strings.Join(DefaultIgnoredFolders(), "\n"))
 		}
 		return nil, err
 	}
