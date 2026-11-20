@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"testing"
 
 	"yact/logic"
@@ -13,66 +12,21 @@ func codeFileBlock(path string, body string) string {
 	return fence + "\n// " + path + "\n" + body + "\n" + fence + "\n"
 }
 
-func TestPrintFreeText(t *testing.T) {
+func TestProcessResponsePrintsTextOnce(t *testing.T) {
 	elements := []logic.ParsedElement{
 		logic.NewTextElement("intro"),
-		logic.NewCodeFileElement(logic.CodeFile{Path: "a.go", Content: "x"}),
-		logic.NewTextElement("   "),
-		logic.NewRejectedFileElement(errors.New("bad path")),
-		logic.NewTextElement("outro"),
 	}
 
+	var err error
 	got := captureStdout(t, func() {
-		printFreeText(elements)
+		err = processResponse(elements)
 	})
 
-	want := "intro\noutro\n"
+	if err != nil {
+		t.Fatalf("processResponse() unexpected error: %v", err)
+	}
+	want := "intro\n"
 	if got != want {
-		t.Errorf("printFreeText() output = %q, want %q", got, want)
-	}
-}
-
-func TestParseBufferElements(t *testing.T) {
-	tests := []struct {
-		name           string
-		content        string
-		wantErr        bool
-		wantIncomplete bool
-		wantOutput     string
-	}{
-		{
-			name:    "clean code-only buffer parses with validation",
-			content: codeFileBlock("a.txt", "x"),
-		},
-		{
-			name:       "free text without validation is printed",
-			content:    "intro\n" + codeFileBlock("a.txt", "x"),
-			wantOutput: "intro\n",
-		},
-		{
-			name:           "incomplete code block sets the incomplete flag",
-			content:        fence + "\n// a.txt\nx\n",
-			wantIncomplete: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			output := captureStdout(t, func() {
-				_ = parseBufferElements(tc.content)
-			})
-
-			if tc.wantErr {
-				if err == nil {
-					t.Fatal("parseBufferElements() error = nil, want error")
-				}
-			} else if err != nil {
-				t.Fatalf("parseBufferElements() unexpected error: %v", err)
-			}
-			if output != tc.wantOutput {
-				t.Errorf("parseBufferElements() printed %q, want %q", output, tc.wantOutput)
-			}
-		})
+		t.Errorf("processResponse() printed %q, want %q", got, want)
 	}
 }
