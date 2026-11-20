@@ -90,3 +90,36 @@ func TestParsePromptFlagsErrorsNameThePrompt(t *testing.T) {
 		})
 	}
 }
+
+func TestStripPromptFlagsLine(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "content without flags line is unchanged",
+			content: "just a prompt\nsecond line",
+			want:    "just a prompt\nsecond line",
+		},
+		{
+			name:    "flags line is removed before the body",
+			content: "flags: c1i1\nbody line",
+			want:    "body line",
+		},
+		{
+			name:    "content consisting only of the flags line becomes empty",
+			content: "flags: c1",
+			want:    "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := StripPromptFlagsLine(tc.content)
+			if got != tc.want {
+				t.Errorf("StripPromptFlagsLine(%q) = %q, want %q", tc.content, got, tc.want)
+			}
+		})
+	}
+}

@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"slices"
-	"strings"
 
 	"yact/commands"
 	"yact/config"
@@ -50,19 +49,43 @@ func promptNotFoundMessage(command config.PromptName, err error) {
 	printError("Run 'y --help' for usage information.")
 }
 
-func downloadAndLoadSystemPrompt(command config.PromptName) (string, config.PromptDefaults, error) {
+func downloadAndLoadSystemPrompt(command config.PromptName) (config.SystemPrompt, error) {
 	if err := config.DownloadPrompt(command); err != nil {
-		return "", config.PromptDefaults{}, err
+		return config.SystemPrompt{}, err
 	}
-	return config.LoadPromptWithFlags(command)
+	return config.LoadPrompt(command)
 }
 
-func loadSystemPrompt(command config.PromptName) (string, config.PromptDefaults, error) {
-	systemPrompt, defaults, err := config.LoadPromptWithFlags(command)
+func loadSystemPrompt(command config.PromptName) (config.SystemPrompt, error) {
+	systemPrompt, err := config.LoadPrompt(command)
 	if errors.Is(err, fs.ErrNotExist) {
 		return downloadAndLoadSystemPrompt(command)
 	}
-	return systemPrompt, defaults, err
+	return systemPrompt, err
+}
+
+func printExecuting(resolved config.Flaglist, command string) {
+	if flagString := resolved.FlagString(); flagString != "" {
+		fmt.Printf("Executing: y %s %s\n", flagString, command)
+	}
+}
+
+func runPromptCommand(command string, flags config.Flaglist, cfg *config.Config) error {
+	promptName, err := config.ParsePromptName(command)
+	if err != nil {
+		printError("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	systemPrompt, err := loadSystemPrompt(promptName)
+	if err != nil {
+		promptNotFoundMessage(promptName, err)
+		os.Exit(1)
+	}
+
+	resolved := config.ResolveFlags(flags, systemPrompt.Defaults)
+	printExecuting(resolved, command)
+	return commands.HandleCommand(resolved, cfg, systemPrompt.Text)
 }
 
 func main() {
@@ -127,9 +150,7 @@ func main() {
 	case "query":
 		requireNoArgs("query", commandArgs)
 		resolved := config.ResolveFlags(flags, config.QueryDefaults())
-		if flagString := resolved.FlagString(); flagString != "" {
-			fmt.Printf("Executing: y %s query\n", flagString)
-		}
+		printExecuting(resolved, "query")
 		commandErr = commands.HandleCommand(resolved, cfg, "")
 	case "batch":
 		requireNoArgs("batch", commandArgs)
@@ -147,33 +168,7 @@ func main() {
 		commandErr = commands.HandlePromptCommand(commandArgs[0])
 	default:
 		requireNoArgs(command, commandArgs)
-
-		promptName, err := config.ParsePromptName(command)
-		if err != nil {
-			printError("Error: %v\n", err)
-			os.Exit(1)
-		}
-
-		systemPrompt, defaults, err := loadSystemPrompt(promptName)
-		if err != nil {
-			promptNotFoundMessage(promptName, err)
-			os.Exit(1)
-		}
-
-		resolved := config.ResolveFlags(flags, defaults)
-
-		cleanedPrompt := systemPrompt
-		if strings.HasPrefix(cleanedPrompt, "flags: ") {
-			lines := strings.Split(cleanedPrompt, "\n")
-			if len(lines) > 1 {
-				cleanedPrompt = strings.Join(lines[1:], "\n")
-			}
-		}
-
-		if flagString := resolved.FlagString(); flagString != "" {
-			fmt.Printf("Executing: y %s %s\n", flagString, command)
-		}
-		commandErr = commands.HandleCommand(resolved, cfg, cleanedPrompt)
+		commandErr = runPromptCommand(command, flags, cfg)
 	}
 
 	if commandErr != nil {

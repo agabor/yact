@@ -185,27 +185,34 @@ func readInclude(name string) (string, error) {
 	return string(data), nil
 }
 
-func LoadPromptWithFlags(name PromptName) (string, PromptDefaults, error) {
+// SystemPrompt keeps the CLI settings apart from the text sent to the model, so
+// the flags line cannot leak into the request.
+type SystemPrompt struct {
+	Text     string
+	Defaults PromptDefaults
+}
+
+func LoadPrompt(name PromptName) (SystemPrompt, error) {
 	promptFile, err := getPromptFile(name)
 	if err != nil {
-		return "", PromptDefaults{}, err
+		return SystemPrompt{}, err
 	}
 
 	data, err := os.ReadFile(promptFile)
 	if err != nil {
-		return "", PromptDefaults{}, err
+		return SystemPrompt{}, err
 	}
 
 	content, err := ExpandIncludes(string(data), readInclude)
 	if err != nil {
-		return "", PromptDefaults{}, fmt.Errorf("expanding includes for '%s': %w", name, err)
+		return SystemPrompt{}, fmt.Errorf("expanding includes for '%s': %w", name, err)
 	}
 
 	defaults, err := ParsePromptFlags(name, content)
 	if err != nil {
-		return "", PromptDefaults{}, fmt.Errorf("reading flags for '%s': %w", name, err)
+		return SystemPrompt{}, fmt.Errorf("reading flags for '%s': %w", name, err)
 	}
-	return content, defaults, nil
+	return SystemPrompt{Text: StripPromptFlagsLine(content), Defaults: defaults}, nil
 }
 
 func downloadToFile(url string, localPath string) ([]byte, error) {

@@ -33,6 +33,18 @@ func ParsePromptFlags(name PromptName, content string) (PromptDefaults, error) {
 	return parseLetterFlags(text), nil
 }
 
+// The flags line configures the CLI and is not part of the prompt sent to the model.
+func StripPromptFlagsLine(content string) string {
+	if !strings.HasPrefix(content, promptFlagsPrefix) {
+		return content
+	}
+	_, rest, found := strings.Cut(content, "\n")
+	if !found {
+		return ""
+	}
+	return rest
+}
+
 func parseLongFlags(name PromptName, text string) (PromptDefaults, error) {
 	var modelRaw, indexRaw, outputRaw string
 	var defaults PromptDefaults
