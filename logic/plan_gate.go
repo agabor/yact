@@ -79,11 +79,11 @@ func DecidePromptGate(promptText string) PromptGate {
 func PromptGateError(gate PromptGate) error {
 	switch gate {
 	case PromptGateMissingContext:
-		return errors.New("Files needed as context are missing; run with --plan to update the plan")
+		return errors.New("Files needed as context are missing; run the plan command again to update the plan")
 	case PromptGateUnansweredAssumptions:
-		return errors.New("Assumptions are still open; tick the box of each one you accept, or write \"Answer: ...\" under it and run with --plan to update the plan")
+		return errors.New("Assumptions are still open; tick the box of each one you accept, or write \"Answer: ...\" under it and the plan command again to update the plan")
 	case PromptGateUnappliedAnswers:
-		return errors.New("Answers under assumptions are not applied yet; run with --plan to update the plan")
+		return errors.New("Answers under assumptions are not applied yet; run the plan command again to update the plan")
 	default:
 		return nil
 	}
