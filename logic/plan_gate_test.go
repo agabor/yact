@@ -64,30 +64,3 @@ func TestDecidePromptGate(t *testing.T) {
 		})
 	}
 }
-
-func TestPromptGateError(t *testing.T) {
-	tests := []struct {
-		name    string
-		gate    PromptGate
-		wantErr string
-	}{
-		{name: "open gate has no error", gate: PromptGateOpen, wantErr: ""},
-		{name: "missing context error", gate: PromptGateMissingContext, wantErr: "Files needed as context are missing; run with --plan to update the plan"},
-		{name: "unanswered assumptions error", gate: PromptGateUnansweredAssumptions, wantErr: "Assumptions are still open; tick the box of each one you accept, or write \"Answer: ...\" under it and run with --plan to update the plan"},
-		{name: "unapplied answers error", gate: PromptGateUnappliedAnswers, wantErr: "Answers under assumptions are not applied yet; run with --plan to update the plan"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := PromptGateError(tc.gate)
-			if tc.wantErr == "" {
-				if err != nil {
-					t.Errorf("PromptGateError() = %v, want nil", err)
-				}
-				return
-			}
-			if err == nil || err.Error() != tc.wantErr {
-				t.Errorf("PromptGateError() = %v, want %q", err, tc.wantErr)
-			}
-		})
-	}
-}

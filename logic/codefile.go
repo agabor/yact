@@ -206,7 +206,7 @@ func processCodeBlock(lineBuffer []string) *ParsedElement {
 	return &element
 }
 
-func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
+func ParseCodeFilesDetailed(response string) []ParsedElement {
 	lines := strings.Split(response, "\n")
 	var result = make([]ParsedElement, 0)
 	var lineBuffer = make([]string, 0)
@@ -222,11 +222,14 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, bool) {
 		}
 	}
 
-	incomplete := false
 	if block := processCodeBlock(lineBuffer); block != nil {
 		result = append(result, *block)
-		incomplete = result[len(result)-1].Kind != ElementText
+		lastIdx := len(result) - 1
+		lastElement := result[lastIdx]
+		if lastElement.Kind == ElementCodeFile {
+			result[lastIdx] = NewRejectedFileElement(fmt.Errorf("file at %s is truncated", lastElement.CodeFile.Path))
+		}
 	}
 
-	return result, incomplete
+	return result
 }

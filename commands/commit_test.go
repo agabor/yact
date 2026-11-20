@@ -58,10 +58,9 @@ func TestParseBufferElements(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var incomplete bool
 			var err error
 			output := captureStdout(t, func() {
-				_, incomplete, err = parseBufferElements(tc.content)
+				_ = parseBufferElements(tc.content)
 			})
 
 			if tc.wantErr {
@@ -70,9 +69,6 @@ func TestParseBufferElements(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Fatalf("parseBufferElements() unexpected error: %v", err)
-			}
-			if incomplete != tc.wantIncomplete {
-				t.Errorf("parseBufferElements() incomplete = %t, want %t", incomplete, tc.wantIncomplete)
 			}
 			if output != tc.wantOutput {
 				t.Errorf("parseBufferElements() printed %q, want %q", output, tc.wantOutput)

@@ -40,10 +40,7 @@ func deliverResponse(mode config.OutputMode, response string) error {
 		fmt.Println("\n" + response)
 		return nil
 	case config.OutputApply:
-		elements, incomplete := logic.ParseCodeFilesDetailed(response)
-		if incomplete {
-			return fmt.Errorf("response contains an incomplete code block")
-		}
+		elements := logic.ParseCodeFilesDetailed(response)
 		return processResponse(elements)
 	}
 	return fmt.Errorf("unknown output mode %d", mode)

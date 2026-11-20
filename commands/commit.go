@@ -15,10 +15,10 @@ func printFreeText(elements []logic.ParsedElement) {
 	}
 }
 
-func parseBufferElements(content string) ([]logic.ParsedElement, bool, error) {
-	elements, incomplete := logic.ParseCodeFilesDetailed(content)
+func parseBufferElements(content string) []logic.ParsedElement {
+	elements := logic.ParseCodeFilesDetailed(content)
 	printFreeText(elements)
-	return elements, incomplete, nil
+	return elements
 }
 
 func HandleCommitCommand() error {
@@ -27,13 +27,7 @@ func HandleCommitCommand() error {
 		return err
 	}
 
-	elements, incomplete, err := parseBufferElements(content)
-	if err != nil {
-		return err
-	}
-	if incomplete {
-		fmt.Println("Warning: Incomplete code block.")
-	}
+	elements := parseBufferElements(content)
 
 	var writeErrors []string
 
@@ -49,6 +43,8 @@ func HandleCommitCommand() error {
 			printApplyOutcome(codeFile.Path, outcome)
 		case logic.ElementRejectedFile:
 			writeErrors = append(writeErrors, element.Text)
+		case logic.ElementText:
+			fmt.Println(element.Text)
 		}
 	}
 
