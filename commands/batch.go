@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 
 	"yact/api"
@@ -44,12 +45,15 @@ func HandleBatchCommand(cfg *config.Config) error {
 
 	printBatchUsage(result)
 
-	outputErr := applyBatchOutput(job, result.Text)
-	deleteErr := logic.DeleteBatchJobID()
-	if outputErr != nil {
-		return outputErr
+	// The batch result is paid for, so it is stored before the job id is deleted.
+	// If storing fails, the job id stays and the result can be fetched again.
+	if err := storeBuffer(result.Text); err != nil {
+		return err
 	}
-	return deleteErr
+
+	deliverErr := deliverResponse(job.Mode, result.Text)
+	deleteErr := logic.DeleteBatchJobID()
+	return errors.Join(deliverErr, deleteErr)
 }
 
 func printBatchStatus(status api.BatchStatus) {
@@ -65,11 +69,4 @@ func printBatchUsage(result api.BatchResult) {
 	fmt.Printf("Input tokens: %d\n", result.InputTokens)
 	fmt.Printf("Output tokens: %d\n", result.OutputTokens)
 	fmt.Printf("Cost (50%% batch discount applied): $%.4f\n", result.Cost)
-}
-
-func applyBatchOutput(job logic.BatchJob, content string) error {
-	if err := storeBuffer(content); err != nil {
-		return err
-	}
-	return deliverResponse(job.Mode, content)
 }

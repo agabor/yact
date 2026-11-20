@@ -36,7 +36,6 @@ func TestParseBufferElements(t *testing.T) {
 	tests := []struct {
 		name           string
 		content        string
-		validateCode   bool
 		wantErr        bool
 		wantIncomplete bool
 		wantOutput     string
