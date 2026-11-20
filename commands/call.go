@@ -16,10 +16,6 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 		}
 	}
 
-	if err := applyIndexOverride(flags.Index); err != nil {
-		return err
-	}
-
 	applyModelOverride(cfg, flags.Model)
 
 	planPrompt, planFound, err := logic.ReadPlan()
@@ -33,6 +29,13 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	// Writing the plan is how a blocked prompt gets unblocked, so it is never gated.
 	if mode != config.OutputWritePlan {
 		if err := logic.PromptGateError(logic.DecidePromptGate(planPrompt)); err != nil {
+			return err
+		}
+	}
+
+	// The index is synced only after the gate passes, so a blocked call leaves it untouched.
+	if !flags.DryRun {
+		if err := syncIndexFile(indexSettingOrNone(flags.Index)); err != nil {
 			return err
 		}
 	}
@@ -69,4 +72,11 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	return deliverResponse(mode, result.Text)
+}
+
+func indexSettingOrNone(setting *config.IndexSetting) config.IndexSetting {
+	if setting != nil {
+		return *setting
+	}
+	return config.IndexNone
 }

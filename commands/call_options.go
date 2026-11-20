@@ -22,11 +22,9 @@ func indexVisibility(setting config.IndexSetting) (index.Visibility, bool) {
 	return 0, false
 }
 
-func applyIndexOverride(setting *config.IndexSetting) error {
-	if setting != nil {
-		if visibility, ok := indexVisibility(*setting); ok {
-			return index.WriteIndex(visibility)
-		}
+func syncIndexFile(setting config.IndexSetting) error {
+	if visibility, ok := indexVisibility(setting); ok {
+		return index.WriteIndex(visibility)
 	}
 	return logic.RemoveIndexFile()
 }

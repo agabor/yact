@@ -13,7 +13,7 @@ func HandleIndexCommand(args []string) error {
 		return err
 	}
 
-	if err := applyIndexOverride(&setting); err != nil {
+	if err := syncIndexFile(setting); err != nil {
 		return err
 	}
 
