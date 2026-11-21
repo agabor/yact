@@ -55,6 +55,32 @@ func skipsIgnoredFolder(filePath projectpath.Path, ignoredFolders []config.Ignor
 	return logic.IsInIgnoredFolder(string(filePath), ignoredFolders)
 }
 
+// recordReadExtension keeps the extensions list in step with the files the user
+// reads, so that code blocks in later responses for those files are accepted.
+func recordReadExtension(filePath projectpath.Path) error {
+	extension := logic.FileExtension(string(filePath))
+	if extension == "" {
+		return nil
+	}
+
+	extensions, err := config.LoadExtensions()
+	if err != nil {
+		return err
+	}
+
+	updated, added := config.WithExtension(extensions, extension)
+	if !added {
+		return nil
+	}
+
+	if err := config.SaveExtensions(updated); err != nil {
+		return err
+	}
+
+	fmt.Printf("Added extension '%s'\n", extension)
+	return nil
+}
+
 func readFile(filePath projectpath.Path) error {
 	info, err := os.Stat(string(filePath))
 	if err != nil {
@@ -65,6 +91,10 @@ func readFile(filePath projectpath.Path) error {
 	if info.IsDir() {
 		fmt.Printf("Skipping directory: %s\n", filePath)
 		return nil
+	}
+
+	if err := recordReadExtension(filePath); err != nil {
+		return err
 	}
 
 	added, err := logic.AddReadLink(string(filePath))

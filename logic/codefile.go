@@ -6,6 +6,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"yact/config"
 
 	"yact/projectpath"
 )
@@ -105,9 +106,11 @@ func detectFilePath(lines []string) (string, int) {
 	return "", -1
 }
 
-func isValidCodeFile(lines []string) bool {
+// A block is a code file only when its extension is listed; otherwise a code
+// sample that starts with a filename comment would be written to disk.
+func isValidCodeFile(lines []string, extensions []string) bool {
 	p, _ := detectFilePath(lines)
-	return p != ""
+	return p != "" && FileHasExtension(p, extensions)
 }
 
 func linesToCodeFile(lines []string) (CodeFile, error) {
@@ -189,11 +192,11 @@ func (cf *CodeFile) Apply() (ApplyOutcome, error) {
 	return OutcomeWritten, nil
 }
 
-func processCodeBlock(lineBuffer []string) *ParsedElement {
+func processCodeBlock(lineBuffer []string, extensions []string) *ParsedElement {
 	if len(lineBuffer) == 0 {
 		return nil
 	}
-	if isValidCodeFile(lineBuffer) {
+	if isValidCodeFile(lineBuffer, extensions) {
 		codeFile, err := linesToCodeFile(lineBuffer)
 		if err != nil {
 			element := NewRejectedFileElement(err)
@@ -206,14 +209,19 @@ func processCodeBlock(lineBuffer []string) *ParsedElement {
 	return &element
 }
 
-func ParseCodeFilesDetailed(response string) []ParsedElement {
+func ParseCodeFilesDetailed(response string) ([]ParsedElement, error) {
+	extensions, err := config.LoadExtensions()
+	if err != nil {
+		return nil, err
+	}
+
 	lines := strings.Split(response, "\n")
 	var result = make([]ParsedElement, 0)
 	var lineBuffer = make([]string, 0)
 
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
-			if block := processCodeBlock(lineBuffer); block != nil {
+			if block := processCodeBlock(lineBuffer, extensions); block != nil {
 				result = append(result, *block)
 			}
 			lineBuffer = make([]string, 0)
@@ -222,7 +230,7 @@ func ParseCodeFilesDetailed(response string) []ParsedElement {
 		}
 	}
 
-	if block := processCodeBlock(lineBuffer); block != nil {
+	if block := processCodeBlock(lineBuffer, extensions); block != nil {
 		result = append(result, *block)
 		lastIdx := len(result) - 1
 		lastElement := result[lastIdx]
@@ -231,5 +239,5 @@ func ParseCodeFilesDetailed(response string) []ParsedElement {
 		}
 	}
 
-	return result
+	return result, nil
 }

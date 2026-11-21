@@ -66,3 +66,26 @@ func TestIsFolderIgnored(t *testing.T) {
 		})
 	}
 }
+
+func TestFileExtension(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "file with an extension", path: "main.go", want: "go"},
+		{name: "file in a folder", path: "src/app/main.go", want: "go"},
+		{name: "file without an extension", path: "Makefile", want: ""},
+		{name: "dot in a folder name does not give the file an extension", path: "lib.d/readme", want: ""},
+		{name: "dotfile counts its name as the extension", path: ".yml", want: "yml"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := FileExtension(tc.path)
+			if got != tc.want {
+				t.Errorf("FileExtension(%q) = %q, want %q", tc.path, got, tc.want)
+			}
+		})
+	}
+}

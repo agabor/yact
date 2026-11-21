@@ -10,6 +10,9 @@ func HandleCommitCommand() error {
 		return err
 	}
 
-	elements := logic.ParseCodeFilesDetailed(content)
+	elements, err := logic.ParseCodeFilesDetailed(content)
+	if err != nil {
+		return err
+	}
 	return processResponse(elements)
 }

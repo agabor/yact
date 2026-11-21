@@ -112,8 +112,14 @@ func matchesFolderSegments(pattern []string, folder []string) bool {
 	return matchesFolderSegments(pattern[1:], folder[1:])
 }
 
+// FileExtension keeps the rule of filepath.Ext, so a dotfile such as ".yml"
+// counts "yml" as its extension.
+func FileExtension(path string) string {
+	return strings.TrimPrefix(filepath.Ext(path), ".")
+}
+
 func FileHasExtension(path string, extensions []string) bool {
-	ext := strings.TrimPrefix(filepath.Ext(path), ".")
+	ext := FileExtension(path)
 	for _, allowed := range extensions {
 		if ext == allowed {
 			return true
