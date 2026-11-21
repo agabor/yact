@@ -67,11 +67,17 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 
 	printCallResult(result)
 
-	if err := storeBuffer(result.Text); err != nil {
+	session := logic.Session{
+		Linked:   requestContentForLLM.Linked,
+		Mode:     mode,
+		Response: result.Text,
+	}
+
+	if err := storeBuffer(session); err != nil {
 		return err
 	}
 
-	return deliverResponse(mode, result.Text)
+	return deliverResponse(session)
 }
 
 func indexSettingOrNone(setting *config.IndexSetting) config.IndexSetting {

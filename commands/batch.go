@@ -45,13 +45,19 @@ func HandleBatchCommand(cfg *config.Config) error {
 
 	printBatchUsage(result)
 
+	session := logic.Session{
+		Linked:   job.Linked,
+		Mode:     job.Mode,
+		Response: result.Text,
+	}
+
 	// The batch result is paid for, so it is stored before the job id is deleted.
 	// If storing fails, the job id stays and the result can be fetched again.
-	if err := storeBuffer(result.Text); err != nil {
+	if err := storeBuffer(session); err != nil {
 		return err
 	}
 
-	deliverErr := deliverResponse(job.Mode, result.Text)
+	deliverErr := deliverResponse(session)
 	deleteErr := logic.DeleteBatchJobID()
 	return errors.Join(deliverErr, deleteErr)
 }

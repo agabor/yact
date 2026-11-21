@@ -9,8 +9,9 @@ import (
 )
 
 type BatchJob struct {
-	ID   string            `json:"id"`
-	Mode config.OutputMode `json:"mode"`
+	ID     string            `json:"id"`
+	Mode   config.OutputMode `json:"mode"`
+	Linked LinkedFiles       `json:"linked"`
 }
 
 func ReadBatchJob() (BatchJob, bool, error) {

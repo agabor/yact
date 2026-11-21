@@ -29,8 +29,9 @@ func submitBatch(requestContent *logic.RequestContent, cfg *config.Config, syste
 	}
 
 	job := logic.BatchJob{
-		ID:   batchID,
-		Mode: mode,
+		ID:     batchID,
+		Mode:   mode,
+		Linked: requestContent.Linked,
 	}
 	if err := logic.WriteBatchJob(job); err != nil {
 		return err

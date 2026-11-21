@@ -35,7 +35,8 @@ func applyPromptLinks(requestContent *logic.RequestContent) error {
 
 	paths := append([]projectpath.Path{}, links.Paths...)
 	paths = append(paths, keywordPaths...)
-	for _, path := range logic.UniquePaths(paths) {
+	uniquePaths := logic.UniquePaths(paths)
+	for _, path := range uniquePaths {
 		file, err := logic.ReadAsFile(path)
 		if err != nil {
 			return err
@@ -48,6 +49,7 @@ func applyPromptLinks(requestContent *logic.RequestContent) error {
 		}
 		requestContent.Files = append(requestContent.Files, file)
 	}
+	requestContent.Linked = logic.LinkedFiles(uniquePaths)
 	requestContent.Prompt = sentPromptText(requestContent.Prompt)
 	return nil
 }

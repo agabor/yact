@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"encoding/json"
 	"os"
 	"yact/config"
 )
@@ -9,8 +10,12 @@ func ensureBufferDir() error {
 	return os.MkdirAll(string(config.GetProjectTempDir()), 0755)
 }
 
-func PutBuffer(content string) error {
+func PutBuffer(session Session) error {
 	if err := ensureBufferDir(); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(session, "", "  ")
+	if err != nil {
 		return err
 	}
 	file, err := os.Create(string(BufferFilePath()))
@@ -19,17 +24,26 @@ func PutBuffer(content string) error {
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(content)
+	_, err = file.Write(data)
 	return err
 }
 
-func ReadBuffer() (string, error) {
+func ReadBuffer() (Session, error) {
 	data, err := os.ReadFile(string(BufferFilePath()))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil
+			return Session{}, nil
 		}
-		return "", err
+		return Session{}, err
 	}
-	return string(data), nil
+	return parseBufferContent(data), nil
+}
+
+// Buffers written before sessions existed hold plain response text; they have no linked files, so only feedback.md can be written from them.
+func parseBufferContent(data []byte) Session {
+	var session Session
+	if err := json.Unmarshal(data, &session); err != nil {
+		return Session{Response: string(data)}
+	}
+	return session
 }

@@ -11,6 +11,7 @@ type RequestContent struct {
 	Files  []CodeFile
 	Domain CodeFile
 	Index  CodeFile
+	Linked LinkedFiles
 }
 
 const (

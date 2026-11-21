@@ -5,12 +5,12 @@ import (
 )
 
 func HandleCommitCommand() error {
-	content, err := logic.ReadBuffer()
+	session, err := logic.ReadBuffer()
 	if err != nil {
 		return err
 	}
 
-	elements, err := logic.ParseCodeFilesDetailed(content)
+	elements, err := logic.ParseCodeFilesDetailed(session.Response, session.Linked)
 	if err != nil {
 		return err
 	}

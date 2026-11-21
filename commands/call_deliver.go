@@ -9,8 +9,8 @@ import (
 	"yact/projectpath"
 )
 
-func storeBuffer(response string) error {
-	if err := logic.PutBuffer(response); err != nil {
+func storeBuffer(session logic.Session) error {
+	if err := logic.PutBuffer(session); err != nil {
 		return fmt.Errorf("error writing buffer: %w", err)
 	}
 	return nil
@@ -22,14 +22,14 @@ func formatPlanSummary(plan string) string {
 	return fmt.Sprintf("Assumptions: %d\nMissing context: %d", assumptions, missingContext)
 }
 
-func deliverResponse(mode config.OutputMode, response string) error {
-	switch mode {
+func deliverResponse(session logic.Session) error {
+	switch session.Mode {
 	case config.OutputWritePlan:
 		previousPlan, _, err := logic.ReadPlan()
 		if err != nil {
 			return err
 		}
-		carriedPlan := logic.CarryAssumptionTicks(previousPlan, response)
+		carriedPlan := logic.CarryAssumptionTicks(previousPlan, session.Response)
 		if err := logic.WritePlan(carriedPlan); err != nil {
 			return err
 		}
@@ -37,16 +37,16 @@ func deliverResponse(mode config.OutputMode, response string) error {
 		fmt.Println(formatPlanSummary(carriedPlan))
 		return nil
 	case config.OutputPrintOnly:
-		fmt.Println("\n" + response)
+		fmt.Println("\n" + session.Response)
 		return nil
 	case config.OutputApply:
-		elements, err := logic.ParseCodeFilesDetailed(response)
+		elements, err := logic.ParseCodeFilesDetailed(session.Response, session.Linked)
 		if err != nil {
 			return err
 		}
 		return processResponse(elements)
 	}
-	return fmt.Errorf("unknown output mode %d", mode)
+	return fmt.Errorf("unknown output mode %d", session.Mode)
 }
 
 func processResponse(elements []logic.ParsedElement) error {

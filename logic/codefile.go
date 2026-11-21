@@ -192,7 +192,8 @@ func (cf *CodeFile) Apply() (ApplyOutcome, error) {
 	return OutcomeWritten, nil
 }
 
-func processCodeBlock(lineBuffer []string, extensions []string) *ParsedElement {
+// A response may write only the files the prompt linked, so a code block for any other path is rejected rather than written.
+func processCodeBlock(lineBuffer []string, extensions []string, linked LinkedFiles) *ParsedElement {
 	if len(lineBuffer) == 0 {
 		return nil
 	}
@@ -202,6 +203,10 @@ func processCodeBlock(lineBuffer []string, extensions []string) *ParsedElement {
 			element := NewRejectedFileElement(err)
 			return &element
 		}
+		if !linked.Allows(codeFile.Path) {
+			element := NewRejectedFileElement(fmt.Errorf("file %s is not linked in the prompt", codeFile.Path))
+			return &element
+		}
 		element := NewCodeFileElement(codeFile)
 		return &element
 	}
@@ -209,7 +214,7 @@ func processCodeBlock(lineBuffer []string, extensions []string) *ParsedElement {
 	return &element
 }
 
-func ParseCodeFilesDetailed(response string) ([]ParsedElement, error) {
+func ParseCodeFilesDetailed(response string, linked LinkedFiles) ([]ParsedElement, error) {
 	extensions, err := config.LoadExtensions()
 	if err != nil {
 		return nil, err
@@ -221,7 +226,7 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, error) {
 
 	for _, line := range lines {
 		if strings.HasPrefix(strings.TrimSpace(line), BlockDelimiterMin) {
-			if block := processCodeBlock(lineBuffer, extensions); block != nil {
+			if block := processCodeBlock(lineBuffer, extensions, linked); block != nil {
 				result = append(result, *block)
 			}
 			lineBuffer = make([]string, 0)
@@ -230,7 +235,7 @@ func ParseCodeFilesDetailed(response string) ([]ParsedElement, error) {
 		}
 	}
 
-	if block := processCodeBlock(lineBuffer, extensions); block != nil {
+	if block := processCodeBlock(lineBuffer, extensions, linked); block != nil {
 		result = append(result, *block)
 		lastIdx := len(result) - 1
 		lastElement := result[lastIdx]
