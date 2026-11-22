@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"yact/logic"
-	"yact/projectpath"
 )
 
 const longFileLineThreshold = 300
@@ -33,8 +32,7 @@ func applyPromptLinks(requestContent *logic.RequestContent) error {
 		return err
 	}
 
-	paths := append([]projectpath.Path{}, links.Paths...)
-	paths = append(paths, keywordPaths...)
+	paths := append(links.Paths, keywordPaths...)
 	uniquePaths := logic.UniquePaths(paths)
 	for _, path := range uniquePaths {
 		file, err := logic.ReadAsFile(path)
@@ -49,7 +47,7 @@ func applyPromptLinks(requestContent *logic.RequestContent) error {
 		}
 		requestContent.Files = append(requestContent.Files, file)
 	}
-	requestContent.Linked = logic.LinkedFiles(uniquePaths)
+	requestContent.Linked = append(links.UnresolvedPaths, uniquePaths...)
 	requestContent.Prompt = sentPromptText(requestContent.Prompt)
 	return nil
 }
