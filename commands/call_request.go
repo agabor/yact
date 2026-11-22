@@ -20,7 +20,7 @@ func checkNoPendingBatch() error {
 	return nil
 }
 
-func submitBatch(requestContent *logic.RequestContent, cfg *config.Config, systemPrompt string, mode config.OutputMode) error {
+func submitBatch(requestContent *logic.RequestContent, cfg *config.Config, systemPrompt string, mode config.OutputMode, newClient api.ClientFactory) error {
 	client := newClient(cfg)
 
 	batchID, err := client.SubmitBatch(requestContent, systemPrompt)
@@ -42,12 +42,6 @@ func submitBatch(requestContent *logic.RequestContent, cfg *config.Config, syste
 	return nil
 }
 
-func newClient(cfg *config.Config) api.Client {
-	client := &api.ClaudeClient{}
-	client.Init(cfg)
-	return client
-}
-
 // The progress indicator writes control output, so it is shown only on a terminal.
 func shouldShowProgress(noProgress bool, stdoutIsTerminal bool) bool {
 	return !noProgress && stdoutIsTerminal
@@ -61,7 +55,7 @@ func stdoutIsTerminal() bool {
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
-func callLLM(requestContent *logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string) (api.CallResult, error) {
+func callLLM(requestContent *logic.RequestContent, noProgress bool, cfg *config.Config, systemPrompt string, newClient api.ClientFactory) (api.CallResult, error) {
 	client := newClient(cfg)
 
 	if !shouldShowProgress(noProgress, stdoutIsTerminal()) {

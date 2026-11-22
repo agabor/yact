@@ -9,7 +9,7 @@ import (
 	"yact/logic"
 )
 
-func HandleBatchCommand(cfg *config.Config) error {
+func HandleBatchCommand(cfg *config.Config, newClient api.ClientFactory) error {
 	job, found, err := logic.ReadBatchJob()
 	if err != nil {
 		return err

@@ -7,13 +7,15 @@ import (
 )
 
 type Client interface {
-	Init(cfg *config.Config)
 	GetModelName() string
 	Call(requestContent *logic.RequestContent, systemPrompt string) (CallResult, error)
 	SubmitBatch(requestContent *logic.RequestContent, systemPrompt string) (string, error)
 	GetBatchStatus(batchID string) (BatchStatus, error)
 	GetBatchResult(batchID string) (BatchResult, error)
 }
+
+// Commands and the entry point obtain clients only through this factory, so that tests can substitute one.
+type ClientFactory func(cfg *config.Config) Client
 
 func Serialize(file logic.CodeFile) string {
 	delimiter := "//"

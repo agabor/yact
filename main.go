@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 
+	"yact/api"
 	"yact/commands"
 	"yact/config"
 
@@ -16,37 +17,25 @@ import (
 // Set at build time with -ldflags "-X main.version=<tag>"; local builds keep "dev".
 var version = "dev"
 
-// Failing to write an error message leaves no other channel to report the failure,
-// so the process exits with the same status as the error it was trying to report.
-func printError(format string, args ...any) {
-	if _, err := fmt.Fprintf(os.Stderr, format, args...); err != nil {
-		os.Exit(1)
-	}
-}
-
-func requireArgCount(command string, args []string, validCounts ...int) {
+func requireArgCount(command string, args []string, validCounts ...int) error {
 	if slices.Contains(validCounts, len(args)) {
-		return
+		return nil
 	}
 	if len(validCounts) == 1 {
-		printError("Error: %s command requires %d argument(s)\n", command, validCounts[0])
-	} else {
-		printError("Error: %s command received %d argument(s), expected one of: %v\n", command, len(args), validCounts)
+		return fmt.Errorf("%s command requires %d argument(s)", command, validCounts[0])
 	}
-	os.Exit(1)
+	return fmt.Errorf("%s command received %d argument(s), expected one of: %v", command, len(args), validCounts)
 }
 
-func requireNoArgs(command string, args []string) {
+func requireNoArgs(command string, args []string) error {
 	if len(args) != 0 {
-		printError("Error: %s command takes no arguments\n", command)
-		os.Exit(1)
+		return fmt.Errorf("%s command takes no arguments", command)
 	}
+	return nil
 }
 
-func promptNotFoundMessage(command config.PromptName, err error) {
-	printError("Error: no system prompt found for command '%s'\n", command)
-	printError("Download failed: %v\n", err)
-	printError("Run 'y --help' for usage information.")
+func promptNotFoundError(command config.PromptName, err error) error {
+	return fmt.Errorf("no system prompt found for command '%s'\nDownload failed: %v\nRun 'y --help' for usage information.", command, err)
 }
 
 func downloadAndLoadSystemPrompt(command config.PromptName) (config.SystemPrompt, error) {
@@ -70,109 +59,128 @@ func printExecuting(resolved config.Flaglist, command string) {
 	}
 }
 
-func runPromptCommand(command string, flags config.Flaglist, cfg *config.Config) error {
+func runPromptCommand(command string, flags config.Flaglist, cfg *config.Config, newClient api.ClientFactory) error {
 	promptName, err := config.ParsePromptName(command)
 	if err != nil {
-		printError("Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	systemPrompt, err := loadSystemPrompt(promptName)
 	if err != nil {
-		promptNotFoundMessage(promptName, err)
-		os.Exit(1)
+		return promptNotFoundError(promptName, err)
 	}
 
 	resolved := config.ResolveFlags(flags, systemPrompt.Defaults)
 	printExecuting(resolved, command)
-	return commands.HandleCommand(resolved, cfg, systemPrompt.Text)
+	return commands.HandleCommand(resolved, cfg, systemPrompt.Text, newClient)
 }
 
-func main() {
-	cli := config.RegisterFlags(flag.CommandLine)
-	flag.Parse()
+func run(args []string, newClient api.ClientFactory) error {
+	set := flag.NewFlagSet("yact", flag.ContinueOnError)
+	cli := config.RegisterFlags(set)
+	if err := set.Parse(args); err != nil {
+		return err
+	}
 
-	flags, err := cli.ToFlaglist(flag.CommandLine)
+	flags, err := cli.ToFlaglist(set)
 	if err != nil {
-		printError("Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	if cli.Help {
 		commands.ShowHelp()
-		return
+		return nil
 	}
 
 	if cli.Version {
 		fmt.Printf("yact %s\n", version)
-		return
+		return nil
 	}
 
-	args := flag.Args()
+	commandArgs := set.Args()
 
-	if len(args) == 0 {
-		printError("Error: no command provided\n")
-		fmt.Println("Run 'y --help' for usage information.")
-		os.Exit(1)
+	if len(commandArgs) == 0 {
+		return errors.New("no command provided. Run 'y --help' for usage information.")
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		printError("Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
-	command := args[0]
-	commandArgs := []string{}
-	if len(args) > 1 {
-		commandArgs = args[1:]
+	command := commandArgs[0]
+	subArgs := []string{}
+	if len(commandArgs) > 1 {
+		subArgs = commandArgs[1:]
 	}
-
-	var commandErr error
 
 	switch command {
 	case "help":
 		commands.ShowHelp()
-		return
+		return nil
 	case "read":
-		commandErr = commands.HandleReadCommand(commandArgs)
+		return commands.HandleReadCommand(subArgs)
 	case "keyword":
-		requireArgCount("keyword", commandArgs, 1)
-		commandErr = commands.HandleKeywordCommand(commandArgs)
+		if err := requireArgCount("keyword", subArgs, 1); err != nil {
+			return err
+		}
+		return commands.HandleKeywordCommand(subArgs)
 	case "config":
-		requireArgCount("config", commandArgs, 0, 2)
-		commandErr = commands.HandleConfigCommand(commandArgs, cfg)
+		if err := requireArgCount("config", subArgs, 0, 2); err != nil {
+			return err
+		}
+		return commands.HandleConfigCommand(subArgs, cfg)
 	case "new":
-		commandErr = commands.HandleNewCommand()
+		return commands.HandleNewCommand()
 	case "commit":
-		requireNoArgs("commit", commandArgs)
-		commandErr = commands.HandleCommitCommand()
+		if err := requireNoArgs("commit", subArgs); err != nil {
+			return err
+		}
+		return commands.HandleCommitCommand()
 	case "query":
-		requireNoArgs("query", commandArgs)
+		if err := requireNoArgs("query", subArgs); err != nil {
+			return err
+		}
 		resolved := config.ResolveFlags(flags, config.QueryDefaults())
 		printExecuting(resolved, "query")
-		commandErr = commands.HandleCommand(resolved, cfg, "")
+		return commands.HandleCommand(resolved, cfg, "", newClient)
 	case "batch":
-		requireNoArgs("batch", commandArgs)
-		commandErr = commands.HandleBatchCommand(cfg)
+		if err := requireNoArgs("batch", subArgs); err != nil {
+			return err
+		}
+		return commands.HandleBatchCommand(cfg, newClient)
 	case "download":
-		commandErr = commands.HandleDownloadCommand(commandArgs)
+		return commands.HandleDownloadCommand(subArgs)
 	case "index":
-		requireArgCount("index", commandArgs, 1)
-		commandErr = commands.HandleIndexCommand(commandArgs)
+		if err := requireArgCount("index", subArgs, 1); err != nil {
+			return err
+		}
+		return commands.HandleIndexCommand(subArgs)
 	case "compact":
-		requireNoArgs("compact", commandArgs)
-		commandErr = commands.HandleCompactCommand()
+		if err := requireNoArgs("compact", subArgs); err != nil {
+			return err
+		}
+		return commands.HandleCompactCommand()
 	case "prompt":
-		requireArgCount("prompt", commandArgs, 1)
-		commandErr = commands.HandlePromptCommand(commandArgs[0])
+		if err := requireArgCount("prompt", subArgs, 1); err != nil {
+			return err
+		}
+		return commands.HandlePromptCommand(subArgs[0])
 	default:
-		requireNoArgs(command, commandArgs)
-		commandErr = runPromptCommand(command, flags, cfg)
+		if err := requireNoArgs(command, subArgs); err != nil {
+			return err
+		}
+		return runPromptCommand(command, flags, cfg, newClient)
 	}
+}
 
-	if commandErr != nil {
-		printError("Error: %v\n", commandErr)
+func main() {
+	if err := run(os.Args[1:], api.NewClaudeClient); err != nil {
+		// Failing to write an error message leaves no other channel to report the failure,
+		// so the process exits with the same status as the error it was trying to report.
+		if _, writeErr := fmt.Fprintf(os.Stderr, "Error: %v\n", err); writeErr != nil {
+			os.Exit(1)
+		}
 		os.Exit(1)
 	}
 }

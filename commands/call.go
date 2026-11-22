@@ -3,11 +3,12 @@ package commands
 import (
 	"fmt"
 
+	"yact/api"
 	"yact/config"
 	"yact/logic"
 )
 
-func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string) error {
+func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt string, newClient api.ClientFactory) error {
 	mode := config.ParseOutputMode(flags)
 
 	if flags.Batch {
@@ -57,10 +58,10 @@ func HandleCommand(flags config.Flaglist, cfg *config.Config, systemPrompt strin
 	}
 
 	if flags.Batch {
-		return submitBatch(requestContentForLLM, cfg, systemPrompt, mode)
+		return submitBatch(requestContentForLLM, cfg, systemPrompt, mode, newClient)
 	}
 
-	result, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt)
+	result, err := callLLM(requestContentForLLM, flags.NoProgress, cfg, systemPrompt, newClient)
 	if err != nil {
 		return err
 	}

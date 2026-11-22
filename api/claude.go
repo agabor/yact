@@ -65,6 +65,13 @@ func (c *ClaudeClient) Init(cfg *config.Config) {
 	c.tier = selectTier(cfg.ClaudeModel)
 }
 
+// This is the only place that builds the production Claude client.
+func NewClaudeClient(cfg *config.Config) Client {
+	client := &ClaudeClient{}
+	client.Init(cfg)
+	return client
+}
+
 func selectTier(model config.ModelName) claudeTier {
 	switch model {
 	case config.ModelFable:
