@@ -1,314 +1,83 @@
 ---
 layout: default
-title: "yact: lint the prompt, review the change against its plan"
-description: "YACT is an open-source command-line tool for AI-assisted coding. You write a prompt, the model turns it into a plan and lists what the prompt left unclear, and the reviewer gets the plan together with the change."
+title: "YACT: Yet Another Coding Tool"
+description: "A command-line tool for AI-assisted coding where the model plans, a person resolves every open decision, and only then is code written. A personal project by Gábor Angyal."
 canonical: index.html
+og_title: "YACT"
+nav: home
 ---
 
-    <section class="hero home">
+    <div class="wrap">
+      <h1 class="page-title">YACT</h1>
+      <p class="lede">YACT (Yet Another Coding Tool) is a command-line tool for AI-assisted coding that I built for my own work. This site describes how it works, the principles behind it, and how to try it.</p>
+      <p class="small byline">Gábor Angyal · v0.12.0 · GNU GPL v3</p>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="why" aria-labelledby="why-h">
       <div class="wrap">
-        <div class="hero-grid">
-          <div class="hero-text">
-            <div class="eyebrow">Open source · Go · GPL v3</div>
-            <h1>Lint the prompt.<br>Review the change <mark>against its plan.</mark></h1>
-            <p class="lede">YACT is a command-line tool for AI-assisted coding that works one way: plan first. You write a prompt. The model turns it into a plan and lists what your prompt left unclear. One model call then implements the plan. You put the plan in the pull request, so the reviewer can see what was asked.</p>
-            <div class="actions">
-              <a class="btn btn-primary" href="getting-started.html">Get started</a>
-              <a class="btn" href="https://github.com/agabor/yact">View on GitHub</a>
-            </div>
-            <p class="install">Prebuilt binaries for Linux, macOS and Windows: <a href="https://github.com/agabor/yact/releases/tag/v0.12.0">download v0.12.0</a><br>or build it yourself with Go: <code>go build -o y .</code></p>
-          </div>
-          <div class="hero-visual">
-            <div class="lint">
-              <div class="lint-head">yact-prompt.md · after y plan</div>
-              <div class="lint-block">
-                <div class="lint-title">### 1. Add email validation</div>
-                <p class="lint-item">**File:** internal/signup/validate.go</p>
-                <p class="lint-item">**Context:** internal/signup/signup.go</p>
-              </div>
-              <div class="lint-block">
-                <div class="lint-title">## Assumptions <span class="tag error">error · you accept or answer it</span></div>
-                <p class="lint-item">- [ ] **A1. Unclear:** the prompt does not say what happens to an invalid address. Taken: signup returns an error.</p>
-              </div>
-            </div>
-            <p class="seq">read the plan, tick the box, then act</p>
-            <div class="diff">
-              <div class="diff-head"><b>internal/signup/validate.go</b><span><span class="add-n">+4</span> <span class="del-n">−1</span></span></div>
-              <div class="diff-body">
-                <div class="dl hunkline"><span class="n"></span><span class="s"></span><span class="t">@@ -12,3 +12,6 @@ func ValidateSignup</span></div>
-                <div class="dl"><span class="n">12</span><span class="s"></span><span class="t">func ValidateSignup(s Signup) error {</span></div>
-                <div class="dl del"><span class="n">13</span><span class="s">−</span><span class="t">	return nil</span></div>
-                <div class="dl add"><span class="n">13</span><span class="s">+</span><span class="t">	if _, err := mail.ParseAddress(s.Email); err != nil {</span></div>
-                <div class="dl add"><span class="n">14</span><span class="s">+</span><span class="t">		return fmt.Errorf("invalid email: %w", err)</span></div>
-                <div class="dl add"><span class="n">15</span><span class="s">+</span><span class="t">	}</span></div>
-                <div class="dl add"><span class="n">16</span><span class="s">+</span><span class="t">	return nil</span></div>
-                <div class="dl"><span class="n">17</span><span class="s"></span><span class="t">}</span></div>
-              </div>
-            </div>
-            <p class="small">An illustrative example. Above: one step of a plan, with the file it changes, its context and one assumption. Below: the change that the step produces.</p>
-          </div>
-        </div>
+        <h2 id="why-h">Why I built it</h2>
+        <p>Partly as a way of learning. And partly because agentic development took the control out of my hands. An agent explores the code, decides, edits and runs things in a loop, and the person is asked to step in now and then: a human in the loop.</p>
+        <p>I wanted it the other way round, AI in the loop: I make the decisions and stay in the codebase, and the model does a well-defined job inside that.</p>
       </div>
     </section>
 
-    <section class="section band home" aria-labelledby="problem-h">
+    <hr class="rule">
+
+    <section class="section" id="idea" aria-labelledby="idea-h">
       <div class="wrap">
-        <div class="hunk">@@ <b>01 · The problem</b> @@</div>
-        <h2 class="big" id="problem-h">AI writes the code faster. The cost shows up later.</h2>
-        <p class="lead">Most coding tools take a short prompt, decide everything else themselves and return a change. That is fast, but it has five costs:</p>
-        <div class="grid c3">
-          <div class="topline"><h3>The model changes more than you asked</h3><p>The prompt did not say which files to change, so the model chose.</p></div>
-          <div class="topline"><h3>The model fills gaps without telling you</h3><p>Where the prompt was vague, the model picked an answer and kept going. You find out in review, or after the merge.</p></div>
-          <div class="topline"><h3>Review takes longer</h3><p>A pull or merge request shows the diff but not the intent. The reviewer has to work out what was asked, what the model assumed and which code the model was shown.</p></div>
-          <div class="topline"><h3>Developers lose touch with their code</h3><p>When a tool explores the code and decides for you, you stop building your own picture of the codebase.</p></div>
-          <div class="topline"><h3>Juniors learn less</h3><p>Much of what juniors learn from seniors, they learn in review. A pull request that nobody can review properly teaches nothing.</p></div>
-        </div>
-        <p class="pull">A better model reduces these costs but does not remove their cause: nobody checked the prompt, and nobody wrote down the intent.</p>
+        <h2 id="idea-h">The idea</h2>
+        <p>Before the model writes any code, it writes a plan. The plan names the file each step changes, the files the model needed but did not get, and every decision it made because the prompt did not say. Those are resolved first, by a person. Then one model call writes the code. The change is checked against the plan, and the plan goes to whoever reviews it.</p>
       </div>
     </section>
 
-    <section class="section dark home" id="principle" aria-labelledby="principle-h">
+    <hr class="rule">
+
+    <section class="section" id="what" aria-labelledby="what-h">
       <div class="wrap">
-        <div class="hunk">@@ <b>02 · The principle</b> @@</div>
-        <h2 class="big" id="principle-h">A prompt is a program in a very high-level language.</h2>
-        <p class="lead">A program can be checked before it runs, and so can a prompt. When you run <code>y plan</code>, the model checks your prompt for two properties and writes the results into the plan. At that point no code has been written. This check is the lint.</p>
-        <div class="grid c2">
-          <div class="topline">
-            <div class="num">1</div>
-            <h3>Complete</h3>
-            <p>Everything the prompt refers to must be something the model can see. If the model needs code it was not given, it does not guess: it lists the files under <code>## Missing context</code>. This is an error. <code>act</code> refuses to run until the section is gone.</p>
-          </div>
-          <div class="topline">
-            <div class="num">2</div>
-            <h3>No silent assumptions</h3>
-            <p>Where the prompt leaves a decision open, the model writes down the decision it made under <code>## Assumptions</code>. This is an error too. Every entry has a checkbox, and <code>act</code> refuses to run while one is open. If you agree with an entry, tick its box. If you disagree, write an <code>Answer:</code> line under it and run <code>y plan</code> again.</p>
-          </div>
-        </div>
-        <div class="split">
-          <div>
-            <p class="say">A plan is ready when it has no Missing context section and you have ticked every assumption.</p>
-            <p class="fine">The lint is not a proof. The model does the checking and can overlook something, so a plan without an Assumptions section may still contain an assumption. A stronger model overlooks less, and <code>-m</code> lets you plan with one. You still read the plan and check the change.</p>
-            <p class="more"><a class="arrow-link" href="the-yact-way.html">Read The YACT way</a></p>
-          </div>
-          <div class="ready">
-            <span class="cap">the plan, after linking the missing file and ticking A1</span>
-            <span class="row"># Goal</span>
-            <span class="row">## Steps</span>
-            <span class="row">### 1. Add email validation</span>
-            <span class="row">## Assumptions</span>
-            <span class="row">- [x] **A1. Unclear:** ... Taken: signup returns an error.</span>
-            <span class="row dim">(no ## Missing context)</span>
-            <span class="ok">Ready: y act</span>
-          </div>
-        </div>
+        <h2 id="what-h">What it is</h2>
+        <ul>
+          <li>A single Go binary, <code>y</code>, that calls Anthropic's API. One command is one API call: no agent loop, no tool use, no background process.</li>
+          <li>A plain Markdown file, <code>yact-prompt.md</code>, that holds the prompt and then the plan.</li>
+          <li>A handful of system prompts, plain text files you can read and change. Each one is a command: <code>plan</code>, <code>act</code>, <code>ask</code>, <code>analyze</code>, <code>review</code>, <code>bash</code>.</li>
+          <li>Open source under the GNU GPL v3.</li>
+        </ul>
       </div>
     </section>
 
-    <section class="section home" id="plan" aria-labelledby="plan-h">
+    <hr class="rule">
+
+    <section class="section" id="state" aria-labelledby="state-h">
       <div class="wrap">
-        <div class="hunk">@@ <b>03 · The plan</b> @@</div>
-        <h2 class="big" id="plan-h">The plan ties each change to its intent and its context.</h2>
-        <p class="lead">A plan is a Markdown file. You read it, and edit it if you want to, before <code>act</code> writes any code. It records four things in one place.</p>
-        <div class="grid c4">
-          <div class="topline"><div class="num">01</div><h3>The intent</h3><p>The goal in your words, followed by the steps that reach it.</p></div>
-          <div class="topline"><div class="num">02</div><h3>The change</h3><p>Each step names the one file it changes, so you see the scope before any code is written.</p></div>
-          <div class="topline"><div class="num">03</div><h3>The context</h3><p>Each step links the files the model receives when it implements that step.</p></div>
-          <div class="topline"><div class="num">04</div><h3>The assumptions</h3><p>The decisions the model made where your prompt left them open, each one accepted or answered by you.</p></div>
-        </div>
-        <p class="pull">This is what helps a reviewer. With the plan next to the pull request, the reviewer compares the change with what was asked.</p>
-        <p class="more">YACT keeps the plan in <code>yact-prompt.md</code> and does not attach it for you. <code>y new</code> deletes that file, so commit the plan or copy it into the pull request before you start the next change. Your team decides which of the two.</p>
+        <h2 id="state-h">State of the project</h2>
+        <ul>
+          <li>A personal project with one maintainer. It changes often, and features come and go: step-by-step execution, the <code>split</code> command, strict mode and skills were all removed in November 2026.</li>
+          <li>The current release is <a href="https://github.com/agabor/yact/releases/tag/v0.12.0">v0.12.0</a>, with binaries for Linux, macOS and Windows. This site describes that version.</li>
+          <li>It works only with Anthropic's API and your own key. You pay Anthropic for the tokens; every call prints its cost.</li>
+          <li>The benefits described here come from my own use. They are not measured.</li>
+          <li>There is no support promise. <a href="https://github.com/agabor/yact/issues">Issues</a> and pull requests are welcome.</li>
+        </ul>
+        <p>YACT is not made or endorsed by Anthropic.</p>
       </div>
     </section>
 
-    <section class="section band home" id="how" aria-labelledby="how-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>04 · How it works</b> @@</div>
-        <h2 class="big" id="how-h">From prompt to pull request in five steps.</h2>
-        <div class="split">
-          <ol class="steps">
-            <li><h3>Write the prompt and link the files</h3><p><code>y new</code> starts an empty prompt, and <code>y prompt</code> writes your request into it. <code>y read</code> links files by path or glob. <code>y keyword Signup</code> links every file that contains the word, and <code>((Signup))</code> typed into the prompt runs the same search each time you run a command. The linked files are the context: they are the only code the model sees.</p></li>
-            <li><h3>Plan, then resolve the two sections</h3><p><code>y plan</code> turns the prompt into a plan with one file per step. Link the files that <code>## Missing context</code> lists. Under <code>## Assumptions</code>, tick each entry you accept and write an answer under each one you do not. If you linked a file or wrote an answer, run <code>y plan</code> again.</p></li>
-            <li><h3>Implement the plan</h3><p><code>y act</code> implements the plan in one call and writes back, in full, the files the plan links. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
-            <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the plan and run your tests.</p></li>
-            <li><h3>Open the pull request</h3><p>Include the plan, so the reviewer has the intent, the files and the assumptions you accepted.</p></li>
-          </ol>
-          <div class="stack">
-            <div class="term">
-              <span class="cap">terminal</span>
-              <span class="row"><span class="dim">$</span> y new</span>
-              <span class="row"><span class="dim">$</span> y read "internal/signup/*.go"</span>
-              <span class="row"><span class="dim">$</span> y prompt "validate email addresses on signup"</span>
-              <span class="row"><span class="dim">$</span> y plan</span>
-              <span class="row"><span class="dim">$</span> y act</span>
-              <span class="row"><span class="dim">$</span> git diff</span>
-            </div>
-            <div class="term">
-              <span class="cap">yact-prompt.md, the plan</span>
-              <span class="row"># Goal</span>
-              <span class="row soft">Validate email addresses on signup.</span>
-              <span class="row"> </span>
-              <span class="row">## Steps</span>
-              <span class="row">### 1. Add email validation</span>
-              <span class="row soft">**File:** internal/signup/validate.go</span>
-              <span class="row soft">**Context:** internal/signup/signup.go</span>
-              <span class="row">### 2. Cover it with tests</span>
-              <span class="row soft">**File:** internal/signup/validate_test.go</span>
-              <span class="row soft">**Context:** internal/signup/validate.go</span>
-            </div>
-          </div>
-        </div>
-        <p class="more">By default, <code>plan</code> and <code>act</code> also send an index: a list of the names of the files, classes and functions in your project, without their code. With the index, the model can name code it was not given and ask for it. The index covers Go, PHP, JavaScript, C#, Swift and Kotlin, and <code>-i none</code> turns it off.</p>
-        <p class="more">Before every call, YACT lists the files it sends; after it, the token counts and the estimated cost. Add <code>--dry-run</code> to see which files a command would send, without calling the API.</p>
-      </div>
-    </section>
+    <hr class="rule">
 
-    <section class="section home" id="keywords" aria-labelledby="keywords-h">
+    <section class="section" id="read-on" aria-labelledby="read-on-h">
       <div class="wrap">
-        <div class="hunk">@@ <b>05 · Context by keyword</b> @@</div>
-        <h2 class="big" id="keywords-h">Know the name but not the files? Link by keyword.</h2>
-        <p class="lead">A path works when you know where the code is. For a rename, or for a change to something used in many places, give YACT the name and it links every file that contains it.</p>
-        <div class="cards">
-          <div class="card"><h3><code>y keyword PlanStep</code></h3><p>Searches once and writes a link to every matching file into <code>yact-prompt.md</code>. The list is a snapshot that you can read and shorten.</p></div>
-          <div class="card"><h3><code>((PlanStep))</code></h3><p>Type it into the prompt file and the search runs each time you run a command, so files created later are included. Passed to <code>y prompt</code>, it searches once and links the files. YACT removes the marker before it sends the text.</p></div>
-          <div class="card"><h3>Whole words, any naming style</h3><p><code>plan step</code> matches <code>PlanStep</code> and <code>plan_step</code>. Only files with known extensions are searched, and <code>y config ext vue</code> adds one. <code>--dry-run</code> shows which files matched.</p></div>
-        </div>
-        <p>A trivial change does not need a plan. For a rename, for example, write the prompt and run <code>act</code> on it directly. Keywords work there too:</p>
-        <div class="split">
-          <pre data-copy><code>y prompt "Rename PlanStep to Step and update every use. ((PlanStep))"
-y act</code></pre>
-          <p class="small">A keyword links files by their content. With <code>--dry-run</code> you can see the list before anything is sent.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section band home" id="code-principles" aria-labelledby="code-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>06 · Code principles</b> @@</div>
-        <h2 class="big" id="code-h">YACT also has rules for the code it writes.</h2>
-        <p class="lead">The lint checks your prompt. Sixteen code principles guide the code. <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> all include the same list, and the list has one goal: every piece of code can be understood from what is visible in one place.</p>
-        <div class="grid c3">
-          <div class="topline"><h3>Why YACT needs them</h3><p>Each call sees only the files you linked, and <code>act</code> writes every changed file back in full. Code that can be understood from one place needs few linked files, and a small file is quick to rewrite.</p></div>
-          <div class="topline"><h3>What they ask for</h3><p>Searchable names, one job per function, no hidden side effects, logic kept apart from I/O, precise types, tests, and source files under about 200 lines.</p></div>
-          <div class="topline"><h3>Where they apply</h3><p>Only in code that a step writes or changes. <code>act</code> does not refactor code that the prompt did not mention, and where the plan and a principle disagree, the plan wins.</p></div>
-        </div>
-        <p class="more">The principles are one text file, so you can change them to match your team's rules. <a class="arrow-link" href="code-principles.html">Read the code principles</a></p>
-      </div>
-    </section>
-
-    <section class="section home" id="compare" aria-labelledby="compare-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>07 · Compared</b> @@</div>
-        <h2 class="big" id="compare-h">Not a smaller agent. A tool with a method.</h2>
-        <p class="lead">Most agents and IDE assistants can plan first if you ask them to. In YACT, planning first is the default, and the whole tool is built around it.</p>
-        <div class="compare">
-          <table class="compare">
-            <thead><tr><th></th><th class="us">YACT</th><th>Coding agent</th><th>IDE assistant</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Method</th><td class="us">Built in: lint the prompt, plan, then act</td><td>Your choice; many offer a plan mode</td><td>Your choice</td></tr>
-              <tr><th scope="row">Who sets the context</th><td class="us">You link the files; the plan lists what else is needed</td><td>Usually the agent, by exploring</td><td>You, by selecting code</td></tr>
-              <tr><th scope="row">Gaps in the prompt</th><td class="us">Listed in the plan; you accept or answer each one before code is written</td><td>Usually filled in during the work</td><td>Usually filled in during the work</td></tr>
-              <tr><th scope="row">Model calls</th><td class="us">One per command</td><td>Many, in a loop</td><td>Many, interactive</td></tr>
-              <tr><th scope="row">Runs tests and retries</th><td class="us">No</td><td>Yes</td><td>Limited</td></tr>
-              <tr><th scope="row">Runs unattended</th><td class="us">No: a person resolves every plan</td><td>Yes</td><td>No</td></tr>
-              <tr><th scope="row">What the reviewer gets</th><td class="us">The change and the plan it was made from</td><td>The change</td><td>The change</td></tr>
-              <tr><th scope="row">Cost</th><td class="us">Estimate printed after every call</td><td>Varies with the run</td><td>Usually a subscription</td></tr>
-              <tr><th scope="row">Best for</th><td class="us">Planned changes in code you know</td><td>Open-ended and exploratory work</td><td>Everyday typing</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p>If you want a tool that finds the files, runs the tests and fixes the failures, use an agent. If you want every change to start from a linted prompt and reach the reviewer with its plan, use YACT. Many people will use both.</p>
-      </div>
-    </section>
-
-    <section class="section band home" aria-labelledby="who-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>08 · Who it is for</b> @@</div>
-        <h2 class="big" id="who-h">For developers, and for the people who review their work.</h2>
-        <div class="grid c2">
-          <div class="topline"><h3>Developers who know their code</h3><p>You decide what changes, and the model does the typing. Because you write the prompt, link the files and read the plan, you stay familiar with your code.</p></div>
-          <div class="topline"><h3>Team leads</h3><p>You decide how your team works with AI. With YACT, every AI-assisted pull request can include the plan it was made from.</p></div>
-          <div class="topline"><h3>Teams where review is the bottleneck</h3><p>Comparing a change with its plan takes less effort than working out the intent from a diff, and the model's assumptions are already listed, with the author's decision on each.</p></div>
-          <div class="topline"><h3>Seniors who mentor juniors</h3><p>When a junior's pull request includes its plan, you can review the junior's thinking as well as the code. That review is where the junior learns.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section home" id="trade-offs" aria-labelledby="limits-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>09 · Trade-offs</b> @@</div>
-        <h2 class="big" id="limits-h">What the method costs you.</h2>
-        <p class="lead">Each of these costs is a deliberate choice.</p>
-        <div class="split">
-          <div class="costs">
-            <div class="cost"><b>−</b><span><strong>You link the files.</strong> YACT does not explore the code for you, so you need to know roughly where a change belongs. Keywords find files by name, <code>ask</code> answers questions about the code you link, and the plan lists what is still missing.</span></div>
-            <div class="cost"><b>−</b><span><strong>You resolve the plan.</strong> You have to supply the missing context and accept or answer every assumption, and <code>act</code> does not run until you have. That is work. Without it, the same work comes back in review.</span></div>
-            <div class="cost"><b>−</b><span><strong>Files must be small.</strong> <code>act</code> writes every file it changes back in full. A long file makes the call slow and expensive, and gives the model more room for edits you did not ask for. Keep files under about 200 lines. YACT warns above 300.</span></div>
-            <div class="cost"><b>−</b><span><strong>Legacy code is hard.</strong> YACT is easy to introduce on a new project or a clean codebase. On a legacy codebase with very large files it is hard: every step rewrites a long file and needs a lot of context, and YACT does not refactor code that the prompt did not mention.</span></div>
-            <div class="cost"><b>−</b><span><strong>You run the tests.</strong> YACT never runs anything and never retries. If a test fails, save the output to a file, link it with <code>y read</code>, and write the next prompt.</span></div>
-            <div class="cost"><b>−</b><span><strong>No automation.</strong> YACT does not run unattended. A plan needs a person to accept or answer its assumptions, so there are no CI workflows that plan and implement by themselves.</span></div>
-            <div class="cost"><b>−</b><span><strong>Anthropic models only, for now.</strong></span></div>
-          </div>
-          <div class="stack">
-            <div class="verdict fit"><b>+</b><span><strong>A good fit.</strong> You know your codebase, its files are small, and you want every change to start from a plan you have read.</span></div>
-            <div class="verdict nofit"><b>−</b><span><strong>Not a fit.</strong> You want a tool that finds the files, runs the tests and fixes the failures by itself, you want changes made unattended, or most of your code is in very large files.</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section band home" id="make-it-yours" aria-labelledby="own-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>10 · Make it yours</b> @@</div>
-        <h2 class="big" id="own-h">Every command is a text file.</h2>
-        <div class="split">
-          <div>
-            <p>Six commands come with YACT. Each one is a plain-text system prompt in <code>~/.yact/systemprompts/</code>. Add a file there and you have a new command, with nothing to rebuild. The lint rules and the code principles are in these files too, so you can read them and change them.</p>
-            <dl class="cmds">
-              <dt>plan</dt><dd>Turns a prompt into a plan with one file per step, and lists the missing context and the assumptions</dd>
-              <dt>act</dt><dd>Implements the plan by writing complete files, following the plan and the code principles</dd>
-              <dt>ask</dt><dd>Answers questions about the linked code and changes nothing</dd>
-              <dt>review</dt><dd>Asks the model to review a diff against its prompt</dd>
-              <dt>analyze</dt><dd>Checks code against the <a href="code-principles.html">code principles</a></dd>
-              <dt>bash</dt><dd>Prints shell commands for you to read and run yourself</dd>
-            </dl>
-            <p class="small">Before you change a prompt that came with YACT, copy it to a new name. <code>y download prompt &lt;command&gt;</code> downloads the original again and overwrites your edits.</p>
-          </div>
-          <div class="term">
-            <span class="cap">~/.yact/systemprompts/ask.txt, the first lines</span>
-            <span class="row">flags: --model sonnet --output print</span>
-            <span class="row">CODEBASE QUESTION ANSWERING ASSISTANT</span>
-            <span class="row"> </span>
-            <span class="row soft">You are a codebase expert assistant. Your job is to:</span>
-            <span class="row soft">- Answer questions about how the codebase works</span>
-            <span class="row soft">- Explain code functionality and architecture</span>
-            <span class="row"> </span>
-            <span class="row"><span class="dim">$</span> y prompt "how does keyword search pick files?"</span>
-            <span class="row"><span class="dim">$</span> y ask</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section home" id="faq" aria-labelledby="faq-h">
-      <div class="wrap">
-        <div class="hunk">@@ <b>11 · Questions</b> @@</div>
-        <h2 class="big" id="faq-h">Common questions.</h2>
-        <div class="grid c2">
-          <div><h3>What if the plan lists assumptions?</h3><p>Resolve each one. An assumption is a decision the model made because the prompt left it open. If you agree, tick its box. If you disagree, write an <code>Answer:</code> line under it and run <code>y plan</code> again: the model changes the steps and records your decision, and you tick the entry once you have read it. <code>act</code> refuses to run while an assumption is open.</p></div>
-          <div><h3>Can the model tick an assumption itself?</h3><p>No. YACT decides every box after a plan call. A box stays ticked only if you ticked that entry before and its wording has not changed. If the model rewords an entry, you accept it again.</p></div>
-          <div><h3>Can I run it in CI, without a person?</h3><p>No, and this is deliberate. A plan needs a person to accept or answer its assumptions. YACT has no workflows that plan and implement by themselves.</p></div>
-          <div><h3>Does the lint prove the code is right?</h3><p>No. The model does the lint during the plan call, and the two sections show only what the model noticed. It can overlook something, so you still read the plan, check the change and run your tests. What the lint gives you is the open decisions before any code is written, when changing one costs a sentence.</p></div>
-          <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and one optional input if you use it: <code>.yact/domain.txt</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run</code> shows what would be sent. Hidden files such as <code>.env</code> are sent only if you link them.</p></div>
-          <div><h3>What if a plan is too large for one call?</h3><p>Make the goal smaller. Plan and implement one part of the change, check it, and then plan the next. If <code>act</code> implements only part of a plan, <code>y plan</code> drops the finished steps.</p></div>
-          <div><h3>Do I always need a plan?</h3><p>No. For a trivial change, such as a rename, write the prompt with <code>y prompt</code> and run <code>y act</code> without planning. For any change that a reviewer will need to understand, plan first.</p></div>
-          <div><h3>Can I use it on an existing codebase?</h3><p>Yes, if its files are small and its structure is clear. On a legacy codebase with very large files it is hard, because <code>act</code> rewrites every changed file in full. It is easiest on a new project.</p></div>
-          <div><h3>Does it change my coding style?</h3><p><code>plan</code> and <code>act</code> follow sixteen <a href="code-principles.html">code principles</a>, but only in code that a step writes or changes, and they are told to match the conventions already in the file. The principles are one text file that you can edit.</p></div>
-          <div><h3>Which models can I use?</h3><p>Each command has its own default: <code>plan</code>, <code>act</code> and <code>bash</code> use Claude Haiku, and <code>ask</code>, <code>review</code> and <code>analyze</code> use Sonnet. <code>-m</code> selects Haiku, Sonnet, Opus or Fable for one call, if your Anthropic account has access to it.</p></div>
-          <div><h3>What does it cost?</h3><p>YACT is free. You pay Anthropic directly for the tokens you use, and YACT prints the token counts and the estimated cost after every call.</p></div>
-          <div><h3>Where do my API key and code go?</h3><p>The key is stored in <code>~/.yact/config</code> and sent only to Anthropic. The files you link are sent to Anthropic's API and nowhere else. There is no telemetry. Apart from the API calls, YACT contacts only GitHub, to download system prompts from the project's repository.</p></div>
-          <div><h3>Can it write outside my project?</h3><p>No. YACT rejects absolute paths and paths that leave the project directory. Inside the project, the model can write or delete only the files the prompt or the plan links, including the new files a plan names. Check the change with <code>git diff</code> before you commit.</p></div>
-          <div><h3>How is it different from aider, Claude Code or Cursor?</h3><p>Those tools let you work in any way you like, and most can plan first if you ask. In YACT, planning first is the default: the prompt is linted, you read the plan before any code is written, and the plan goes to the reviewer with the change. YACT also does less. It makes one call per command, and it never explores, runs tests or retries.</p></div>
-          <div><h3>Is it made by Anthropic?</h3><p>No. It is an independent open-source project under the GNU GPL v3.</p></div>
-        </div>
+        <h2 id="read-on-h">Read on</h2>
+        <dl class="defs">
+          <dt><a href="how-it-works.html">How it works</a></dt>
+          <dd>One change, start to finish.</dd>
+          <dt><a href="principles.html">Principles</a></dt>
+          <dd>The rules behind it, for prompts, for the tool and for code.</dd>
+          <dt><a href="install-and-run.html">Install and run</a></dt>
+          <dd>How to try it.</dd>
+          <dt><a href="limitations.html">Limitations</a></dt>
+          <dd>What it does not do, and what is known to be broken.</dd>
+          <dt><a href="https://github.com/agabor/yact">Source and README on GitHub</a></dt>
+          <dd>The code, and the full reference of commands, flags and settings.</dd>
+        </dl>
       </div>
     </section>

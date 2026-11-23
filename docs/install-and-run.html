@@ -1,0 +1,163 @@
+---
+layout: default
+title: "Install and run: YACT"
+description: "How to install YACT, configure it with your own Anthropic key, link files and run its commands. The README on GitHub is the full reference."
+canonical: install-and-run.html
+og_title: "Install and run YACT"
+nav: install
+---
+
+    <div class="wrap">
+      <h1 class="page-title">Install and run</h1>
+      <p class="lede">What you need to try YACT. The <a href="https://github.com/agabor/yact#readme">README</a> has every command, flag and setting.</p>
+      <ul class="jump" aria-label="On this page">
+        <li><a href="#need">What you need</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#configure">Configure</a></li>
+        <li><a href="#commands">Commands</a></li>
+        <li><a href="#linking">Linking files</a></li>
+        <li><a href="#team">In a team</a></li>
+        <li><a href="#cost">Cost</a></li>
+        <li><a href="#trouble">When something goes wrong</a></li>
+      </ul>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="need" aria-labelledby="need-h">
+      <div class="wrap">
+        <h2 id="need-h">What you need</h2>
+        <ul>
+          <li>Your own Anthropic API key, from <a href="https://console.anthropic.com">console.anthropic.com</a></li>
+          <li>A project in a git working tree, so you can review and revert what YACT writes</li>
+          <li>Go 1.26 or newer, only if you build it yourself</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="install" aria-labelledby="install-h">
+      <div class="wrap">
+        <h2 id="install-h">Install</h2>
+        <p>Prebuilt binaries of v0.12.0 for Linux, macOS and Windows are on the <a href="https://github.com/agabor/yact/releases/tag/v0.12.0">releases page</a>. On Linux and macOS:</p>
+        <pre data-copy><code>chmod +x yact-linux-amd64
+mkdir -p ~/.local/bin
+mv yact-linux-amd64 ~/.local/bin/y</code></pre>
+        <p>On Windows, put <code>yact-windows-amd64.exe</code> in a folder on your <code>PATH</code>, renamed to <code>y.exe</code>. Or build it from source:</p>
+        <pre data-copy><code>git clone https://github.com/agabor/yact.git
+cd yact
+go build -o y .
+mv y ~/.local/bin/</code></pre>
+        <p>Releases do not include checksums. If you need to verify what you run, build from source. <code>y --version</code> shows the installed version.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="configure" aria-labelledby="configure-h">
+      <div class="wrap">
+        <h2 id="configure-h">Configure</h2>
+        <pre data-copy><code>y config anthropic_api_key &lt;your-own-key&gt;
+y config</code></pre>
+        <p>YACT reads the key only from <code>~/.yact/config</code>, not from the environment. The first time you run a command, YACT downloads its system prompt from the repository into <code>~/.yact/systemprompts/</code>.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="commands" aria-labelledby="commands-h">
+      <div class="wrap">
+        <h2 id="commands-h">Commands</h2>
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>y new</code></td><td>Starts an empty prompt</td></tr>
+            <tr><td><code>y prompt "…"</code></td><td>Appends text to the prompt</td></tr>
+            <tr><td><code>y read &lt;file&gt;</code></td><td>Links files; a quoted pattern such as <code>"src/*.go"</code> links every match</td></tr>
+            <tr><td><code>y keyword &lt;word&gt;</code></td><td>Links every file that contains the word</td></tr>
+            <tr><td><code>y plan</code></td><td>Writes or updates the plan in <code>yact-prompt.md</code></td></tr>
+            <tr><td><code>y act</code></td><td>Implements the plan, or the prompt, and writes the files</td></tr>
+            <tr><td><code>y ask</code></td><td>Answers a question about the linked code</td></tr>
+            <tr><td><code>y review</code></td><td>Reviews a linked diff against the prompt</td></tr>
+            <tr><td><code>y analyze</code></td><td>Reports where the linked code breaks the code principles</td></tr>
+            <tr><td><code>y bash</code></td><td>Prints shell commands to read and run yourself</td></tr>
+            <tr><td><code>y commit</code></td><td>Writes the files of the last response, for example after <code>-o print</code></td></tr>
+          </tbody>
+        </table>
+        <p>Useful flags, written before the command: <code>-m sonnet</code> (or <code>opus</code>, <code>fable</code>) uses a stronger model for one call; <code>--dry-run</code> lists the files that would be sent and makes no call; <code>-o print</code> prints a response instead of writing files.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="linking" aria-labelledby="linking-h">
+      <div class="wrap">
+        <h2 id="linking-h">Linking files</h2>
+        <p>Only links send files. A path mentioned in prose sends nothing.</p>
+        <ul>
+          <li><code>[text](path)</code> and <code>[[path]]</code> link one file.</li>
+          <li><code>((word))</code> links every file that contains the word, searched on every call. It matches whole words in any naming style: <code>((plan step))</code> finds <code>PlanStep</code> and <code>plan_step</code>.</li>
+          <li>A line of dashes splits <code>yact-prompt.md</code>: links above it select files but are not sent as text; the text below it is the prompt. <code>y read</code> and <code>y keyword</code> write their links above that line.</li>
+        </ul>
+        <p>Files in <code>vendor</code>, <code>node_modules</code>, <code>.yact</code> and <code>.git</code> are never sent; <code>y config ignore &lt;folder&gt;</code> adds more. Other hidden files are sent if you link them, so do not link secrets such as <code>.env</code>. A link YACT cannot send is printed before the call as <code>Unresolved: &lt;path&gt;</code>, which is expected for a file the plan will create.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="team" aria-labelledby="team-h">
+      <div class="wrap">
+        <h2 id="team-h">In a team</h2>
+        <p>Commit the settings in <code>.yact/</code> (extensions, ignored folders, an optional <code>domain.txt</code> that describes the project) and ignore the rest:</p>
+        <pre data-copy><code>.yact/temp
+.yact/batch_job_id.txt</code></pre>
+        <p>Agree on how a plan reaches the reviewer: committed with the change, or pasted into the pull request.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="cost" aria-labelledby="cost-h">
+      <div class="wrap">
+        <h2 id="cost-h">Cost</h2>
+        <p>YACT is free. You pay Anthropic for the tokens. Each call prints its token counts and an estimated cost, calculated locally from fixed rates. <code>-b</code> submits a call as a batch job at half the price, and <code>y batch</code> fetches the result later.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="trouble" aria-labelledby="trouble-h">
+      <div class="wrap">
+        <h2 id="trouble-h">When something goes wrong</h2>
+        <dl class="defs">
+          <dt>Claude API key not configured</dt>
+          <dd>Set your key with <code class="long">y config anthropic_api_key &lt;your-own-anthropic-key&gt;</code>.</dd>
+          <dt>no system prompt found for command</dt>
+          <dd>The prompt could not be downloaded. Check the command name and your connection, or create the file in <code>~/.yact/systemprompts/</code>.</dd>
+          <dt>file … is not linked in the prompt</dt>
+          <dd>The response wrote a file that the prompt and the plan do not link. That file was not written; the others were. If it belongs in the change, link it with <code>y read</code> or in the plan, and run the command again.</dd>
+          <dt>unknown flag: --strict</dt>
+          <dd><code>--strict</code>, <code>--verbose</code> and <code>--skill</code> were removed. Leave them out of the command line. If the error starts with <code>prompt 'act' flags</code>, your copy of the prompt is old: run <code>y download prompt act</code>. To read what <code>act</code> would produce without writing it, use <code>-o print</code>; to see what it would send, use <code>--dry-run</code>.</dd>
+          <dt>act command takes no arguments</dt>
+          <dd>Prompt commands no longer take the prompt as an argument. Write it with <code>y prompt "…"</code> first, then run the command without one.</dd>
+          <dt>no plan found in yact-prompt.md</dt>
+          <dd><code>yact-prompt.md</code> is missing or empty. Write a prompt with <code>y prompt "…"</code> or in an editor.</dd>
+          <dt>Files needed as context are missing</dt>
+          <dd>The plan has a <code>## Missing context</code> section. Run <code>y plan</code> once more, or add the files yourself with <code>y read</code> or <code>y keyword</code>.</dd>
+          <dt>Assumptions are still open</dt>
+          <dd>An entry under <code>## Assumptions</code> has an open box and no answer. Tick the box if you accept the entry, or write an <code>Answer:</code> line under it and run <code>y plan</code>.</dd>
+          <dt>Answers under assumptions are not applied yet</dt>
+          <dd>You answered an assumption but have not planned again. Run <code>y plan</code>, read the rewritten entry and tick it.</dd>
+          <dt>A ticked assumption is open again</dt>
+          <dd>The model reworded the entry, so YACT did not keep your tick. Read the new wording and tick it again.</dd>
+          <dt>Unresolved: …</dt>
+          <dd>A link points to a file that does not exist (expected for a file the plan creates), to a file in a skipped folder, or is a <code>[[pattern]]</code>, which no longer expands. Otherwise fix the path, or link the matching files with <code>y read "&lt;pattern&gt;"</code>.</dd>
+          <dt>The plan is only partly implemented, or the response is cut off</dt>
+          <dd>The plan is too large for one call. Run <code>y plan</code> to drop the finished steps and <code>y act</code> again, and plan smaller goals next time.</dd>
+          <dt>A file was not sent</dt>
+          <dd>Only links send files. Run with <code>--dry-run</code>, and check that the path is relative to the project root and not in a skipped folder.</dd>
+        </dl>
+        <p>The <a href="https://github.com/agabor/yact#troubleshooting">README</a> lists more, <a href="limitations.html">Limitations</a> covers what YACT does not do, and you can open an <a href="https://github.com/agabor/yact/issues">issue</a>.</p>
+      </div>
+    </section>

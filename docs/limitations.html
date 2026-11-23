@@ -1,0 +1,70 @@
+---
+layout: default
+title: "Limitations: YACT"
+description: "What YACT does not do, where it works badly, and the issues that are known."
+canonical: limitations.html
+og_title: "YACT limitations"
+nav: limits
+---
+
+    <div class="wrap">
+      <h1 class="page-title">Limitations</h1>
+      <p class="lede">YACT does a narrow job and gives up a lot to do it. This page lists what it does not do, where it works badly, and what is known to be broken. For anything else, open an <a href="https://github.com/agabor/yact/issues">issue</a>.</p>
+      <ul class="jump" aria-label="On this page">
+        <li><a href="#not">What it does not do</a></li>
+        <li><a href="#badly">Where it works badly</a></li>
+        <li><a href="#known">Known issues</a></li>
+      </ul>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="not" aria-labelledby="not-h">
+      <div class="wrap">
+        <h2 id="not-h">What it does not do</h2>
+        <ul>
+          <li><strong>It does not prove a change is correct.</strong> The lint shows the gaps in the prompt that the model noticed. It can miss some, and a plan with no Assumptions section may still rest on one. Reading the plan, reading the diff and running the tests are still needed.</li>
+          <li><strong>It does not find context for you.</strong> You link the files. If you do not know which code a change touches, an agent that explores the repository is the better tool.</li>
+          <li><strong>It does not run tests or iterate.</strong> One call writes the code; checking it is up to you.</li>
+          <li><strong>It does not run unattended.</strong> There are no workflows, by design.</li>
+          <li><strong>It does not make anyone read.</strong> A tick is one keystroke.</li>
+          <li><strong>It does not attach the plan to the change.</strong> Committing it or pasting it into the pull request is up to you.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="badly" aria-labelledby="badly-h">
+      <div class="wrap">
+        <h2 id="badly-h">Where it works badly</h2>
+        <ul>
+          <li><strong>Large files.</strong> The model writes every changed file back in full, within the model's output limit. YACT warns about linked files over 300 lines. A codebase of very large files is hard to work with.</li>
+          <li><strong>Large changes.</strong> A plan is implemented in one call. A change that does not fit has to be planned as several smaller ones.</li>
+          <li><strong>Legacy code.</strong> Tangled code needs many linked files per step, and <code>act</code> does not refactor code the prompt did not ask about.</li>
+          <li><strong>One provider.</strong> Only Anthropic's API, with your own key. No other providers, no local models.</li>
+          <li><strong>Index coverage.</strong> The index of names covers Go, PHP, JavaScript, C#, Swift and Kotlin. In other languages, such as TypeScript or Python, the model is less able to ask for code it was not given.</li>
+          <li><strong>Noisy diffs.</strong> Whole-file output can change more lines than the task needed. Nothing in YACT limits the size of a diff.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="known" aria-labelledby="known-h">
+      <div class="wrap">
+        <h2 id="known-h">Known issues</h2>
+        <dl class="defs">
+          <dt id="missing-context-loop">The missing-context loop</dt>
+          <dd>Rarely, <code>y plan</code> keeps listing the same files under Missing context while nothing else changes. YACT keeps no conversation history, so the model does not know it asked before. Fix: delete the section by hand and run <code>y act</code>; if a step then lacks context, link the file yourself.</dd>
+          <dt>Links into ignored folders are writable</dt>
+          <dd>A response may only write linked files, but a link to an existing file inside an ignored folder (such as <code>.git/hooks/pre-commit</code>) is treated like a new file and allowed. Do not link into ignored folders.</dd>
+          <dt>Old prompt copies</dt>
+          <dd>A system prompt downloaded before 2026-11-20 may contain <code>--strict</code>, which no longer exists, and fails with <code>unknown flag: --strict</code>. Run <code>y download prompt act</code> to get a current copy.</dd>
+          <dt>The feedback note is not cleared</dt>
+          <dd><code>.yact/temp/feedback.md</code> stays between calls, so an old note can look new. Delete it before a new change.</dd>
+          <dt><code>.yact/plans/</code> from older versions stays</dt>
+          <dd>If you used <code>split</code>, delete the folder; nothing reads it any more.</dd>
+        </dl>
+      </div>
+    </section>

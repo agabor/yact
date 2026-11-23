@@ -1,36 +1,102 @@
 ---
 layout: default
-title: "Code principles: the rules YACT applies to code"
-description: "The sixteen code principles that YACT follows when it plans, writes and reviews code, how they are applied, and why YACT is easier to introduce on clean code than on legacy code."
-canonical: code-principles.html
-og_title: "YACT code principles"
+title: "Principles: YACT"
+description: "The rules behind YACT: a prompt is a program that can be checked, the AI works inside a loop a person controls, and code is shaped so it can be understood from a few files."
+canonical: principles.html
+og_title: "YACT principles"
 nav: principles
 ---
 
     <div class="wrap">
-      <h1 class="page-title">Code principles</h1>
-      <p class="lede">YACT has sixteen principles for the code it plans, writes and reviews. They have one goal: every piece of code can be understood from what is visible in one place, and mistakes are caught by types, the compiler and tests rather than by careful reading.</p>
+      <h1 class="page-title">Principles</h1>
+      <p class="lede">These are the rules YACT is built on. Some are enforced by the tool; others are habits it only supports. Each says which.</p>
       <ul class="jump" aria-label="On this page">
-        <li><a href="#why">Why YACT has them</a></li>
-        <li><a href="#principles">The sixteen principles</a></li>
+        <li><a href="#ai-in-the-loop">AI in the loop</a></li>
+        <li><a href="#program">A prompt is a program</a></li>
+        <li><a href="#decisions">Decisions</a></li>
+        <li><a href="#plan">The plan travels</a></li>
+        <li><a href="#in-sight">Nothing out of sight</a></li>
+        <li><a href="#codebase">Stay in the codebase</a></li>
+        <li><a href="#code">Code principles</a></li>
+        <li><a href="#principles">The sixteen</a></li>
         <li><a href="#defaults">Four defaults</a></li>
-        <li><a href="#applied">How YACT applies them</a></li>
-        <li><a href="#change">Changing them</a></li>
-        <li><a href="#legacy">New code and legacy code</a></li>
       </ul>
     </div>
 
     <hr class="rule toc-rule">
 
-    <section class="section" id="why" aria-labelledby="why-h">
+    <section class="section" id="ai-in-the-loop" aria-labelledby="ai-in-the-loop-h">
       <div class="wrap">
-        <h2 id="why-h">Why YACT has them</h2>
-        <p><a href="the-yact-way.html">The YACT way</a> is about the prompt. These principles are about the code. YACT needs both, for two reasons.</p>
+        <h2 id="ai-in-the-loop-h">AI in the loop, not human in the loop</h2>
+        <p>In agentic development, the agent runs the loop and the person steps in when asked. YACT turns that around. The person runs the loop: writes the prompt, chooses the context, makes every decision, checks the result. The model does a well-defined job at two points in it: it writes the plan, and it writes the code. <em>A design decision.</em></p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="program" aria-labelledby="program-h">
+      <div class="wrap">
+        <h2 id="program-h">A prompt is a program</h2>
+        <p>When you ask a model to change code, the prompt is a program in a very high-level language, and the model compiles it into files. A program can be checked before it runs. A prompt can be wrong in two ways that can be found without running anything:</p>
         <ul>
-          <li><strong>Each call sees only the files you linked.</strong> Code that can be understood from one place needs few linked files. Code with hidden side effects, generic names or implicit wiring needs many, and the model is more likely to miss one.</li>
-          <li><strong><code>act</code> writes every changed file back in full.</strong> A small file is quick and cheap to rewrite, and its diff is easy to check.</li>
+          <li><strong>It is incomplete.</strong> It refers to code the model cannot see: a type, a caller, a file that was not linked. The plan lists these under Missing context.</li>
+          <li><strong>It leaves a decision open.</strong> The model then decides without saying so. The plan lists these under Assumptions.</li>
         </ul>
-        <p>The principles also keep the code readable for people. A person who reviews a change has the same limit as the model: they can only judge what they can see.</p>
+        <p>YACT treats both as errors: <code>act</code> will not run until they are resolved. <em>Enforced by the tool.</em></p>
+        <p>The check is a lint, not a proof. The model does it during the plan call, so it finds only what the model notices, and an empty Assumptions section does not mean the prompt had none. What it gives is narrower and still useful: gaps show up before any code exists, when fixing one costs a sentence instead of a round of review.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="decisions" aria-labelledby="decisions-h">
+      <div class="wrap">
+        <h2 id="decisions-h">Only a person accepts a decision</h2>
+        <p>The model always writes open boxes, and YACT keeps a tick only if a person ticked the same entry before and its words have not changed. <em>Enforced by the tool.</em></p>
+        <p>This is also why YACT does not run unattended. A job that plans and implements with nobody reading would have to tick the boxes itself. <em>A design decision: there is no automation to switch on.</em></p>
+        <p>A tick is one keystroke, so the tool cannot make anyone read. It makes each decision visible and records it in the plan.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="plan" aria-labelledby="plan-h">
+      <div class="wrap">
+        <h2 id="plan-h">The plan travels with the change</h2>
+        <p>A resolved plan records four things in one place: the intent in the author's words, the file each step changes, the files the model saw, and the decisions that were accepted. A reviewer with the plan compares the change with what was asked instead of reconstructing it from the diff. <em>A habit: YACT does not attach the plan anywhere.</em></p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="in-sight" aria-labelledby="in-sight-h">
+      <div class="wrap">
+        <h2 id="in-sight-h">Nothing happens out of sight</h2>
+        <ul>
+          <li>One command is one API call. No loop, no retries, no exploring the codebase, no running commands. <em>Enforced by the design.</em></li>
+          <li>Only linked files are sent, plus the index of names when a call asks for it. <em>Enforced.</em></li>
+          <li>A response may only write the files the prompt or plan links. <em>Enforced.</em></li>
+          <li>State lives in plain files: the prompt and plan in <code>yact-prompt.md</code>, the last response in <code>.yact/temp/buffer.txt</code>. Every call prints the files it sends and its cost. <em>Enforced.</em></li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="codebase" aria-labelledby="codebase-h">
+      <div class="wrap">
+        <h2 id="codebase-h">The developer stays in the codebase</h2>
+        <p>Writing a complete prompt and choosing the files requires knowing the code, and doing it keeps that knowledge in use. This is why YACT does not search for context on its own. <em>A design decision, with a cost: see <a href="limitations.html">Limitations</a>.</em></p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="code" aria-labelledby="code-h">
+      <div class="wrap">
+        <h2 id="code-h">Code is shaped to be understood from a few files</h2>
+        <p>Each call sees only the linked files, and the model writes every changed file back in full. So code has to be understandable from what is visible in one place, and files have to stay small. Sixteen code principles and four defaults describe that code. <code>plan</code>, <code>act</code>, <code>analyze</code> and <code>review</code> all include the same list, from one text file you can edit.</p>
+        <p>Where code shaped for a model and code shaped for a person disagree, the person wins.</p>
         <p>The text below follows the file that the model receives, lightly edited for reading. The file in the repository, <a href="https://github.com/agabor/yact/blob/main/systemprompts/include/principles.txt"><code>systemprompts/include/principles.txt</code></a>, is the authoritative version.</p>
       </div>
     </section>
@@ -74,6 +140,7 @@ nav: principles
           <dt id="p16">P16. Consistency</dt>
           <dd>Formatting, naming and structure match the surrounding code.</dd>
         </dl>
+      
       </div>
     </section>
 
@@ -93,6 +160,7 @@ nav: principles
           <dt id="d4">D4. File size</dt>
           <dd>Keep source files under about 200 lines and split them before 300, because every change rewrites the whole file. Split along responsibilities inside the same package or module and keep its public interface unchanged, rather than creating new modules or shallow wrappers.</dd>
         </dl>
+      
       </div>
     </section>
 
@@ -114,6 +182,7 @@ nav: principles
         </dl>
         <p>The plan has priority. If a plan and a principle disagree, <code>act</code> follows the plan. The principles decide only what the plan leaves open.</p>
         <p>The principles shape how a goal is reached. They do not change the goal: YACT does not refactor your code because it breaks a principle. If you want that, ask for it in a prompt.</p>
+      
       </div>
     </section>
 
@@ -127,6 +196,7 @@ nav: principles
         <p>Edit it to match your team's rules. The change applies to <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> from the next call. Keep the identifiers (<code>P1</code>, <code>D4</code>) stable if you can, because plans and reviews refer to them.</p>
         <p>Keep a copy of your version. Running <code>y download prompt</code> for one of those four commands downloads the original file again and overwrites your edits.</p>
         <p>Some principles assume a statically typed language (P6, P9). In a dynamically typed codebase, the model applies them as far as the language allows, and you may want to reword them.</p>
+      
       </div>
     </section>
 
@@ -143,9 +213,6 @@ nav: principles
           <li><code>act</code> does not refactor code that the prompt did not mention, so the code does not get cleaner as a side effect of other changes.</li>
         </ul>
         <p>YACT warns before a call about every linked file over 300 lines. To see how far a part of your codebase is from the principles, link its files and run <code>y analyze</code>.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="getting-started.html">Get started</a>
-          <a class="btn" href="the-yact-way.html">Read The YACT way</a>
-        </div>
+      
       </div>
     </section>

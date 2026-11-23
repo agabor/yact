@@ -1,0 +1,193 @@
+---
+layout: default
+title: "How it works: YACT"
+description: "One change with YACT, start to finish: write the prompt, plan, resolve what the plan lists, act, check the change, hand it over with its plan."
+canonical: how-it-works.html
+og_title: "How YACT works"
+nav: how
+---
+
+    <div class="wrap">
+      <h1 class="page-title">How it works</h1>
+      <p class="lede">Every change follows the same loop. The tool enforces part of it; the rest is habit.</p>
+        <figure class="loop">
+          <div class="loop-scroll">
+            <svg class="loop-wide" viewBox="0 0 760 236" role="img" aria-labelledby="loop-cap">
+              <defs><marker id="loop-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker></defs>
+              <g class="edge">
+                <path d="M235 80H275" marker-end="url(#loop-arrow)"/>
+                <path d="M485 80H525" marker-end="url(#loop-arrow)"/>
+                <path d="M630 56V32H380V56" marker-end="url(#loop-arrow)"/>
+                <path d="M630 104V176" marker-end="url(#loop-arrow)"/>
+                <path d="M525 200H485" marker-end="url(#loop-arrow)"/>
+                <path d="M275 200H235" marker-end="url(#loop-arrow)"/>
+                <path d="M380 176V104" marker-end="url(#loop-arrow)"/>
+              </g>
+              <rect class="box" x="25" y="56" width="210" height="48" rx="8"/><text x="130" y="84">Write the prompt</text>
+              <rect class="box" x="275" y="56" width="210" height="48" rx="8"/><text x="380" y="84">y plan</text>
+              <rect class="box key" x="525" y="56" width="210" height="48" rx="8"/><text class="strong" x="630" y="84">Resolve the two sections</text>
+              <rect class="box" x="525" y="176" width="210" height="48" rx="8"/><text x="630" y="204">y act</text>
+              <rect class="box" x="275" y="176" width="210" height="48" rx="8"/><text x="380" y="204">Check git diff, run tests</text>
+              <rect class="box" x="25" y="176" width="210" height="48" rx="8"/><text x="130" y="204">Hand over with the plan</text>
+              <text class="lbl" x="505" y="24">linked a file or wrote an answer</text>
+              <text class="lbl end" x="620" y="144">every entry resolved</text>
+              <text class="lbl end" x="370" y="144">only part implemented</text>
+            </svg>
+            <svg class="loop-tall" viewBox="0 0 360 484" role="img" aria-labelledby="loop-cap">
+              <defs><marker id="loop-arrow-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker></defs>
+              <g class="edge">
+                <path d="M180 62V98" marker-end="url(#loop-arrow-t)"/>
+                <path d="M180 142V178" marker-end="url(#loop-arrow-t)"/>
+                <path d="M180 222V258" marker-end="url(#loop-arrow-t)"/>
+                <path d="M180 302V338" marker-end="url(#loop-arrow-t)"/>
+                <path d="M180 382V418" marker-end="url(#loop-arrow-t)"/>
+                <path d="M300 200H326V120H300" marker-end="url(#loop-arrow-t)"/>
+                <path d="M60 360H34V120H60" marker-end="url(#loop-arrow-t)"/>
+              </g>
+              <rect class="box" x="60" y="18" width="240" height="44" rx="8"/><text x="180" y="45">Write the prompt</text>
+              <rect class="box" x="60" y="98" width="240" height="44" rx="8"/><text x="180" y="125">y plan</text>
+              <rect class="box key" x="60" y="178" width="240" height="44" rx="8"/><text class="strong" x="180" y="205">Resolve the two sections</text>
+              <rect class="box" x="60" y="258" width="240" height="44" rx="8"/><text x="180" y="285">y act</text>
+              <rect class="box" x="60" y="338" width="240" height="44" rx="8"/><text x="180" y="365">Check git diff, run tests</text>
+              <rect class="box" x="60" y="418" width="240" height="44" rx="8"/><text x="180" y="445">Hand over with the plan</text>
+              <text class="lbl" x="344" y="160" transform="rotate(90 344 160)">file linked or answer written</text>
+              <text class="lbl" x="18" y="240" transform="rotate(-90 18 240)">only part implemented</text>
+              <text class="lbl start" x="190" y="244">every entry resolved</text>
+            </svg>
+          </div>
+          <figcaption id="loop-cap">Code is written only after the plan is resolved. A partial result goes back to <code>y plan</code>.</figcaption>
+        </figure>
+      <ul class="jump" aria-label="On this page">
+        <li><a href="#prompt">1. Prompt</a></li>
+        <li><a href="#plan">2. Plan</a></li>
+        <li><a href="#resolve">3. Resolve</a></li>
+        <li><a href="#act">4. Act</a></li>
+        <li><a href="#check">5. Check</a></li>
+        <li><a href="#hand-over">6. Hand over</a></li>
+        <li><a href="#shortcuts">Shortcuts</a></li>
+        <li><a href="#habits">Habits</a></li>
+      </ul>
+    </div>
+
+    <hr class="rule toc-rule">
+
+    <section class="section" id="prompt" aria-labelledby="prompt-h">
+      <div class="wrap">
+        <h2 id="prompt-h">1. Write the prompt and link the files</h2>
+        <p>A change starts with an empty prompt, the files it needs, and a request in plain words.</p>
+        <pre data-copy><code>y new
+y read "internal/signup/*.go"
+y prompt "validate email addresses on signup"</code></pre>
+        <p>The linked files are the only code the model sees. That is deliberate: choosing them requires knowing which code a change touches, and keeps the developer in the codebase.</p>
+        <p>When you know a name but not where it is used, link by keyword: <code>y keyword Signup</code> links every file that contains the word, and <code>((Signup))</code> typed into the prompt runs the same search on every call.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="plan" aria-labelledby="plan-h">
+      <div class="wrap">
+        <h2 id="plan-h">2. Plan</h2>
+        <pre data-copy><code>y plan</code></pre>
+        <p>The model turns the prompt into a plan in <code>yact-prompt.md</code>: a goal, then steps that each name the file they change and link the files they need. It also gets an index of the names of files, types and functions in the project, so it can ask for code it was not given.</p>
+        <pre><code># Goal
+
+Validate email addresses on signup.
+
+## Steps
+
+### 1. Add email validation
+
+**File:** internal/signup/validate.go
+**Context:** internal/signup/signup.go
+
+### 2. Cover it with tests
+
+**File:** internal/signup/validate_test.go
+**Context:** internal/signup/validate.go</code></pre>
+        <p>The default model is Haiku. For a difficult or unfamiliar change, plan with a stronger one (<code>y -m sonnet plan</code>): it notices more of what the prompt left open.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="resolve" aria-labelledby="resolve-h">
+      <div class="wrap">
+        <h2 id="resolve-h">3. Resolve what the plan lists</h2>
+        <p>The plan ends with up to two sections. They show fastest where the prompt was weak, so read them before the steps.</p>
+        <ul>
+          <li><strong>Missing context</strong> lists files the model needed and did not get. Link them, or simply plan again: the entries are links, so the files are sent next time.</li>
+          <li><strong>Assumptions</strong> lists decisions the model made because the prompt did not say. Tick each one you agree with. Where you disagree, write an <code>Answer:</code> line under it and plan again, then read how the model understood you and tick it.</li>
+        </ul>
+        <pre><code>## Assumptions
+
+- [x] **A1. Unclear:** the prompt does not say what happens to an invalid
+  address. Taken: signup returns an error.
+- [ ] **A2. Unclear:** the prompt does not say where the error is shown.
+  Taken: on a new page.
+  Answer: inline, after the field loses focus</code></pre>
+        <p><code>y act</code> refuses to run while either section has an open entry. The model cannot tick a box: YACT keeps a tick only if a person ticked that entry before and its wording has not changed.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="act" aria-labelledby="act-h">
+      <div class="wrap">
+        <h2 id="act-h">4. Act</h2>
+        <pre data-copy><code>y act</code></pre>
+        <p>One call sends the whole plan with the files it links, and YACT writes back the files in the response. A response may only write files the prompt or plan links; a new file counts if the plan links it.</p>
+        <p>If the model finds a problem in the plan while writing code, it leaves a note in <code>.yact/temp/feedback.md</code>, which YACT prints. Treat the note as a bug in the prompt.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="check" aria-labelledby="check-h">
+      <div class="wrap">
+        <h2 id="check-h">5. Check the change</h2>
+        <pre data-copy><code>git diff</code></pre>
+        <p>Read the diff against the plan and run the tests; YACT does not run them. If only part of the plan was implemented, <code>y plan</code> drops the finished steps, and <code>y act</code> continues.</p>
+        <p>If the change is wrong because the prompt left something open, fix the prompt and plan again rather than patching the code, so the plan still describes what was done.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="hand-over" aria-labelledby="hand-over-h">
+      <div class="wrap">
+        <h2 id="hand-over-h">6. Hand it over with its plan</h2>
+        <p>The plan records what was asked, which files changed, which files the model saw and which decisions were accepted. Commit it with the change or paste it into the pull request, so the reviewer reads the change against it.</p>
+        <p>YACT does not attach it anywhere, and <code>y new</code> deletes it, so do this before the next change.</p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="shortcuts" aria-labelledby="shortcuts-h">
+      <div class="wrap">
+        <h2 id="shortcuts-h">Shortcuts</h2>
+        <ul>
+          <li><strong>Trivial changes skip the plan.</strong> For a rename or a one-line fix, write the prompt and run <code>y act</code> directly.</li>
+        </ul>
+        <pre data-copy><code>y prompt "Rename PlanStep to Step and update every use. ((PlanStep))"
+y act</code></pre>
+        <ul>
+          <li><strong>Questions change nothing.</strong> <code>y ask</code> answers questions about the linked code. <code>y review</code> reviews a diff written to a file and linked.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <section class="section" id="habits" aria-labelledby="habits-h">
+      <div class="wrap">
+        <h2 id="habits-h">Habits that help</h2>
+        <ul>
+          <li>Keep plans small enough for one call and one review. A bigger goal becomes several smaller goals, one after the other.</li>
+          <li>Keep files small. The model writes every changed file back in full, so a 150-line file is quicker, cheaper and easier to check than a 900-line one.</li>
+          <li>Start an unrelated change with <code>y new</code>. <code>y prompt</code> appends, so old text would be sent again.</li>
+          <li>Use <code>--dry-run</code> when unsure what will be sent. It lists every file and makes no call.</li>
+        </ul>
+      </div>
+    </section>

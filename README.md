@@ -7,7 +7,7 @@ a prompt. The model turns it into a plan and lists what your prompt left unclear
 resolve every entry, and one model call then implements the plan. The plan goes to the
 reviewer together with the change. Not for vibe coding.
 
-Website and getting-started guide: [yact.dev](https://agabor.github.io/yact)
+Website: [agabor.github.io/yact](https://agabor.github.io/yact)
 
 > **Not affiliated with Anthropic.** YACT is an independent, open-source, third-party tool.
 > It is not made, endorsed, or supported by Anthropic PBC. "Claude" and "Anthropic" are
@@ -54,7 +54,7 @@ Website and getting-started guide: [yact.dev](https://agabor.github.io/yact)
 
 The lint is not a proof. The model does the checking and can overlook something, so you
 still read the plan, check the change and run your tests. More on the method:
-[The YACT way](https://agabor.github.io/yact/the-yact-way.html).
+[Principles](https://agabor.github.io/yact/principles.html).
 
 ## How YACT works
 
@@ -301,7 +301,7 @@ The official prompts:
 `act`, `plan`, `analyze` and `review` share one set of code principles
 ([`systemprompts/include/principles.txt`](systemprompts/include/principles.txt)), so code is
 planned, written and reviewed against the same rules. They are described on
-[yact.dev](https://agabor.github.io/yact/code-principles.html).
+[the website](https://agabor.github.io/yact/principles.html#principles).
 
 You can write your own prompts. Before you edit an official one, copy it to a new name,
 because `y download prompt` overwrites the original. Prompt names may not contain `/`, `\`
