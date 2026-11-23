@@ -16,4 +16,4 @@ Create a minimal Go program that prints "Hello, world!" to the console.
 
 ## Assumptions
 
-- [x] **A1. Unclear:** the task does not say where the program lives or whether it needs a `go.mod`. Taken: a single `main.go` in the project root, runnable with `go run main.go`.
+- [ ] **A1. Unclear:** the task does not say where the program lives or whether it needs a `go.mod`. Taken: a single `main.go` in the project root, runnable with `go run main.go`.
