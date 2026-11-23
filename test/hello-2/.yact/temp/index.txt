@@ -1,0 +1,9 @@
+This is an index of the source code in the project.
+Each section starts with a file path relative to the project root, followed by
+the signatures of the declarations (functions, methods, types, classes) found in that file.
+Function bodies are omitted. Indented signatures are members of the declaration above them.
+Use this index to understand the structure of the project and to locate code.
+Only the public interface is listed: private declarations are omitted.
+
+main.go
+  func Greeting() string

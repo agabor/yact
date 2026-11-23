@@ -1,0 +1,68 @@
+````
+// fibonacci/fibonacci.go
+package fibonacci
+
+// Number returns the Fibonacci number at a 0-based index, so Number(0) == 0 and
+// Number(1) == 1. Results above index 93 overflow uint64 and wrap silently.
+func Number(index uint) uint64 {
+	var previous uint64 = 0
+	var current uint64 = 1
+	for i := uint(0); i < index; i++ {
+		previous, current = current, previous+current
+	}
+	return previous
+}
+````
+````
+// fibonacci/fibonacci_test.go
+package fibonacci
+
+import "testing"
+
+func TestNumber(t *testing.T) {
+	cases := []struct {
+		index uint
+		want  uint64
+	}{
+		{index: 0, want: 0},
+		{index: 1, want: 1},
+		{index: 2, want: 1},
+		{index: 10, want: 55},
+		{index: 26, want: 121393},
+	}
+
+	for _, tc := range cases {
+		got := Number(tc.index)
+		if got != tc.want {
+			t.Errorf("Number(%d) = %d, want %d", tc.index, got, tc.want)
+		}
+	}
+}
+````
+````
+// main.go
+package main
+
+import (
+	"fmt"
+
+	"hello/fibonacci"
+)
+
+// Greeting is separate from main so the message can be tested without console output.
+func Greeting() string {
+	return "Hello, world!"
+}
+
+func main() {
+	fmt.Println(Greeting())
+	fmt.Println(fibonacci.Number(26))
+}
+
+````
+````
+// .yact/temp/feedback.md
+# Feedback
+
+- **Unclear:** the module path from `go.mod` was not provided, so the import path `<module>/fibonacci` is unknown. Taken: the module is named `hello`, giving the import `"hello/fibonacci"`; adjust it to the real module path.
+````
