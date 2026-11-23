@@ -97,7 +97,7 @@ nav: way
           <li><h3>Write the prompt</h3><p>Say what you want in plain words, and link the files that you know the change needs.</p></li>
           <li><h3>Plan</h3><p><code>y plan</code> writes the steps. The two sections list what is missing and what the model assumed.</p></li>
           <li><h3>Resolve the two sections</h3><p>Link the files that Missing context lists. Tick each assumption you accept, and write an answer under each one you do not. If you linked a file or wrote an answer, plan again.</p></li>
-          <li><h3>Act</h3><p>When the plan has no Missing context section and every assumption is ticked, run <code>y act</code>. It implements the plan in one call. If the plan is too large for one call, <code>y split</code> first writes it as smaller plans, each of which leaves the code working, and you implement and check them one at a time.</p></li>
+          <li><h3>Act</h3><p>When the plan has no Missing context section and every assumption is ticked, run <code>y act</code>. It implements the plan in one call. Keep each plan small enough for one call and one review; a larger goal becomes several smaller ones, planned and implemented one after the other.</p></li>
           <li><h3>Hand over the change with its plan</h3><p>Include the plan in the pull request, so that the reviewer can compare the change with it.</p></li>
         </ol>
         <p><code>act</code> can still find a problem in the plan while it writes the code. It then writes a note to <code>.yact/temp/feedback.md</code>, and YACT prints the note. Treat the note as a bug report on the prompt: correct the prompt as well as the code.</p>

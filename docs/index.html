@@ -128,8 +128,8 @@ canonical: index.html
           <ol class="steps">
             <li><h3>Write the prompt and link the files</h3><p><code>y new</code> starts an empty prompt, and <code>y prompt</code> writes your request into it. <code>y read</code> links files by path or glob. <code>y keyword Signup</code> links every file that contains the word, and <code>((Signup))</code> typed into the prompt runs the same search each time you run a command. The linked files are the context: they are the only code the model sees.</p></li>
             <li><h3>Plan, then resolve the two sections</h3><p><code>y plan</code> turns the prompt into a plan with one file per step. Link the files that <code>## Missing context</code> lists. Under <code>## Assumptions</code>, tick each entry you accept and write an answer under each one you do not. If you linked a file or wrote an answer, run <code>y plan</code> again.</p></li>
-            <li><h3>Implement the plan</h3><p><code>y act</code> implements the plan in one call and writes the complete files. A plan too large for one call is split first: <code>y split</code> writes it as smaller plans, each of which leaves the code working, and you implement them one at a time. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
-            <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the plan and run your tests. If you split the plan, go on with the next part.</p></li>
+            <li><h3>Implement the plan</h3><p><code>y act</code> implements the plan in one call and writes back, in full, the files the plan links. If <code>act</code> finds a problem in the plan, it writes a feedback note, and YACT prints it.</p></li>
+            <li><h3>Check the change</h3><p>Compare <code>git diff</code> with the plan and run your tests.</p></li>
             <li><h3>Open the pull request</h3><p>Include the plan, so the reviewer has the intent, the files and the assumptions you accepted.</p></li>
           </ol>
           <div class="stack">
@@ -158,7 +158,7 @@ canonical: index.html
           </div>
         </div>
         <p class="more">By default, <code>plan</code> and <code>act</code> also send an index: a list of the names of the files, classes and functions in your project, without their code. With the index, the model can name code it was not given and ask for it. The index covers Go, PHP, JavaScript, C#, Swift and Kotlin, and <code>-i none</code> turns it off.</p>
-        <p class="more">After every call, YACT prints the model, the token counts and the estimated cost. Add <code>--dry-run --verbose</code> to see exactly what a command would send, without calling the API.</p>
+        <p class="more">Before every call, YACT lists the files it sends; after it, the token counts and the estimated cost. Add <code>--dry-run</code> to see which files a command would send, without calling the API.</p>
       </div>
     </section>
 
@@ -170,13 +170,13 @@ canonical: index.html
         <div class="cards">
           <div class="card"><h3><code>y keyword PlanStep</code></h3><p>Searches once and writes a link to every matching file into <code>yact-prompt.md</code>. The list is a snapshot that you can read and shorten.</p></div>
           <div class="card"><h3><code>((PlanStep))</code></h3><p>Type it into the prompt file and the search runs each time you run a command, so files created later are included. Passed to <code>y prompt</code>, it searches once and links the files. YACT removes the marker before it sends the text.</p></div>
-          <div class="card"><h3>Whole words, any naming style</h3><p><code>plan step</code> matches <code>PlanStep</code> and <code>plan_step</code>. Only files with known extensions are searched, and <code>y config ext vue</code> adds one. <code>--dry-run --verbose</code> shows which files matched.</p></div>
+          <div class="card"><h3>Whole words, any naming style</h3><p><code>plan step</code> matches <code>PlanStep</code> and <code>plan_step</code>. Only files with known extensions are searched, and <code>y config ext vue</code> adds one. <code>--dry-run</code> shows which files matched.</p></div>
         </div>
         <p>A trivial change does not need a plan. For a rename, for example, write the prompt and run <code>act</code> on it directly. Keywords work there too:</p>
         <div class="split">
           <pre data-copy><code>y prompt "Rename PlanStep to Step and update every use. ((PlanStep))"
 y act</code></pre>
-          <p class="small">A keyword links files by their content. With <code>--dry-run --verbose</code> you can see the list before anything is sent.</p>
+          <p class="small">A keyword links files by their content. With <code>--dry-run</code> you can see the list before anything is sent.</p>
         </div>
       </div>
     </section>
@@ -185,7 +185,7 @@ y act</code></pre>
       <div class="wrap">
         <div class="hunk">@@ <b>06 · Code principles</b> @@</div>
         <h2 class="big" id="code-h">YACT also has rules for the code it writes.</h2>
-        <p class="lead">The lint checks your prompt. Sixteen code principles guide the code. <code>plan</code>, <code>split</code>, <code>act</code>, <code>review</code> and <code>analyze</code> all include the same list, and the list has one goal: every piece of code can be understood from what is visible in one place.</p>
+        <p class="lead">The lint checks your prompt. Sixteen code principles guide the code. <code>plan</code>, <code>act</code>, <code>review</code> and <code>analyze</code> all include the same list, and the list has one goal: every piece of code can be understood from what is visible in one place.</p>
         <div class="grid c3">
           <div class="topline"><h3>Why YACT needs them</h3><p>Each call sees only the files you linked, and <code>act</code> writes every changed file back in full. Code that can be understood from one place needs few linked files, and a small file is quick to rewrite.</p></div>
           <div class="topline"><h3>What they ask for</h3><p>Searchable names, one job per function, no hidden side effects, logic kept apart from I/O, precise types, tests, and source files under about 200 lines.</p></div>
@@ -262,10 +262,9 @@ y act</code></pre>
         <h2 class="big" id="own-h">Every command is a text file.</h2>
         <div class="split">
           <div>
-            <p>Seven commands come with YACT. Each one is a plain-text system prompt in <code>~/.yact/systemprompts/</code>. Add a file there and you have a new command, with nothing to rebuild. The lint rules and the code principles are in these files too, so you can read them and change them.</p>
+            <p>Six commands come with YACT. Each one is a plain-text system prompt in <code>~/.yact/systemprompts/</code>. Add a file there and you have a new command, with nothing to rebuild. The lint rules and the code principles are in these files too, so you can read them and change them.</p>
             <dl class="cmds">
               <dt>plan</dt><dd>Turns a prompt into a plan with one file per step, and lists the missing context and the assumptions</dd>
-              <dt>split</dt><dd>Splits a plan too large for one call into smaller plans, each of which leaves the code working</dd>
               <dt>act</dt><dd>Implements the plan by writing complete files, following the plan and the code principles</dd>
               <dt>ask</dt><dd>Answers questions about the linked code and changes nothing</dd>
               <dt>review</dt><dd>Asks the model to review a diff against its prompt</dd>
@@ -299,15 +298,15 @@ y act</code></pre>
           <div><h3>Can the model tick an assumption itself?</h3><p>No. YACT decides every box after a plan call. A box stays ticked only if you ticked that entry before and its wording has not changed. If the model rewords an entry, you accept it again.</p></div>
           <div><h3>Can I run it in CI, without a person?</h3><p>No, and this is deliberate. A plan needs a person to accept or answer its assumptions. YACT has no workflows that plan and implement by themselves.</p></div>
           <div><h3>Does the lint prove the code is right?</h3><p>No. The model does the lint during the plan call, and the two sections show only what the model noticed. It can overlook something, so you still read the plan, check the change and run your tests. What the lint gives you is the open decisions before any code is written, when changing one costs a sentence.</p></div>
-          <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and one optional input if you use it: <code>.yact/domain.txt</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run --verbose</code> shows what would be sent.</p></div>
-          <div><h3>What if a plan is too large for one call?</h3><p>Split it. <code>y split</code> regroups its steps into smaller plans of at most four steps each, ordered so that the code builds and the tests pass after every part. It does not change the design of the steps. You implement and check the parts one at a time.</p></div>
+          <div><h3>Does it send my whole repository?</h3><p>No. It sends the prompt, the files linked in the prompt or the plan, and one optional input if you use it: <code>.yact/domain.txt</code>. By default, <code>plan</code> and <code>act</code> add an index of file, class and function names, without code; <code>-i none</code> turns it off. A keyword can match many files, and <code>--dry-run</code> shows what would be sent. Hidden files such as <code>.env</code> are sent only if you link them.</p></div>
+          <div><h3>What if a plan is too large for one call?</h3><p>Make the goal smaller. Plan and implement one part of the change, check it, and then plan the next. If <code>act</code> implements only part of a plan, <code>y plan</code> drops the finished steps.</p></div>
           <div><h3>Do I always need a plan?</h3><p>No. For a trivial change, such as a rename, write the prompt with <code>y prompt</code> and run <code>y act</code> without planning. For any change that a reviewer will need to understand, plan first.</p></div>
           <div><h3>Can I use it on an existing codebase?</h3><p>Yes, if its files are small and its structure is clear. On a legacy codebase with very large files it is hard, because <code>act</code> rewrites every changed file in full. It is easiest on a new project.</p></div>
           <div><h3>Does it change my coding style?</h3><p><code>plan</code> and <code>act</code> follow sixteen <a href="code-principles.html">code principles</a>, but only in code that a step writes or changes, and they are told to match the conventions already in the file. The principles are one text file that you can edit.</p></div>
           <div><h3>Which models can I use?</h3><p>Each command has its own default: <code>plan</code>, <code>act</code> and <code>bash</code> use Claude Haiku, and <code>ask</code>, <code>review</code> and <code>analyze</code> use Sonnet. <code>-m</code> selects Haiku, Sonnet, Opus or Fable for one call, if your Anthropic account has access to it.</p></div>
           <div><h3>What does it cost?</h3><p>YACT is free. You pay Anthropic directly for the tokens you use, and YACT prints the token counts and the estimated cost after every call.</p></div>
-          <div><h3>Where do my API key and code go?</h3><p>The key is stored in <code>~/.yact/config</code> and sent only to Anthropic. The files you link are sent to Anthropic's API and nowhere else. There is no telemetry. Apart from the API calls, YACT contacts only GitHub, to download system prompts and skills from the project's repository.</p></div>
-          <div><h3>Can it write outside my project?</h3><p>No. YACT rejects absolute paths and paths that leave the project directory. Inside the project, the model can write or delete any file, not only the linked ones. Check the change with <code>git diff</code> before you commit.</p></div>
+          <div><h3>Where do my API key and code go?</h3><p>The key is stored in <code>~/.yact/config</code> and sent only to Anthropic. The files you link are sent to Anthropic's API and nowhere else. There is no telemetry. Apart from the API calls, YACT contacts only GitHub, to download system prompts from the project's repository.</p></div>
+          <div><h3>Can it write outside my project?</h3><p>No. YACT rejects absolute paths and paths that leave the project directory. Inside the project, the model can write or delete only the files the prompt or the plan links, including the new files a plan names. Check the change with <code>git diff</code> before you commit.</p></div>
           <div><h3>How is it different from aider, Claude Code or Cursor?</h3><p>Those tools let you work in any way you like, and most can plan first if you ask. In YACT, planning first is the default: the prompt is linted, you read the plan before any code is written, and the plan goes to the reviewer with the change. YACT also does less. It makes one call per command, and it never explores, runs tests or retries.</p></div>
           <div><h3>Is it made by Anthropic?</h3><p>No. It is an independent open-source project under the GNU GPL v3.</p></div>
         </div>
