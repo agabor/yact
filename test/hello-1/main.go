@@ -1,0 +1,12 @@
+package main
+
+import "fmt"
+
+// Greeting is separate from main so the message can be tested without console output.
+func Greeting() string {
+	return "Hello, world!"
+}
+
+func main() {
+	fmt.Println(Greeting())
+}

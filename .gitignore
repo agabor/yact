@@ -19,8 +19,7 @@ vendor/
 go.work
 
 .idea
-**/.yact/temp
-**/yact-prompt.md
+.yact/temp
 
 # Jekyll build output and local bundler state (docs/)
 docs/_site/
