@@ -22,6 +22,28 @@ func formatPlanSummary(plan string) string {
 	return fmt.Sprintf("Assumptions: %d\nMissing context: %d", assumptions, missingContext)
 }
 
+func formatPlanChanges(changes logic.PlanChanges) string {
+	return fmt.Sprintf(
+		"Goal: %s\nSteps new: %d\nSteps changed: %d\nSteps removed: %d",
+		goalStateName(changes.Goal),
+		changes.NewSteps,
+		changes.ChangedSteps,
+		changes.RemovedSteps,
+	)
+}
+
+func goalStateName(state logic.GoalState) string {
+	switch state {
+	case logic.GoalUnchanged:
+		return "unchanged"
+	case logic.GoalChanged:
+		return "changed"
+	case logic.GoalNew:
+		return "new"
+	}
+	return fmt.Sprintf("unknown goal state %d", state)
+}
+
 func deliverResponse(session logic.Session) error {
 	switch session.Mode {
 	case config.OutputWritePlan:
@@ -35,6 +57,7 @@ func deliverResponse(session logic.Session) error {
 		}
 		fmt.Printf("Plan written to %s\n", config.GetProjectPromptPath())
 		fmt.Println(formatPlanSummary(carriedPlan))
+		fmt.Println(formatPlanChanges(logic.ComparePlans(previousPlan, carriedPlan)))
 		return nil
 	case config.OutputPrintOnly:
 		fmt.Println("\n" + session.Response)
