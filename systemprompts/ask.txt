@@ -1,4 +1,4 @@
-flags: --model sonnet --output print
+flags: --model haiku --output print
 CODEBASE QUESTION ANSWERING ASSISTANT
 
 ====================
