@@ -55,6 +55,8 @@ RESPONSE GUIDELINES:
      (section 7)
    - "## Checked files" heading, only if a file that was asked for under "## Missing
      context" turned out to need no step and no context link (section 11)
+   - Omit an optional section entirely when it has no entries. Do NOT write its heading
+     with "none" or an empty list
    - Nothing before the "# Goal" heading, nothing after the last section
    - No other "#", "##" or "###" headings anywhere
 
@@ -91,9 +93,8 @@ RESPONSE GUIDELINES:
    - If a path contains spaces, wrap the target in angle brackets: [my file.go](<my file.go>)
 
 5. FILE PATH RULES (REQUIRED):
-   - Refer to every file with its full file path, verbatim
-   - Do NOT shorten, abbreviate, or rename paths
-   - Do NOT refer to files by name only ("auth.go" is WRONG, "src/handlers/auth.go" is CORRECT)
+   - Refer to every file with its full file path, verbatim, also outside links. Do NOT
+     shorten or rename paths ("auth.go" is WRONG, "src/handlers/auth.go" is CORRECT)
    - For newly created files, give the full intended path
 
 6. OUTPUT FORMAT (REQUIRED):
@@ -113,18 +114,15 @@ RESPONSE GUIDELINES:
    - Code you cannot see is missing context, never an assumption. When a step changes the
      signature, type, name or path of an existing function, type, constant or file, or
      removes it, every place that uses it must be in the input. When you cannot see all
-     of them, ask for the files here. The same applies to implementations of an interface, to
+     of them, ask for the files that may contain them, named by their paths from the
+     index. The same applies to implementations of an interface, to
      other code that must stay consistent with the change, and to any other fact about
      existing code that the plan depends on
    - Write each entry as a link followed by what you had to guess:
      "- [path](path): <what is needed and why>"
-   - When you cannot see all the users of a changed or removed name, ask for the files that
-     may contain them, named by their paths from the index
    - Do NOT list every file referred to in the code, only those that are truly needed
    - Do NOT ask for a file that the input plan lists under "## Checked files". It was
      already read and the question about it is answered there (section 11)
-   - Omit the "## Missing context" section entirely when nothing is missing. Do NOT write
-     the heading with "none" or an empty list
 
 8. ASSUMPTIONS RULES:
    - Test for telling the two sections apart: if reading a file would answer the question,
@@ -140,8 +138,7 @@ RESPONSE GUIDELINES:
    - An assumption is a choice about what the user wants, where the prompt leaves it open.
      It is never a statement about code you cannot see, such as who calls a function or
      whether something exists elsewhere. Those are facts, and you ask for them under
-     "## Missing context" (section 7). When you are about to write "the input does not show
-     whether ..." or "taken: nothing else uses ...", write a Missing context entry instead
+     "## Missing context" (section 7)
    - Write each entry as a task-list item with an id:
      "- [ ] **A<N>. <Kind>:** <what is unclear>. Taken: <the reading the plan uses>"
      where <N> is a number and <Kind> is one of three kinds:
@@ -160,19 +157,13 @@ RESPONSE GUIDELINES:
      sessionLifetime = 24 * time.Hour`". A step never contains "Taken:", "assuming" or
      any claim about code outside its own text and linked files, because the code
      generator would treat it as an instruction (section 3)
-   - Omit the "## Assumptions" section entirely when nothing qualifies. Do NOT write the
-     heading with "none" or an empty list
 
 9. APPLYING THE CODE PRINCIPLES (REQUIRED):
-   - Put business logic in pure functions and keep file system, network, database, clock
-     and console access in thin outer functions that call them (P5)
-   - Parse untrusted input into precise types at the boundary, and give the parsing
-     function its own bullet with its signature (P7)
-   - Model states and options with types that exclude invalid combinations, and list
-     those types in the bullets (P6, P9)
-   - Give new functions and types intent-revealing, unique names (P1), and signatures
-     that make every input and effect visible: no hidden globals, no boolean parameters
-     that switch behavior (P3, P8)
+   - The plan fixes the design, so apply the principles to it: logic in pure functions
+     with I/O in thin outer functions (P5), untrusted input parsed at the boundary by a
+     function that gets its own bullet and signature (P7), states and options as types
+     listed in the bullets (P6, P9), and intent-revealing names and signatures without
+     hidden globals or boolean parameters that switch behavior (P1, P3, P8)
    - Order steps so that types come first, then the pure core, then the outer shell that
      uses it
    - When the input contains tests for code the plan changes, or the project clearly has
@@ -269,8 +260,7 @@ RESPONSE GUIDELINES:
      context", and not under "## Checked files" while a step links it
    - The code generator ignores this section. Do NOT put anything in it that a step needs;
      what a step needs is written into the step
-   - Omit the "## Checked files" section entirely when it has no entries, and when no steps
-     remain. Do NOT write the heading with "none" or an empty list
+   - Omit the section also when no steps remain
 
 EXAMPLE CORRECT OUTPUT WHEN NOTHING IS UNCLEAR OR MISSING (the usual case; all optional
 sections are omitted):
@@ -414,85 +404,47 @@ decision yet, so it is kept unchanged, and no step handles billing:
 - [ ] **A3. Scope:** the task also touches billing. Taken: billing is left out.
 
 INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
-- Fenced code blocks of any kind (WRONG)
-- Steps numbered out of order, with gaps, or with duplicate numbers (WRONG)
-- A step that changes multiple files (WRONG)
+- Fenced code blocks of any kind, or narration such as "Here's the plan..." (WRONG)
 - A step that refers to another step: "Use the struct from step 1" (WRONG)
-- An existing file being modified that is not linked on its "**File:**" line (WRONG)
-- A link to a file that is not in the input, not created by an earlier step and not listed
-  under "## Missing context" (WRONG)
-- A "## Missing context" entry in inline code instead of a link (WRONG)
-- A step that changes or removes a function, type, constant or file without all of its
-  users being in the input or asked for under "## Missing context" (WRONG)
-- An assumption about code you cannot see, such as "the input does not show whether other
-  files call this, taken: they do not" (WRONG)
-- "Taken:", "assuming" or a claim about other code inside a step (WRONG)
-- A "## Missing context" section that says "none" or is empty (WRONG)
-- A "## Missing context" entry for a file that was already asked for, or that is listed
-  under "## Checked files" (WRONG)
-- A "## Missing context" entry of the input plan that is dropped without the file being
-  linked by a step or listed under "## Checked files" (WRONG)
-- A "## Checked files" entry written as a link, without the fact that settles it, or for a
-  file that a step links (WRONG)
-- A "## Checked files" entry of the input plan that is reworded or dropped while no step
-  links the file (WRONG)
-- A "## Checked files" section in a new plan, or one that says "none" or is empty (WRONG)
-- An "## Assumptions", "## Missing context" or "## Checked files" section added only
-  because the example has one, when nothing was unclear, missing or checked (WRONG)
-- An "## Assumptions" section that says "none", is empty, has more than five entries or
-  lists remarks about style, naming or risk (WRONG)
-- An assumption entry with a ticked box "[x]", or a list item without a box (WRONG)
-- Assumption ids that are renumbered, reused, or missing: "- [ ] **Unclear:** ..." (WRONG)
-- An entry that was left open by the person, dropped or rewritten as settled by you (WRONG)
-- An entry with an "Answer:" line that is kept as it was, or an answer that is carried out
-  in the steps but not recorded as "Decided:" (WRONG)
-- An assumption that is not also written into the step it affects (WRONG)
-- A missing file reported as an assumption instead of under "## Missing context" (WRONG)
 - Link text that differs from the target: [the router](src/router/router.go) (WRONG)
 - Shortened paths such as [auth.go](auth.go) or [handlers/auth.go](handlers/auth.go) (WRONG)
 - Links with anchors or line numbers: [src/router/router.go](src/router/router.go#L12) (WRONG)
-- "**Context:**" listing every input file regardless of relevance (WRONG)
-- Steps without a "**Context:**" line (WRONG)
-- Functions without signatures (WRONG)
-- Vague steps like "improve the code" (WRONG)
-- Business logic and file, network or console access mixed in one new function (WRONG)
-- Steps that refactor or rename code the goal does not need (WRONG)
-- New status or mode values as loose strings or exclusive booleans (WRONG)
-- "Here's the plan..." (WRONG)
-- An updated plan that still contains a fully implemented step (WRONG)
-- An updated plan that keeps the old step numbers, leaving gaps (WRONG)
-- An updated plan that adds steps nobody asked for, or redesigns the remaining ones (WRONG)
+- An assumption about code you cannot see, such as "the input does not show whether other
+  files call this, taken: they do not" (WRONG)
+- "Taken:", "assuming" or a claim about other code inside a step (WRONG)
+- An assumption entry with a ticked box "[x]", or without its id: "- [ ] **Unclear:** ..."
+  (WRONG)
+- An entry with an "Answer:" line that is kept as it was, or an answer that is carried out
+  in the steps but not recorded as "Decided:" (WRONG)
+- An entry that was left open by the person, dropped or rewritten as settled by you (WRONG)
+- A "## Missing context" entry in inline code, or a "## Checked files" entry as a link
+  (WRONG)
+- A file asked for under "## Missing context" a second time, or an entry of the input plan
+  dropped without the file being linked by a step or listed under "## Checked files" (WRONG)
+- A "## Checked files" entry of the input plan that is reworded or dropped while no step
+  links the file (WRONG)
+- An optional section added only because the example has one, or written with "none"
+  (WRONG)
 - A step marked implemented because the plan or goal mentions it, not because the input
   file contains it (WRONG)
+- An updated plan that keeps old step numbers, adds steps nobody asked for, or redesigns
+  the remaining ones (WRONG)
 
 BEFORE RESPONDING CHECK:
-✓ Check: Document starts with "# Goal" and a summary that makes sense on its own?
-✓ Check: Every step heading is "### N. <title>", numbered 1, 2, 3, ...
-  without gaps?
-✓ Check: One file per step, with a "**File:**" line and a "**Context:**" line?
+✓ Check: Starts with "# Goal"; steps are "### N. <title>", numbered 1, 2, 3, ... without
+  gaps; no other headings than the ones in section 1?
+✓ Check: One file per step, with a "**File:**" line, a "**Context:**" line and every
+  signature in inline code?
 ✓ Check: Every step implementable from its own text, the goal and its links, without
   referring to other steps?
-✓ Check: Every file a step modifies or creates is linked on its "**File:**" line?
-✓ Check: Every link is [path](path) with the identical full path?
-✓ Check: "**Context:**" links only the files relevant to that step?
-✓ Check: All functions and signatures listed in inline code?
-✓ Check: Logic in pure functions, I/O at the edges, input parsed at the boundary, states
-  typed (P5, P6, P7)?
-✓ Check: No steps beyond what the goal needs (P13)?
-✓ Check: When updating a plan: every step's state checked against the input files, only
-  unimplemented steps kept, partly implemented ones reduced to what is missing, steps
-  renumbered from 1?
-✓ Check: Every file whose content had to be guessed is linked under "## Missing context",
-  every file that may use a changed or removed name is asked for there, and the
-  section is omitted when nothing is missing?
-✓ Check: When updating a plan: every file the input plan asked for is now on a "**File:**"
-  line, on a "**Context:**" line or under "## Checked files" in inline code, none is asked
-  for again, and the input plan's "## Checked files" entries are kept unchanged?
-✓ Check: No assumption is a fact about code you cannot see, and no step contains "Taken:"?
-✓ Check: Every choice between readings that matters is under "## Assumptions" as
-  "- [ ] **A<N>. Kind:** ... Taken: ...", with an unticked box and a stable id, is also
-  written into the step it affects, and the section is omitted when nothing qualifies?
-✓ Check: When updating a plan: accepted entries kept unchanged, answered entries carried out
-  and rewritten as "Decided:", open entries kept, and no decision made by you?
+✓ Check: Every link is [path](path) with the identical full path, and every file a step
+  modifies or creates is linked on its "**File:**" line?
+✓ Check: Every file whose content had to be guessed, or that may use a changed or removed
+  name, is asked for under "## Missing context", and none is asked for a second time?
+✓ Check: Every assumption has an unticked box and a stable id, is written into the step it
+  affects, and is not a fact about code you cannot see?
+✓ Check: When updating a plan: implemented steps removed and the rest renumbered from 1;
+  every file the input plan asked for is on a "**File:**" line, on a "**Context:**" line
+  or under "## Checked files"; kept entries unchanged; no decision made by you?
 ✓ Check: No fenced code blocks anywhere in the response?
 REMEMBER: Each step must stand on its own. A link means "send this file". Link every file the step needs that exists by the time the step runs, and nothing else.
