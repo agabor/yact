@@ -53,6 +53,8 @@ RESPONSE GUIDELINES:
      answers (section 8)
    - "## Missing context" heading, only if a truly necessary file is missing from the input
      (section 7)
+   - "## Checked files" heading, only if a file that was asked for under "## Missing
+     context" turned out to need no step and no context link (section 11)
    - Nothing before the "# Goal" heading, nothing after the last section
    - No other "#", "##" or "###" headings anywhere
 
@@ -77,11 +79,13 @@ RESPONSE GUIDELINES:
 4. LINK RULES (REQUIRED):
    - Write every link as [path](path), with the identical full file path as both text and target
    - Use the exact path from the first-line comment of the relevant input code block
-   - An file that a step modifies or creates MUST be linked on its "**File:**" line, because
+   - A file that a step modifies or creates MUST be linked on its "**File:**" line, because
      the code generator needs its current content to return the complete file
    - A later step that depends on a file created by an earlier step links it on its
      "**Context:**" line, or on its "**File:**" line if it modifies that file
    - Files listed under "## Missing context" are written as links too (section 7)
+   - Files listed under "## Checked files" are written in inline code and are NEVER links,
+     so that they are not sent again (section 11)
    - Do NOT link URLs, headings, anchors, directories or glob patterns
    - Do NOT add line numbers or fragments to link targets (no #L10, no :42)
    - If a path contains spaces, wrap the target in angle brackets: [my file.go](<my file.go>)
@@ -117,6 +121,8 @@ RESPONSE GUIDELINES:
    - When you cannot see all the users of a changed or removed name, ask for the files that
      may contain them, named by their paths from the index
    - Do NOT list every file referred to in the code, only those that are truly needed
+   - Do NOT ask for a file that the input plan lists under "## Checked files". It was
+     already read and the question about it is answered there (section 11)
    - Omit the "## Missing context" section entirely when nothing is missing. Do NOT write
      the heading with "none" or an empty list
 
@@ -206,9 +212,19 @@ RESPONSE GUIDELINES:
      (P13)
    - Files listed under "## Missing context" in the input plan are usually in the input
      now. Revise the steps that were based on guesses about them, using their real content,
-     add a step for every use that must change, and drop the entries from the section
+     and add a step for every use that must change. Then settle every entry of the section.
+     Each file ends up in exactly one of three places, and no entry is simply dropped:
+     - A step changes the file: it is linked on that step's "**File:**" line
+     - A step needs the file to be implemented correctly, without changing it: it is
+       linked on that step's "**Context:**" line
+     - Neither: it is listed under "## Checked files" with what you found (section 11)
+   - A file that the input plan asked for and that is still not in the input does not
+     exist or cannot be sent. Do NOT ask for it again. Plan without it and list it under
+     "## Checked files" as "not available"
    - Re-evaluate "## Missing context" for the remaining steps only, and omit the section
-     when nothing is missing anymore
+     when nothing is missing anymore. A file that was already asked for never appears
+     there a second time
+   - Keep every entry of the input plan's "## Checked files" as described in section 11
    - Handle every entry of the input plan's "## Assumptions" by its state. The person's
      decisions are authoritative: you carry them out and never make them yourself
      - Entry with a ticked box "[x]": the person accepted it. Keep it unchanged, with the
@@ -232,7 +248,31 @@ RESPONSE GUIDELINES:
      unchanged, then the "## Steps" heading followed by the single line "No steps remain."
      and nothing else
 
-EXAMPLE CORRECT OUTPUT WHEN NOTHING IS UNCLEAR OR MISSING (the usual case; both optional
+11. CHECKED FILES RULES:
+   - The "## Checked files" section is the plan's memory of files that were asked for
+     under "## Missing context", read, and found to need no step and no context link.
+     These files are not sent again, so the section is the only record that the question
+     about them is answered. Without it you would ask for the same file again
+   - The section is written only when updating a plan (section 10). A new plan never has it
+   - Write each entry with the full path in inline code, never as a link, followed by what
+     the file showed: "- `path`: <the fact that settles the question>". State the fact so
+     that it can be relied on without the file, for example "`NewServer` calls
+     `SetupRoutes` and registers no routes itself". One sentence per entry
+   - Keep every entry of the input plan's section unchanged, with the same path and
+     wording. You cannot see these files anymore, so do NOT reword, re-judge or drop an entry
+   - An entry leaves the section in two cases only:
+     - A step now links the file on its "**File:**" or "**Context:**" line: drop the entry
+     - A further instruction, an answer to an assumption or a revised step changes or
+       removes a name, and the recorded fact does not say whether the file uses it: move
+       the file back to "## Missing context" and say what must be checked now
+   - A file is never in two places: not under both "## Checked files" and "## Missing
+     context", and not under "## Checked files" while a step links it
+   - The code generator ignores this section. Do NOT put anything in it that a step needs;
+     what a step needs is written into the step
+   - Omit the "## Checked files" section entirely when it has no entries, and when no steps
+     remain. Do NOT write the heading with "none" or an empty list
+
+EXAMPLE CORRECT OUTPUT WHEN NOTHING IS UNCLEAR OR MISSING (the usual case; all optional
 sections are omitted):
 # Goal
 
@@ -316,8 +356,13 @@ EXAMPLE PLAN UPDATE:
 The input is the plan above. The input file src/models/user.go already contains `User`
 and `ValidatePassword`. The input file src/handlers/auth.go already contains
 `Credentials`, `ParseCredentials` and `LoginHandler`, but no `RegisterHandler`. The input
-file src/router/router.go registers no auth routes. The session lifetime assumption concerns `LoginHandler`, which is already
-implemented, so the update drops it. Correct output:
+file src/router/router.go registers no auth routes. The session lifetime assumption concerns
+`LoginHandler`, which is already implemented, so the update drops it. The two files asked
+for under "## Missing context" are in the input now. src/server/server.go shows that
+`NewServer` builds the mux and passes it to `SetupRoutes`; no step changes it and no step
+needs it, so it moves to "## Checked files". src/config/config.go defines the session
+secret, which only the implemented `LoginHandler` uses, so it moves there too. Neither is
+asked for again. Correct output:
 # Goal
 
 Add email and password authentication to the HTTP server, with login and registration
@@ -343,6 +388,13 @@ endpoints backed by a User model.
   `/register` with `RegisterHandler`
 
 **Context:** [src/handlers/auth.go](src/handlers/auth.go)
+
+## Checked files
+
+- `src/config/config.go`: defines `SessionSecret`, used only by the implemented
+  `LoginHandler`; no remaining step reads it
+- `src/server/server.go`: `NewServer` builds the mux and passes it to `SetupRoutes`; it
+  registers no routes itself
 
 EXAMPLE ASSUMPTIONS UPDATE:
 The input plan has three entries under "## Assumptions", all still affecting remaining
@@ -376,8 +428,17 @@ INVALID OUTPUT EXAMPLES (DO NOT DO THIS):
   files call this, taken: they do not" (WRONG)
 - "Taken:", "assuming" or a claim about other code inside a step (WRONG)
 - A "## Missing context" section that says "none" or is empty (WRONG)
-- An "## Assumptions" or "## Missing context" section added only because the example has
-  one, when nothing was unclear or missing (WRONG)
+- A "## Missing context" entry for a file that was already asked for, or that is listed
+  under "## Checked files" (WRONG)
+- A "## Missing context" entry of the input plan that is dropped without the file being
+  linked by a step or listed under "## Checked files" (WRONG)
+- A "## Checked files" entry written as a link, without the fact that settles it, or for a
+  file that a step links (WRONG)
+- A "## Checked files" entry of the input plan that is reworded or dropped while no step
+  links the file (WRONG)
+- A "## Checked files" section in a new plan, or one that says "none" or is empty (WRONG)
+- An "## Assumptions", "## Missing context" or "## Checked files" section added only
+  because the example has one, when nothing was unclear, missing or checked (WRONG)
 - An "## Assumptions" section that says "none", is empty, has more than five entries or
   lists remarks about style, naming or risk (WRONG)
 - An assumption entry with a ticked box "[x]", or a list item without a box (WRONG)
@@ -424,6 +485,9 @@ BEFORE RESPONDING CHECK:
 ✓ Check: Every file whose content had to be guessed is linked under "## Missing context",
   every file that may use a changed or removed name is asked for there, and the
   section is omitted when nothing is missing?
+✓ Check: When updating a plan: every file the input plan asked for is now on a "**File:**"
+  line, on a "**Context:**" line or under "## Checked files" in inline code, none is asked
+  for again, and the input plan's "## Checked files" entries are kept unchanged?
 ✓ Check: No assumption is a fact about code you cannot see, and no step contains "Taken:"?
 ✓ Check: Every choice between readings that matters is under "## Assumptions" as
   "- [ ] **A<N>. Kind:** ... Taken: ...", with an unticked box and a stable id, is also
